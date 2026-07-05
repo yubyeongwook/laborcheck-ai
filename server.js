@@ -36,7 +36,12 @@ app.post('/api/generate-report', async (req, res) => {
       weekly_days,
       break_time,
       file_data,  // Base64 데이터 URL 또는 순수 Base64
-      file_mime   // mimeType
+      file_mime,  // mimeType
+      pattern1_days,
+      pattern1_hours,
+      pattern2_days,
+      pattern2_hours,
+      weekly_night_hours
     } = req.body;
 
     // 입력값 검증
@@ -69,7 +74,11 @@ app.post('/api/generate-report', async (req, res) => {
 - 사업장 규모: ${company_size} (5인 미만 / 5인 이상)
 - 기존 근무/급여 설명: ${work_hours || '상세 입력 참조'}
 - 급여 유형 및 금액: ${salary_type || '미입력'} (${salary_amount ? Number(salary_amount).toLocaleString() : 0}원)
-- 근로 시간 정보: 하루 ${daily_hours || 0}시간, 주 ${weekly_days || 0}일 근무
+- 근로 시간 정보:
+  * 패턴 1: 주 ${pattern1_days || 0}일, 하루 ${pattern1_hours || 0}시간 근무
+  * 패턴 2: 주 ${pattern2_days || 0}일, 하루 ${pattern2_hours || 0}시간 근무 (선택)
+  * 주당 총 야간 근로시간 (22시 ~ 익일 06시): ${weekly_night_hours || 0}시간
+  * 평균 1일 근로시간: 하루 ${daily_hours || 0}시간, 주 ${weekly_days || 0}일 근무
 - 휴게 시간 정보: 하루 ${break_time || 0}분 휴게
 - 근로계약서상 수당 포함 여부 (5인 이상 전용): ${company_size === '5인 이상' ? (allowance_included || '해당 없음/확인불가') : '해당 없음 (5인 미만)'}
 - 사연: ${issue_text}

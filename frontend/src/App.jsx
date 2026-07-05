@@ -39,9 +39,20 @@ function App() {
   const [salaryType, setSalaryType] = useState('월급');
   const [salaryAmount, setSalaryAmount] = useState('');
   const [allowanceIncluded, setAllowanceIncluded] = useState('확인불가');
-  const [dailyHours, setDailyHours] = useState('8');
-  const [weeklyDays, setWeeklyDays] = useState('5');
+  const [pattern1Days, setPattern1Days] = useState('5');
+  const [pattern1Hours, setPattern1Hours] = useState('8');
+  const [pattern2Days, setPattern2Days] = useState('0');
+  const [pattern2Hours, setPattern2Hours] = useState('0');
+  const [weeklyNightHours, setWeeklyNightHours] = useState('0');
   const [breakTime, setBreakTime] = useState('60');
+
+  // Derived working hours variables
+  const p1Days = parseFloat(pattern1Days) || 0;
+  const p1Hours = parseFloat(pattern1Hours) || 0;
+  const p2Days = parseFloat(pattern2Days) || 0;
+  const p2Hours = parseFloat(pattern2Hours) || 0;
+  const weeklyDays = p1Days + p2Days;
+  const dailyHours = weeklyDays > 0 ? ((p1Days * p1Hours) + (p2Days * p2Hours)) / weeklyDays : 0;
   
   // 멀티모달 파일 상태
   const [fileBase64, setFileBase64] = useState('');
@@ -192,79 +203,136 @@ function App() {
   // 2. 실시간 급여 항목 시뮬레이션 계산
   const calculateSalaryBreakdown = (extraWeeklyOvertime = 0) => {
     const amt = parseFloat(salaryAmount) || 0;
-    const hours = parseFloat(dailyHours) || 0;
-    const days = parseFloat(weeklyDays) || 0;
-    const weeklyHours = hours * days;
     
+    const p1D = parseFloat(pattern1Days) || 0;
+    const p1H = parseFloat(pattern1Hours) || 0;
+    const p2D = parseFloat(pattern2Days) || 0;
+    const p2H = parseFloat(pattern2Hours) || 0;
+    const wNightHours = parseFloat(weeklyNightHours) || 0;
+
+    const weeklyHours = (p1D * p1H) + (p2D * p2H);
+    
+    // 소정근로시간 (하루 8시간 초과분 제외, 주 40시간 초과분 제외)
+    const p1RegularDaily = Math.min(p1H, 8);
+    const p2RegularDaily = Math.min(p2H, 8);
+    const weeklyRegularHours = (p1D * p1RegularDaily) + (p2D * p2RegularDaily);
+    const regularWorkHoursForBasePay = Math.min(weeklyRegularHours, 40);
+    
+    // 연장근로시간 계산 (1일 8시간 초과분 합산)
+    const p1DailyOvertime = Math.max(p1H - 8, 0) * p1D;
+    const p2DailyOvertime = Math.max(p2H - 8, 0) * p2D;
+    const dailyOvertime = p1DailyOvertime + p2DailyOvertime;
+    
+    // 주 40시간 초과분
+    const weeklyOvertimeLimit = Math.max(weeklyRegularHours - 40, 0);
+    const weeklyOvertimeHours = dailyOvertime + weeklyOvertimeLimit + extraWeeklyOvertime;
+
     // 주휴수당 기준: 1주 15시간 이상 근무
     const hasWeeklyHoliday = weeklyHours >= 15;
-    const weeklyHolidayHours = hasWeeklyHoliday ? Math.min((weeklyHours / 40) * 8, 8) : 0;
+    const weeklyHolidayHours = hasWeeklyHoliday ? (regularWorkHoursForBasePay / 40) * 8 : 0;
     
-    // 5인 이상 여부 및 연장 근로시간 산정
+    // 5인 이상 여부
     const is5Over = companySize === '5인 이상';
-    let weeklyOvertimeHours = 0;
-    
-    // 1일 8시간 초과분 또는 1주 40시간 초과분 계산
-    const dailyOvertime = Math.max(hours - 8, 0) * days;
-    weeklyOvertimeHours = Math.max(dailyOvertime, Math.max(weeklyHours - 40, 0)) + extraWeeklyOvertime;
-    
-    // 5인 이상일 때 연장 가산율 1.5, 5인 미만일 때 1.0 (가산 없음)
     const overtimeMultiplier = is5Over ? 1.5 : 1.0;
+    const nightMultiplier = is5Over ? 0.5 : 0.0;
     
     let hourlyWage = 0;
     let basePay = 0;
     let weeklyHolidayPay = 0;
     let overtimePay = 0;
+    let nightPay = 0;
     let totalPay = 0;
     
     if (salaryType === '시급') {
       hourlyWage = amt;
-      basePay = Math.round(hourlyWage * weeklyHours * 4.345);
+      basePay = Math.round(hourlyWage * regularWorkHoursForBasePay * 4.345);
       weeklyHolidayPay = Math.round(hourlyWage * weeklyHolidayHours * 4.345);
       overtimePay = Math.round(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * 4.345);
-      totalPay = basePay + weeklyHolidayPay + overtimePay;
+      nightPay = Math.round(hourlyWage * wNightHours * nightMultiplier * 4.345);
+      totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
     } else if (salaryType === '일급') {
-      hourlyWage = hours > 0 ? amt / hours : 0;
-      basePay = Math.round(amt * days * 4.345);
+      const averageDailyHours = (p1D + p2D) > 0 ? weeklyHours / (p1D + p2D) : 8;
+      hourlyWage = averageDailyHours > 0 ? amt / averageDailyHours : 0;
+      basePay = Math.round(hourlyWage * regularWorkHoursForBasePay * 4.345);
       weeklyHolidayPay = Math.round(hourlyWage * weeklyHolidayHours * 4.345);
       overtimePay = Math.round(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * 4.345);
-      totalPay = basePay + weeklyHolidayPay + overtimePay;
+      nightPay = Math.round(hourlyWage * wNightHours * nightMultiplier * 4.345);
+      totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
     } else if (salaryType === '주급') {
-      const divisor = weeklyHours + (hasWeeklyHoliday ? weeklyHolidayHours : 0);
+      const divisor = regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (wNightHours * nightMultiplier);
       hourlyWage = divisor > 0 ? amt / divisor : 0;
-      basePay = Math.round(hourlyWage * weeklyHours * 4.345);
+      basePay = Math.round(hourlyWage * regularWorkHoursForBasePay * 4.345);
       weeklyHolidayPay = Math.round(hourlyWage * weeklyHolidayHours * 4.345);
       overtimePay = Math.round(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * 4.345);
-      totalPay = basePay + weeklyHolidayPay + overtimePay;
+      nightPay = Math.round(hourlyWage * wNightHours * nightMultiplier * 4.345);
+      totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
     } else { // 월급
-      // 월급의 경우, 입력 금액이 총 급여(기본급 + 주휴수당 포함)라고 가정
-      const weeklyBaseAndHoliday = weeklyHours + (hasWeeklyHoliday ? weeklyHolidayHours : 0);
+      const weeklyBaseAndHoliday = regularWorkHoursForBasePay + weeklyHolidayHours;
       const monthlyStandardDivisor = weeklyBaseAndHoliday * 4.345;
-      
       hourlyWage = monthlyStandardDivisor > 0 ? amt / monthlyStandardDivisor : 0;
       
-      basePay = Math.round(hourlyWage * weeklyHours * 4.345);
+      basePay = Math.round(hourlyWage * regularWorkHoursForBasePay * 4.345);
       weeklyHolidayPay = Math.round(hourlyWage * weeklyHolidayHours * 4.345);
-      
-      // 월급의 경우 연장수당은 입력된 월급에 추가로 가산되어야 하는 경우가 일반적임
       overtimePay = Math.round(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * 4.345);
+      nightPay = Math.round(hourlyWage * wNightHours * nightMultiplier * 4.345);
       
-      // 만약 포괄임금제라면 입력 금액 내에 연장수당이 포괄되어 있다고 보고, 기본급을 조정
       if (is5Over && allowanceIncluded === '기본급 외 수당 모두 포함 (포괄임금)') {
-        const totalMultiplierDivisor = (weeklyHours + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier)) * 4.345;
+        const totalMultiplierDivisor = (regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (wNightHours * nightMultiplier)) * 4.345;
         if (totalMultiplierDivisor > 0) {
           const actualHourly = amt / totalMultiplierDivisor;
           hourlyWage = actualHourly;
-          basePay = Math.round(actualHourly * weeklyHours * 4.345);
+          basePay = Math.round(actualHourly * regularWorkHoursForBasePay * 4.345);
           weeklyHolidayPay = Math.round(actualHourly * weeklyHolidayHours * 4.345);
           overtimePay = Math.round(actualHourly * weeklyOvertimeHours * overtimeMultiplier * 4.345);
+          nightPay = Math.round(actualHourly * wNightHours * nightMultiplier * 4.345);
         }
         totalPay = amt;
       } else {
-        totalPay = basePay + weeklyHolidayPay + overtimePay;
+        totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
       }
     }
     
+    // 4대보험 공제 (약 9.4%)
+    const nationalPension = Math.round(totalPay * 0.045);
+    const healthInsurance = Math.round(totalPay * 0.03545);
+    const longTermCare = Math.round(healthInsurance * 0.1295);
+    const employmentInsurance = Math.round(totalPay * 0.009);
+    const totalInsurance = nationalPension + healthInsurance + longTermCare + employmentInsurance;
+    
+    // 소득세 단순화 모델
+    let incomeTax = 0;
+    if (totalPay >= 5000000) {
+      incomeTax = Math.round(totalPay * 0.05);
+    } else if (totalPay >= 3000000) {
+      incomeTax = Math.round(totalPay * 0.03);
+    } else if (totalPay >= 1500000) {
+      incomeTax = Math.round(totalPay * 0.015);
+    }
+    const localIncomeTax = Math.round(incomeTax * 0.1);
+    const totalTax = incomeTax + localIncomeTax;
+    
+    const totalDeductions = totalInsurance + totalTax;
+    const netPay = Math.max(totalPay - totalDeductions, 0);
+    
+    return {
+      hourlyWage: Math.round(hourlyWage),
+      basePay,
+      weeklyHolidayPay,
+      overtimePay,
+      nightPay,
+      totalPay,
+      nationalPension,
+      healthInsurance,
+      longTermCare,
+      employmentInsurance,
+      totalInsurance,
+      incomeTax,
+      localIncomeTax,
+      totalTax,
+      totalDeductions,
+      netPay
+    };
+  };
     // 4대보험 공제 (약 9.4%)
     const nationalPension = Math.round(totalPay * 0.045);
     const healthInsurance = Math.round(totalPay * 0.03545);
@@ -325,10 +393,17 @@ function App() {
       riskColor = '#f59e0b';
     }
     
+    const p1D = parseFloat(pattern1Days) || 0;
+    const p1H = parseFloat(pattern1Hours) || 0;
+    const p2D = parseFloat(pattern2Days) || 0;
+    const p2H = parseFloat(pattern2Hours) || 0;
+    const weeklyHours = (p1D * p1H) + (p2D * p2H);
+
     const parts = [
       { label: '기본급', value: breakdown.basePay, color: '#6366f1' },
       { label: '주휴수당', value: breakdown.weeklyHolidayPay, color: '#10b981' },
-      { label: '가산수당', value: breakdown.overtimePay, color: '#f59e0b' },
+      { label: '연장수당', value: breakdown.overtimePay, color: '#f59e0b' },
+      { label: '야간수당', value: breakdown.nightPay, color: '#a5b4fc' },
       { label: '공제액', value: breakdown.totalDeductions, color: '#f87171' }
     ];
     
@@ -349,8 +424,10 @@ function App() {
       };
     });
     
-    const isRestTimeViolated = (parseFloat(dailyHours) >= 8 && parseFloat(breakTime) < 60) || 
-                               (parseFloat(dailyHours) >= 4 && parseFloat(dailyHours) < 8 && parseFloat(breakTime) < 30);
+    const isRestTimeViolated = (p1H >= 8 && parseFloat(breakTime) < 60) || 
+                               (p1H >= 4 && p1H < 8 && parseFloat(breakTime) < 30) ||
+                               (p2D > 0 && p2H >= 8 && parseFloat(breakTime) < 60) ||
+                               (p2D > 0 && p2H >= 4 && p2H < 8 && parseFloat(breakTime) < 30);
     
     return (
       <div className="dashboard-view" style={{ animation: 'fadeIn 0.4s ease' }}>
@@ -414,6 +491,16 @@ function App() {
               </div>
               <div className="compliance-item">
                 <span className="compliance-name">
+                  ⏰ 주당 총 근로시간
+                </span>
+                <span className={`compliance-badge ${
+                  weeklyHours > 52 ? 'danger' : 'pass'
+                }`}>
+                  {weeklyHours}시간 {weeklyHours > 52 ? '(초과)' : '(준수)'}
+                </span>
+              </div>
+              <div className="compliance-item">
+                <span className="compliance-name">
                   🪙 최저임금 준수
                 </span>
                 <span className={`compliance-badge ${
@@ -463,9 +550,16 @@ function App() {
                   <div className="salary-breakdown-item">
                     <span className="salary-breakdown-label">
                       <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></span>
-                      가산수당
+                      연장수당
                     </span>
                     <span className="salary-breakdown-value">{breakdown.overtimePay.toLocaleString()}원</span>
+                  </div>
+                  <div className="salary-breakdown-item">
+                    <span className="salary-breakdown-label">
+                      <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#a5b4fc' }}></span>
+                      야간수당
+                    </span>
+                    <span className="salary-breakdown-value">{breakdown.nightPay.toLocaleString()}원</span>
                   </div>
                   <div className="salary-breakdown-item" style={{ color: '#ef4444' }}>
                     <span className="salary-breakdown-label">
@@ -555,6 +649,11 @@ function App() {
       salary_type: salaryType,
       salary_amount: salaryAmount,
       allowance_included: companySize === '5인 이상' ? allowanceIncluded : '해당 없음 (5인 미만)',
+      pattern1_days: Number(pattern1Days),
+      pattern1_hours: Number(pattern1Hours),
+      pattern2_days: Number(pattern2Days),
+      pattern2_hours: Number(pattern2Hours),
+      weekly_night_hours: Number(weeklyNightHours),
       daily_hours: Number(dailyHours),
       weekly_days: Number(weeklyDays),
       break_time: Number(breakTime),
@@ -752,27 +851,80 @@ function App() {
                 <Clock size={16} color="#38bdf8" /> 상세 근로 및 휴게 시간
               </label>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>1일 근로시간 (시간)</span>
-                  <input 
-                    id="daily-hours-input"
-                    type="number" 
-                    className="text-input" 
-                    value={dailyHours}
-                    onChange={(e) => setDailyHours(e.target.value)}
-                    min="1" max="24"
-                  />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                {/* 근무 패턴 1 */}
+                <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>근무 패턴 1</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주 근무일수 (일)</span>
+                      <input 
+                        id="pattern1-days-input"
+                        type="number" 
+                        className="text-input" 
+                        value={pattern1Days}
+                        onChange={(e) => setPattern1Days(e.target.value)}
+                        min="0" max="7"
+                      />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>하루 근로시간 (시간)</span>
+                      <input 
+                        id="pattern1-hours-input"
+                        type="number" 
+                        className="text-input" 
+                        value={pattern1Hours}
+                        onChange={(e) => setPattern1Hours(e.target.value)}
+                        min="0" max="24"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주당 근무일수 (일)</span>
+
+                {/* 근무 패턴 2 */}
+                <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>근무 패턴 2 (선택)</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주 근무일수 (일)</span>
+                      <input 
+                        id="pattern2-days-input"
+                        type="number" 
+                        className="text-input" 
+                        value={pattern2Days}
+                        onChange={(e) => setPattern2Days(e.target.value)}
+                        min="0" max="7"
+                      />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>하루 근로시간 (시간)</span>
+                      <input 
+                        id="pattern2-hours-input"
+                        type="number" 
+                        className="text-input" 
+                        value={pattern2Hours}
+                        onChange={(e) => setPattern2Hours(e.target.value)}
+                        min="0" max="24"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 야간 근로시간 */}
+                <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.25rem' }}>
+                    주당 야간 근로시간 (시간)
+                  </span>
+                  <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: '0 0 0.5rem 0', lineHeight: 1.3 }}>
+                    오후 10시부터 다음날 오전 6시 사이의 주당 총 근로 시간입니다. (5인 이상 50% 가산)
+                  </p>
                   <input 
-                    id="weekly-days-input"
+                    id="weekly-night-hours-input"
                     type="number" 
                     className="text-input" 
-                    value={weeklyDays}
-                    onChange={(e) => setWeeklyDays(e.target.value)}
-                    min="1" max="7"
+                    value={weeklyNightHours}
+                    onChange={(e) => setWeeklyNightHours(e.target.value)}
+                    min="0"
                   />
                 </div>
               </div>
