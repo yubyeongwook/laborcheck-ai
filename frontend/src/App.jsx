@@ -154,6 +154,60 @@ function App() {
   const [weeklyNightHours, setWeeklyNightHours] = useState('0');
   const [breakTime, setBreakTime] = useState('60');
 
+  // 출퇴근 시업/종업 시간 상태
+  const [pattern1Start, setPattern1Start] = useState('09:00');
+  const [pattern1End, setPattern1End] = useState('18:00');
+  const [pattern2Start, setPattern2Start] = useState('09:00');
+  const [pattern2End, setPattern2End] = useState('18:00');
+
+  // 출퇴근 시간 계산 헬퍼 함수
+  const calculateHoursAndNightHours = (startStr, endStr, breakMinutes) => {
+    if (!startStr || !endStr) return { workHours: 0, nightHours: 0 };
+    
+    const [startH, startM] = startStr.split(':').map(Number);
+    const [endH, endM] = endStr.split(':').map(Number);
+    
+    let startDecimal = startH + startM / 60;
+    let endDecimal = endH + endM / 60;
+    
+    if (endDecimal <= startDecimal) {
+      endDecimal += 24; // 자정 교차
+    }
+    
+    const totalElapsed = endDecimal - startDecimal;
+    const breakHours = (parseFloat(breakMinutes) || 0) / 60;
+    const workHours = Math.max(0, totalElapsed - breakHours);
+    
+    // 야간 근로시간 계산 (22:00 ~ 익일 06:00)
+    // 10 PM ~ 6 AM (dec: 22 ~ 30)
+    const overlapNight1 = Math.max(0, Math.min(endDecimal, 30) - Math.max(startDecimal, 22));
+    
+    // 12 AM ~ 6 AM (dec: 0 ~ 6) - 교대 근무자가 새벽 일찍 출근한 경우
+    const overlapNight2 = Math.max(0, Math.min(endDecimal, 6) - Math.max(startDecimal, 0));
+    
+    const totalNight = overlapNight1 + overlapNight2;
+    
+    return {
+      workHours: Math.round(workHours * 100) / 100,
+      nightHours: Math.round(totalNight * 100) / 100
+    };
+  };
+
+  // 출퇴근 시간 변경 시 시간 및 야간 근로 자동 갱신
+  useEffect(() => {
+    const p1 = calculateHoursAndNightHours(pattern1Start, pattern1End, breakTime);
+    const p2 = calculateHoursAndNightHours(pattern2Start, pattern2End, breakTime);
+    
+    setPattern1Hours(p1.workHours.toString());
+    setPattern2Hours(p2.workHours.toString());
+    
+    const p1DaysNum = parseFloat(pattern1Days) || 0;
+    const p2DaysNum = parseFloat(pattern2Days) || 0;
+    const totalWeeklyNight = (p1.nightHours * p1DaysNum) + (p2.nightHours * p2DaysNum);
+    
+    setWeeklyNightHours((Math.round(totalWeeklyNight * 100) / 100).toString());
+  }, [pattern1Start, pattern1End, pattern2Start, pattern2End, breakTime, pattern1Days, pattern2Days]);
+
   // Derived working hours variables
   const p1Days = parseFloat(pattern1Days) || 0;
   const p1Hours = parseFloat(pattern1Hours) || 0;
@@ -973,9 +1027,9 @@ function App() {
                 {/* 근무 패턴 1 */}
                 <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                   <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>근무 패턴 1</span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                     <div>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주 근무일수 (일)</span>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주 근무일수</span>
                       <input 
                         id="pattern1-days-input"
                         type="number" 
@@ -986,25 +1040,37 @@ function App() {
                       />
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>하루 근로시간 (시간)</span>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>출근 시간</span>
                       <input 
-                        id="pattern1-hours-input"
-                        type="number" 
+                        type="time" 
                         className="text-input" 
-                        value={pattern1Hours}
-                        onChange={(e) => setPattern1Hours(e.target.value)}
-                        min="0" max="24"
+                        value={pattern1Start}
+                        onChange={(e) => setPattern1Start(e.target.value)}
+                        style={{ padding: '0.75rem 0.5rem' }}
                       />
                     </div>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>퇴근 시간</span>
+                      <input 
+                        type="time" 
+                        className="text-input" 
+                        value={pattern1End}
+                        onChange={(e) => setPattern1End(e.target.value)}
+                        style={{ padding: '0.75rem 0.5rem' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#38bdf8', marginTop: '0.5rem', textAlign: 'right', fontWeight: '500' }}>
+                    하루 근로시간: <strong>{pattern1Hours}시간</strong> (휴게 {breakTime}분 제외)
                   </div>
                 </div>
 
                 {/* 근무 패턴 2 */}
                 <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                   <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>근무 패턴 2 (선택)</span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                     <div>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주 근무일수 (일)</span>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주 근무일수</span>
                       <input 
                         id="pattern2-days-input"
                         type="number" 
@@ -1015,34 +1081,46 @@ function App() {
                       />
                     </div>
                     <div>
-                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>하루 근로시간 (시간)</span>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>출근 시간</span>
                       <input 
-                        id="pattern2-hours-input"
-                        type="number" 
+                        type="time" 
                         className="text-input" 
-                        value={pattern2Hours}
-                        onChange={(e) => setPattern2Hours(e.target.value)}
-                        min="0" max="24"
+                        value={pattern2Start}
+                        onChange={(e) => setPattern2Start(e.target.value)}
+                        style={{ padding: '0.75rem 0.5rem' }}
                       />
                     </div>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>퇴근 시간</span>
+                      <input 
+                        type="time" 
+                        className="text-input" 
+                        value={pattern2End}
+                        onChange={(e) => setPattern2End(e.target.value)}
+                        style={{ padding: '0.75rem 0.5rem' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#38bdf8', marginTop: '0.5rem', textAlign: 'right', fontWeight: '500' }}>
+                    하루 근로시간: <strong>{pattern2Hours}시간</strong> (휴게 {breakTime}분 제외)
                   </div>
                 </div>
 
                 {/* 야간 근로시간 */}
-                <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <div style={{ background: 'rgba(99, 102, 241, 0.05)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.15)' }}>
                   <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.25rem' }}>
                     주당 야간 근로시간 (시간)
                   </span>
                   <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: '0 0 0.5rem 0', lineHeight: 1.3 }}>
-                    오후 10시부터 다음날 오전 6시 사이의 주당 총 근로 시간입니다. (5인 이상 50% 가산)
+                    오후 10시부터 다음날 오전 6시 사이의 주당 총 근로 시간입니다. (출퇴근 시간에 의해 자동 계산됨)
                   </p>
                   <input 
                     id="weekly-night-hours-input"
                     type="number" 
                     className="text-input" 
                     value={weeklyNightHours}
-                    onChange={(e) => setWeeklyNightHours(e.target.value)}
-                    min="0"
+                    disabled
+                    style={{ background: 'rgba(255, 255, 255, 0.05)', cursor: 'not-allowed', color: '#cbd5e1' }}
                   />
                 </div>
               </div>
