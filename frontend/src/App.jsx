@@ -333,46 +333,6 @@ function App() {
       netPay
     };
   };
-    // 4대보험 공제 (약 9.4%)
-    const nationalPension = Math.round(totalPay * 0.045);
-    const healthInsurance = Math.round(totalPay * 0.03545);
-    const longTermCare = Math.round(healthInsurance * 0.1295);
-    const employmentInsurance = Math.round(totalPay * 0.009);
-    const totalInsurance = nationalPension + healthInsurance + longTermCare + employmentInsurance;
-    
-    // 소득세 단순화 모델
-    let incomeTax = 0;
-    if (totalPay >= 5000000) {
-      incomeTax = Math.round(totalPay * 0.05);
-    } else if (totalPay >= 3000000) {
-      incomeTax = Math.round(totalPay * 0.03);
-    } else if (totalPay >= 1500000) {
-      incomeTax = Math.round(totalPay * 0.015);
-    }
-    const localIncomeTax = Math.round(incomeTax * 0.1);
-    const totalTax = incomeTax + localIncomeTax;
-    
-    const totalDeductions = totalInsurance + totalTax;
-    const netPay = Math.max(totalPay - totalDeductions, 0);
-    
-    return {
-      hourlyWage: Math.round(hourlyWage),
-      basePay,
-      weeklyHolidayPay,
-      overtimePay,
-      totalPay,
-      nationalPension,
-      healthInsurance,
-      longTermCare,
-      employmentInsurance,
-      totalInsurance,
-      incomeTax,
-      localIncomeTax,
-      totalTax,
-      totalDeductions,
-      netPay
-    };
-  };
 
   // 3. 실시간 대시보드 렌더링 함수
   const renderDashboard = () => {
