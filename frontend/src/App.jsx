@@ -565,7 +565,7 @@ function App() {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/generate-report', {
+      const response = await fetch('https://laborcheck-ai.onrender.com/api/generate-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

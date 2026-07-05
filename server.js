@@ -160,8 +160,8 @@ ${user_type === '근로자'
       return res.json({ report: mockReport });
     }
 
-    // LLM 호출 (gemini-1.5-flash 사용)
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // LLM 호출 (gemini-2.5-flash 사용)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     
     const result = await model.generateContent(systemPrompt);
     const response = await result.response;
