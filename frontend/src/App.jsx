@@ -1,4 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+// Supabase 클라이언트 초기화
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+let supabase = null;
+if (supabaseUrl && supabaseAnonKey && supabaseUrl !== 'your_supabase_url_here') {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+  } catch (err) {
+    console.error('Supabase initialization failed:', err);
+  }
+}
+
 import ReactMarkdown from 'react-markdown';
 import { 
   ShieldAlert, 
@@ -31,6 +45,100 @@ const LOADING_TIPS = [
 ];
 
 function App() {
+  // Supabase Auth 상태 관리
+  const [session, setSession] = useState(null);
+  const [user, setUser] = useState(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isSigningUp, setIsSigningUp] = useState(false);
+
+  useEffect(() => {
+    if (supabase) {
+      // 초기 세션 획득
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      });
+
+      // 인증 상태 변경 리스너
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      });
+
+      return () => subscription.unsubscribe();
+    }
+  }, []);
+
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    if (!supabase) {
+      setAuthError('Supabase가 구성되지 않았습니다. .env 파일을 확인해 주세요.');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      if (error) throw error;
+      setShowLoginModal(false);
+      setLoginEmail('');
+      setLoginPassword('');
+    } catch (err) {
+      setAuthError(err.message || '로그인에 실패했습니다.');
+    }
+  };
+
+  const handleEmailSignUp = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    if (!supabase) {
+      setAuthError('Supabase가 구성되지 않았습니다. .env 파일을 확인해 주세요.');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      if (error) throw error;
+      alert('회원가입 확인 메일이 발송되었습니다! 이메일 링크를 확인해 주세요.');
+      setIsSigningUp(false);
+      setLoginEmail('');
+      setLoginPassword('');
+    } catch (err) {
+      setAuthError(err.message || '회원가입에 실패했습니다.');
+    }
+  };
+
+  const handleOAuthLogin = async (provider) => {
+    if (!supabase) {
+      alert('Supabase가 구성되지 않았습니다. .env 파일을 확인해 주세요.');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: provider,
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      alert(`${provider} 로그인 시도 중 에러가 발생했습니다: ${err.message}`);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+  };
+
   // 기본 상태 값
   const [userType, setUserType] = useState('근로자');
   const [companySize, setCompanySize] = useState('5인 이상');
@@ -623,12 +731,17 @@ function App() {
       file_mime: fileMime
     };
 
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
     try {
       const response = await fetch('https://api.xn--ai-h74ir53a94vh9e.com/api/generate-report', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify(payload),
       });
 
@@ -651,6 +764,11 @@ function App() {
   // 클립보드 복사
   const handleCopyToClipboard = () => {
     if (!report) return;
+    if (!user) {
+      setAuthError('리포트 복사는 회원가입 후 이용하실 수 있습니다.');
+      setShowLoginModal(true);
+      return;
+    }
     navigator.clipboard.writeText(report).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -659,17 +777,57 @@ function App() {
 
   // PDF로 저장 (인쇄 대화상자 호출)
   const handlePrintPDF = () => {
+    if (!user) {
+      setAuthError('PDF 다운로드는 회원가입 후 이용하실 수 있습니다.');
+      setShowLoginModal(true);
+      return;
+    }
     window.print();
   };
 
   return (
     <div>
       {/* App Header */}
-      <header className="app-header">
-        <h1 className="app-logo">
-          <ShieldAlert size={36} color="#6366f1" /> LaborCheck AI
-        </h1>
-        <p className="app-subtitle">대한민국 근로기준법 기반 자가진단 리포트 생성기</p>
+      <header className="app-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', paddingBottom: '1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', marginBottom: '2rem' }}>
+        <div>
+          <h1 className="app-logo" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <ShieldAlert size={36} color="#6366f1" /> LaborCheck AI
+          </h1>
+          <p className="app-subtitle" style={{ margin: '0.25rem 0 0 0' }}>대한민국 근로기준법 기반 자가진단 리포트 생성기</p>
+        </div>
+        
+        {/* Auth Section */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {user ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(99, 102, 241, 0.1)', padding: '0.5rem 0.85rem', borderRadius: '20px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                <span style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%' }}></span>
+                <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: '500' }}>
+                  {user.email}님
+                </span>
+              </div>
+              <button 
+                type="button"
+                onClick={handleLogout}
+                style={{ background: 'transparent', border: '1px solid rgba(255, 255, 255, 0.15)', color: '#94a3b8', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', transition: 'all 0.2s' }}
+                onMouseEnter={(e) => { e.target.style.background = 'rgba(255, 255, 255, 0.05)'; e.target.style.color = '#f8fafc'; }}
+                onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = '#94a3b8'; }}
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <button 
+              type="button"
+              onClick={() => { setAuthError(''); setShowLoginModal(true); }}
+              style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', border: 'none', color: '#ffffff', padding: '0.6rem 1.25rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)', transition: 'all 0.2s' }}
+              onMouseEnter={(e) => { e.target.style.transform = 'translateY(-1px)'; e.target.style.boxShadow = '0 6px 16px rgba(99, 102, 241, 0.4)'; }}
+              onMouseLeave={(e) => { e.target.style.transform = 'none'; e.target.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)'; }}
+            >
+              로그인 / 회원가입
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Main Grid Layout */}
@@ -1098,9 +1256,57 @@ function App() {
                       <Download size={14} /> PDF/인쇄 다운로드
                     </button>
                   </div>
-                  <div className="report-content">
-                    <ReactMarkdown>{report}</ReactMarkdown>
-                  </div>
+                  
+                  {!user ? (
+                    (() => {
+                      let part1 = report;
+                      let part2 = '';
+                      const splitIndex = report.indexOf('## 2.');
+                      if (splitIndex !== -1) {
+                        part1 = report.substring(0, splitIndex);
+                        part2 = report.substring(splitIndex);
+                      }
+                      
+                      return (
+                        <div className="report-content" style={{ position: 'relative' }}>
+                          <ReactMarkdown>{part1}</ReactMarkdown>
+                          
+                          {part2 && (
+                            <div style={{ position: 'relative', marginTop: '1.5rem', minHeight: '300px', overflow: 'hidden' }}>
+                              {/* Blurred Area */}
+                              <div style={{ filter: 'blur(6px)', opacity: 0.3, pointerEvents: 'none', userSelect: 'none' }}>
+                                <ReactMarkdown>{part2}</ReactMarkdown>
+                              </div>
+                              
+                              {/* CTA Banner Overlay */}
+                              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', background: 'linear-gradient(to bottom, transparent 0%, rgba(30, 41, 59, 0.8) 20%, rgba(30, 41, 59, 1) 90%)', padding: '1rem', textAlign: 'center' }}>
+                                <div style={{ background: '#1e293b', border: '1px solid rgba(99, 102, 241, 0.25)', borderRadius: '16px', padding: '1.75rem', maxWidth: '360px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4)', marginTop: '2rem' }}>
+                                  <Coins size={32} color="#6366f1" style={{ marginBottom: '0.75rem' }} />
+                                  <h4 style={{ fontSize: '1.1rem', color: '#f8fafc', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>
+                                    상세 분석 리포트 잠금 해제
+                                  </h4>
+                                  <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0 0 1.25rem 0', lineHeight: 1.4 }}>
+                                    가입하시면 관련 법령 대조 결과, 벌칙 리스크 진단, 준비 서류 체크리스트를 포함한 전체 리포트를 즉시 확인하실 수 있습니다.
+                                  </p>
+                                  <button 
+                                    type="button"
+                                    onClick={() => { setAuthError(''); setShowLoginModal(true); }}
+                                    style={{ width: '100%', background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', border: 'none', color: '#ffffff', padding: '0.7rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)' }}
+                                  >
+                                    1초 로그인 / 회원가입
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="report-content">
+                      <ReactMarkdown>{report}</ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* Dashboard View */
@@ -1110,6 +1316,106 @@ function App() {
           )}
         </section>
       </main>
+
+      {/* Login / Sign Up Modal */}
+      {showLoginModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#1e293b', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '24px', width: '90%', maxWidth: '400px', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)', position: 'relative' }}>
+            
+            <button 
+              type="button"
+              onClick={() => setShowLoginModal(false)}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.25rem' }}
+            >
+              <X size={20} />
+            </button>
+
+            <h3 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0', color: '#f8fafc', textAlign: 'center', fontWeight: 'bold' }}>
+              {isSigningUp ? '회원가입' : '로그인'}
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 1.5rem 0', textAlign: 'center' }}>
+              리포트 상세 분석과 PDF 다운로드 권한이 부여됩니다.
+            </p>
+
+            {authError && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '0.75rem', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={16} />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            {/* Email/PW Form */}
+            <form onSubmit={isSigningUp ? handleEmailSignUp : handleEmailLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이메일 주소</span>
+                <input 
+                  type="email" 
+                  className="text-input" 
+                  placeholder="name@example.com"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>비밀번호</span>
+                <input 
+                  type="password" 
+                  className="text-input" 
+                  placeholder="••••••••"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit"
+                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', border: 'none', color: '#ffffff', padding: '0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold', marginTop: '0.5rem' }}
+              >
+                {isSigningUp ? '이메일로 가입하기' : '로그인'}
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', gap: '0.5rem' }}>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.08)' }}></div>
+              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>또는</span>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.08)' }}></div>
+            </div>
+
+            {/* Social Logins */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <button 
+                type="button"
+                onClick={() => handleOAuthLogin('kakao')}
+                style={{ background: '#fee500', color: '#191919', border: 'none', padding: '0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                <span>💬 카카오톡 1초 로그인</span>
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleOAuthLogin('google')}
+                style={{ background: '#ffffff', color: '#1f2937', border: '1px solid #e5e7eb', padding: '0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                <span>🌐 구글 계정으로 로그인</span>
+              </button>
+            </div>
+
+            {/* Switch Sign Up / Sign In */}
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', textAlign: 'center', marginTop: '1.5rem', marginBottom: 0 }}>
+              {isSigningUp ? '이미 계정이 있으신가요?' : '아직 회원이 아니신가요?'} {' '}
+              <span 
+                onClick={() => { setIsSigningUp(!isSigningUp); setAuthError(''); }}
+                style={{ color: '#818cf8', cursor: 'pointer', fontWeight: 'bold', textDecoration: 'underline' }}
+              >
+                {isSigningUp ? '로그인하기' : '회원가입하기'}
+              </span>
+            </p>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

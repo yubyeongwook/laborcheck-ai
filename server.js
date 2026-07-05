@@ -6,6 +6,20 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // 환경변수 로드
 dotenv.config();
 
+const { createClient } = require('@supabase/supabase-js');
+
+// Supabase API 설정
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+let supabase = null;
+if (supabaseUrl && supabaseAnonKey && supabaseUrl !== 'your_supabase_url_here') {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+  } catch (err) {
+    console.error('Supabase initialization failed in backend:', err);
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -49,6 +63,22 @@ app.post('/api/generate-report', async (req, res) => {
       return res.status(400).json({ error: '필수 입력 변수(user_type, company_size, issue_text)가 누락되었습니다.' });
     }
 
+    // Authorization 헤더 검증을 통한 로그인 상태 확인
+    let isLoggedIn = false;
+    const isSupabaseConfigured = !!supabase;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ') && isSupabaseConfigured) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (!error && user) {
+          isLoggedIn = true;
+        }
+      } catch (err) {
+        console.error('Supabase JWT verification error:', err.message);
+      }
+    }
+
     // 파일이 업로드된 경우 Gemini 인라인 데이터 파트로 변환
     let filePart = null;
     if (file_data && file_mime) {
@@ -64,7 +94,7 @@ app.post('/api/generate-report', async (req, res) => {
     }
 
     // 시스템 프롬프트 구성 (멀티모달 맥락 반영)
-    const systemPrompt = `너는 대한민국 노동법 자가진단 리포트를 작성하는 AI 어시스턴트다.
+    let systemPrompt = `너는 대한민국 노동법 자가진단 리포트를 작성하는 AI 어시스턴트다.
 이 리포트는 법률 자문이 아니라, 사용자가 입력한 정보를 근로기준법 등 관련 법령에 대조해 정리하는 참고용 정보 리포트다.
 너는 특정 노무사나 변호사를 소개, 연결, 알선하지 않는다.
 너는 사건의 승패나 결과를 단정적으로 예측하지 않는다. "~할 가능성이 있습니다", "~로 판단될 여지가 있습니다" 등 참고적 표현만 사용한다.
@@ -117,6 +147,16 @@ app.post('/api/generate-report', async (req, res) => {
 ## 5. 전문가 상담 권고
 (구체적 사건 진행은 전문가 상담이 필요함을 안내. 특정 인물/업체명은 언급하지 않음)`;
 
+    if (!isLoggedIn && isSupabaseConfigured) {
+      systemPrompt += `
+
+[CRITICAL INSTRUCTION]
+이 사용자는 회원가입을 하지 않은 비로그인 사용자입니다. 
+따라서 출력 구조 중 오직 '# [자가진단 리포트]'의 '## 1. 쟁점 요약' 섹션만 상세히 작성하십시오.
+'## 2. 관련 법령 대조' 하단의 모든 섹션(2, 3, 4, 5번)의 내용물은 절대 적지 마시고, 오직 아래의 문구만 정확하게 적어 출력하십시오:
+"🔒 상세 분석 정보는 회원가입 후 무료로 즉시 확인하실 수 있습니다."`;
+    }
+
     // API 키가 없거나 기본값인 경우 데모 모드로 가상 리포트 반환
     if (!apiKey || apiKey === 'your_gemini_api_key_here' || apiKey === '') {
       console.log('ℹ️ GEMINI_API_KEY 미설정으로 데모 모드(Mock Report)를 작동합니다.');
@@ -138,7 +178,28 @@ app.post('/api/generate-report', async (req, res) => {
         }
       }
 
-      const mockReport = `# [자가진단 리포트] (데모 모드)
+      let mockReport = '';
+      if (!isLoggedIn && isSupabaseConfigured) {
+        mockReport = `# [자가진단 리포트] (데모 모드)
+
+## 1. 쟁점 요약
+1. 사용자가 입력한 조건: ${salary_type || '월급'} ${salary_amount ? Number(salary_amount).toLocaleString() : '0'}원, 일 ${daily_hours || 0}시간 (주 ${weekly_days || 0}일, 총 주 ${calcWeeklyHours}시간), 일 휴게 ${break_time || 0}분
+2. 핵심 쟁점: 5인 이상 사업장에서 근로계약서상 수당 포함 여부(${allowance_included || '미작성/모름'})와 실제 노동법상 의무(휴게시간 보장, 수당 추가 청구) 부합 여부가 주된 쟁점입니다.
+3. 비식별화 검토: 사연 속의 고유 명칭(인명, 상호, 상세 주소 등)은 모두 [비식별 처리]로 처리되었습니다.
+
+## 2. 관련 법령 대조
+🔒 상세 분석 정보는 회원가입 후 무료로 즉시 확인하실 수 있습니다.
+
+## 3. 리스크/쟁점 수준 진단
+🔒 상세 분석 정보는 회원가입 후 무료로 즉시 확인하실 수 있습니다.
+
+## 4. 다음 행동 체크리스트
+🔒 상세 분석 정보는 회원가입 후 무료로 즉시 확인하실 수 있습니다.
+
+## 5. 전문가 상담 권고
+🔒 상세 분석 정보는 회원가입 후 무료로 즉시 확인하실 수 있습니다.`;
+      } else {
+        mockReport = `# [자가진단 리포트] (데모 모드)
 
 ## 1. 쟁점 요약
 1. 사용자가 입력한 조건: ${salary_type || '월급'} ${salary_amount ? Number(salary_amount).toLocaleString() : '0'}원, 일 ${daily_hours || 0}시간 (주 ${weekly_days || 0}일, 총 주 ${calcWeeklyHours}시간), 일 휴게 ${break_time || 0}분
