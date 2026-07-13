@@ -31,6 +31,10 @@ function ReportGenerator({ userType }) {
   const [pattern3Hours, setPattern3Hours] = useState('0');
   const [weeklyNightHours, setWeeklyNightHours] = useState('0');
   const [breakTime, setBreakTime] = useState('60');
+  const [pensionBasis, setPensionBasis] = useState('');
+  const [extraWeeklyOvertime, setExtraWeeklyOvertime] = useState('');
+  const [holidayWorkDays, setHolidayWorkDays] = useState('');
+  const [annualLeaveDays, setAnnualLeaveDays] = useState('');
 
   const [pattern1Start, setPattern1Start] = useState('09:00');
   const [pattern1End, setPattern1End] = useState('18:00');
@@ -151,6 +155,10 @@ function ReportGenerator({ userType }) {
       daily_hours: Number(dailyHours),
       weekly_days: Number(weeklyDays),
       break_time: Number(breakTime),
+      pension_basis: pensionBasis ? Number(pensionBasis) : 0,
+      extra_weekly_overtime: extraWeeklyOvertime ? Number(extraWeeklyOvertime) : 0,
+      holiday_work_days: holidayWorkDays ? Number(holidayWorkDays) : 0,
+      annual_leave_days: annualLeaveDays ? Number(annualLeaveDays) : 0,
       work_hours: workHours,
       issue_text: issueText,
       file_data: fileBase64,
@@ -203,6 +211,35 @@ function ReportGenerator({ userType }) {
     window.print();
   };
 
+  function TimeSelectInput({ value, onChange }) {
+    const [hStr, mStr] = (value || '00:00').split(':');
+
+    const handleHourChange = (e) => {
+      onChange(`${e.target.value}:${mStr}`);
+    };
+
+    const handleMinuteChange = (e) => {
+      onChange(`${hStr}:${e.target.value}`);
+    };
+
+    return (
+      <div style={{ display: 'flex', gap: '0.2rem', width: '100%' }}>
+        <select className="text-input" value={hStr} onChange={handleHourChange} style={{ padding: '0.75rem 0.2rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.85rem' }}>
+          {Array.from({ length: 24 }, (_, i) => {
+            const val = String(i).padStart(2, '0');
+            return <option key={val} value={val}>{val}시</option>;
+          })}
+        </select>
+        <select className="text-input" value={mStr} onChange={handleMinuteChange} style={{ padding: '0.75rem 0.2rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.85rem' }}>
+          {Array.from({ length: 60 }, (_, i) => {
+            const val = String(i).padStart(2, '0');
+            return <option key={val} value={val}>{val}분</option>;
+          })}
+        </select>
+      </div>
+    );
+  }
+
   const renderPattern = (label, days, setDays, start, setStart, end, setEnd, hours) => (
     <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
       <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>{label}</span>
@@ -213,11 +250,11 @@ function ReportGenerator({ userType }) {
         </div>
         <div>
           <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>출근 시간</span>
-          <input type="time" className="text-input" value={start} onChange={(e) => setStart(e.target.value)} style={{ padding: '0.75rem 0.5rem' }} />
+          <TimeSelectInput value={start} onChange={setStart} />
         </div>
         <div>
           <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>퇴근 시간</span>
-          <input type="time" className="text-input" value={end} onChange={(e) => setEnd(e.target.value)} style={{ padding: '0.75rem 0.5rem' }} />
+          <TimeSelectInput value={end} onChange={setEnd} />
         </div>
       </div>
       <div style={{ fontSize: '0.7rem', color: '#38bdf8', marginTop: '0.5rem', textAlign: 'right', fontWeight: '500' }}>
@@ -289,10 +326,19 @@ function ReportGenerator({ userType }) {
                 {renderPattern('근무 패턴 2 (선택)', pattern2Days, setPattern2Days, pattern2Start, setPattern2Start, pattern2End, setPattern2End, pattern2Hours)}
                 {renderPattern('근무 패턴 3 (선택)', pattern3Days, setPattern3Days, pattern3Start, setPattern3Start, pattern3End, setPattern3End, pattern3Hours)}
               </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>하루 평균 휴게시간 (분)</span>
-                <input type="number" className="text-input" value={breakTime} onChange={(e) => setBreakTime(e.target.value)} min="0" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>하루 평균 휴게시간 (분)</span>
+                  <input type="number" className="text-input" value={breakTime} onChange={(e) => setBreakTime(e.target.value)} min="0" />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>국민연금 기준소득월액 (선택, 원)</span>
+                  <input type="number" className="text-input" placeholder="예: 2500000" value={pensionBasis} onChange={(e) => setPensionBasis(e.target.value)} min="0" />
+                </div>
               </div>
+              <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                * 국민연금 기준소득월액 미입력 시에는 소정근로 계약급(기본급+주휴수당) 기준으로 자동 산출됩니다.
+              </p>
             </div>
 
             <div className="form-group">

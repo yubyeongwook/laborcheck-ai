@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Coins, Building2, Clock, Plus, Trash2, Sun, CalendarClock } from 'lucide-react';
-import { calculateHoursAndNightHours, calculateYearlyEntryPay } from '../utils/laborCalc.js';
+import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear } from '../utils/laborCalc.js';
 
 const currentYear = new Date().getFullYear();
 
@@ -11,12 +11,14 @@ const makeDefaultEntry = (year) => ({
   id: nextId(),
   year: String(year),
   companySize: '5인 이상',
-  baseHourlyWage: '10030',
+  baseHourlyWage: String(getMinWageForYear(year)),
   pattern1Days: '5', pattern1Start: '09:00', pattern1End: '18:00', pattern1BreakH: '1', pattern1BreakM: '0', pattern1NightBreakH: '0', pattern1NightBreakM: '0',
   pattern2Days: '0', pattern2Start: '09:00', pattern2End: '18:00', pattern2BreakH: '1', pattern2BreakM: '0', pattern2NightBreakH: '0', pattern2NightBreakM: '0',
   pattern3Days: '0', pattern3Start: '09:00', pattern3End: '18:00', pattern3BreakH: '1', pattern3BreakM: '0', pattern3NightBreakH: '0', pattern3NightBreakM: '0',
-  annualLeavePayTotal: '0',
-  holidayWorkH: '0', holidayWorkM: '0'
+  annualLeaveDays: '0',
+  holidayWorkDays: '0',
+  pensionBasis: '0',
+  extraWeeklyOvertime: '0'
 });
 
 // "1시간 30분" 형태로 표시
@@ -42,21 +44,19 @@ function computeDerived(entry) {
   const p1NightBreakMinutes = nightBreakMinutesOf(entry, 1);
   const p2NightBreakMinutes = nightBreakMinutesOf(entry, 2);
   const p3NightBreakMinutes = nightBreakMinutesOf(entry, 3);
-  const holidayWorkHours = (parseFloat(entry.holidayWorkH) || 0) + (parseFloat(entry.holidayWorkM) || 0) / 60;
-
   const p1 = calculateHoursAndNightHours(entry.pattern1Start, entry.pattern1End, p1BreakMinutes, p1NightBreakMinutes);
   const p2 = calculateHoursAndNightHours(entry.pattern2Start, entry.pattern2End, p2BreakMinutes, p2NightBreakMinutes);
   const p3 = calculateHoursAndNightHours(entry.pattern3Start, entry.pattern3End, p3BreakMinutes, p3NightBreakMinutes);
-
+ 
   const p1Days = parseFloat(entry.pattern1Days) || 0;
   const p2Days = parseFloat(entry.pattern2Days) || 0;
   const p3Days = parseFloat(entry.pattern3Days) || 0;
   const totalWeeklyDays = p1Days + p2Days + p3Days;
-
+ 
   const weeklyNightHours = (p1.nightHours * p1Days) + (p2.nightHours * p2Days) + (p3.nightHours * p3Days);
   const weeklyHours = (p1.workHours * p1Days) + (p2.workHours * p2Days) + (p3.workHours * p3Days);
   const totalBreakMinutesWeekly = (p1BreakMinutes * p1Days) + (p2BreakMinutes * p2Days) + (p3BreakMinutes * p3Days);
-
+ 
   const result = calculateYearlyEntryPay({
     year: entry.year,
     companySize: entry.companySize,
@@ -65,11 +65,42 @@ function computeDerived(entry) {
     pattern2Days: entry.pattern2Days, pattern2Hours: p2.workHours,
     pattern3Days: entry.pattern3Days, pattern3Hours: p3.workHours,
     weeklyNightHours,
-    annualLeavePayTotal: entry.annualLeavePayTotal,
-    holidayWorkHoursMonthly: holidayWorkHours
+    annualLeaveDays: parseFloat(entry.annualLeaveDays) || 0,
+    holidayWorkDays: parseFloat(entry.holidayWorkDays) || 0,
+    pensionBasis: parseFloat(entry.pensionBasis) || 0,
+    extraWeeklyOvertime: parseFloat(entry.extraWeeklyOvertime) || 0
   });
+ 
+  return { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, holidayWorkDays: parseFloat(entry.holidayWorkDays) || 0, result };
+}
 
-  return { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, holidayWorkHours, result };
+function TimeSelectInput({ value, onChange }) {
+  const [hStr, mStr] = (value || '00:00').split(':');
+
+  const handleHourChange = (e) => {
+    onChange(`${e.target.value}:${mStr}`);
+  };
+
+  const handleMinuteChange = (e) => {
+    onChange(`${hStr}:${e.target.value}`);
+  };
+
+  return (
+    <div style={{ display: 'flex', gap: '0.2rem', width: '100%' }}>
+      <select className="text-input" value={hStr} onChange={handleHourChange} style={{ padding: '0.75rem 0.2rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.85rem' }}>
+        {Array.from({ length: 24 }, (_, i) => {
+          const val = String(i).padStart(2, '0');
+          return <option key={val} value={val}>{val}시</option>;
+        })}
+      </select>
+      <select className="text-input" value={mStr} onChange={handleMinuteChange} style={{ padding: '0.75rem 0.2rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.85rem' }}>
+        {Array.from({ length: 60 }, (_, i) => {
+          const val = String(i).padStart(2, '0');
+          return <option key={val} value={val}>{val}분</option>;
+        })}
+      </select>
+    </div>
+  );
 }
 
 function PatternInput({
@@ -87,11 +118,11 @@ function PatternInput({
         </div>
         <div>
           <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>출근 시간</span>
-          <input type="time" className="text-input" value={start} onChange={(e) => onStartChange(e.target.value)} style={{ padding: '0.75rem 0.5rem' }} />
+          <TimeSelectInput value={start} onChange={onStartChange} />
         </div>
         <div>
           <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>퇴근 시간</span>
-          <input type="time" className="text-input" value={end} onChange={(e) => onEndChange(e.target.value)} style={{ padding: '0.75rem 0.5rem' }} />
+          <TimeSelectInput value={end} onChange={onEndChange} />
         </div>
       </div>
       <div style={{ marginTop: '0.5rem' }}>
@@ -137,6 +168,7 @@ function HourMinuteInput({ hourValue, onHourChange, minuteValue, onMinuteChange 
 function YearEntryCard({ entry, onChange, onRemove, removable }) {
   const update = (key) => (value) => onChange({ ...entry, [key]: value });
   const { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, holidayWorkHours, result } = computeDerived(entry);
+  const rates = getDeductionRatesForYear(entry.year);
 
   return (
     <section className="glass-panel" style={{ marginBottom: '1.5rem' }}>
@@ -147,7 +179,18 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             type="number"
             className="text-input"
             value={entry.year}
-            onChange={(e) => update('year')(e.target.value)}
+            onChange={(e) => {
+              const newYear = e.target.value;
+              const oldYear = entry.year;
+              const oldMinWage = getMinWageForYear(oldYear);
+              const newMinWage = getMinWageForYear(newYear);
+              
+              const updated = { year: newYear };
+              if (parseInt(entry.baseHourlyWage, 10) === oldMinWage) {
+                updated.baseHourlyWage = String(newMinWage);
+              }
+              onChange({ ...entry, ...updated });
+            }}
             style={{ width: '110px', fontWeight: 700 }}
           />
           <span
@@ -185,7 +228,17 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
 
           <div className="form-group">
             <label className="form-label"><Coins size={16} color="#f59e0b" /> 이 연도 기초시급 (원)</label>
-            <input type="number" className="text-input" value={entry.baseHourlyWage} onChange={(e) => update('baseHourlyWage')(e.target.value)} min="0" />
+            <input 
+              type="text" 
+              className="text-input" 
+              value={entry.baseHourlyWage === '0' || !entry.baseHourlyWage ? '' : Number(entry.baseHourlyWage).toLocaleString()} 
+              onChange={(e) => {
+                const raw = e.target.value.replace(/,/g, '');
+                if (/^\d*$/.test(raw)) {
+                  update('baseHourlyWage')(raw || '0');
+                }
+              }} 
+            />
           </div>
 
           <div className="form-group" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
@@ -195,7 +248,14 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               <PatternInput label="근무 패턴 2 (선택)" days={entry.pattern2Days} onDaysChange={update('pattern2Days')} start={entry.pattern2Start} onStartChange={update('pattern2Start')} end={entry.pattern2End} onEndChange={update('pattern2End')} hours={p2.workHours} breakH={entry.pattern2BreakH} onBreakHChange={update('pattern2BreakH')} breakM={entry.pattern2BreakM} onBreakMChange={update('pattern2BreakM')} breakMinutes={p2BreakMinutes} nightOverlapRaw={p2.nightOverlapRaw} nightHours={p2.nightHours} nightBreakH={entry.pattern2NightBreakH} onNightBreakHChange={update('pattern2NightBreakH')} nightBreakM={entry.pattern2NightBreakM} onNightBreakMChange={update('pattern2NightBreakM')} />
               <PatternInput label="근무 패턴 3 (선택)" days={entry.pattern3Days} onDaysChange={update('pattern3Days')} start={entry.pattern3Start} onStartChange={update('pattern3Start')} end={entry.pattern3End} onEndChange={update('pattern3End')} hours={p3.workHours} breakH={entry.pattern3BreakH} onBreakHChange={update('pattern3BreakH')} breakM={entry.pattern3BreakM} onBreakMChange={update('pattern3BreakM')} breakMinutes={p3BreakMinutes} nightOverlapRaw={p3.nightOverlapRaw} nightHours={p3.nightHours} nightBreakH={entry.pattern3NightBreakH} onNightBreakHChange={update('pattern3NightBreakH')} nightBreakM={entry.pattern3NightBreakM} onNightBreakMChange={update('pattern3NightBreakM')} />
             </div>
-            <p style={{ fontSize: '0.7rem', color: '#64748b', margin: 0 }}>주간 총 휴게시간 합계: {formatMinutesAsHM(totalBreakMinutesWeekly)}</p>
+            
+            <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.15)' }}>
+              <span style={{ fontSize: '0.75rem', color: '#38bdf8', display: 'block', marginBottom: '0.25rem', fontWeight: 600 }}>주당 추가근무시간 (선택, 시간)</span>
+              <input type="number" className="text-input" placeholder="예: 5 (기본 패턴 외 매주 정기적인 추가 연장근로)" value={entry.extraWeeklyOvertime === '0' || !entry.extraWeeklyOvertime ? '' : entry.extraWeeklyOvertime} onChange={(e) => update('extraWeeklyOvertime')(e.target.value || '0')} min="0" />
+              <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>매주 고정적으로 발생하는 추가 연장근로시간이 있다면 입력하세요.</p>
+            </div>
+
+            <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.75rem', marginBottom: 0 }}>주간 총 휴게시간 합계: {formatMinutesAsHM(totalBreakMinutesWeekly)}</p>
             {totalWeeklyDays > 6 && (
               <div className="info-callout warning" style={{ marginTop: '0.75rem' }}>
                 패턴 1~3의 근무일수 합계가 {totalWeeklyDays}일입니다. 주휴일(1일 이상)을 확보하려면 전체 근무일수는 주 6일을 넘지 않아야 합니다.
@@ -204,19 +264,17 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
           </div>
 
           <div className="form-group" style={{ background: 'rgba(99, 102, 241, 0.06)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(99, 102, 241, 0.3)' }}>
-            <label className="form-label" style={{ color: '#a5b4fc' }}>연차수당 선지급 (연간 총액, 원)</label>
-            <input type="number" className="text-input" placeholder="예: 1200000 (12개월로 분할해 매월 반영)" value={entry.annualLeavePayTotal} onChange={(e) => update('annualLeavePayTotal')(e.target.value)} min="0" />
-            <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>법정 자동계산이 아닌, 입사 시 합의한 연차수당 총액을 급여에 매월 분할해 녹이고 싶을 때 입력하세요.</p>
+            <label className="form-label" style={{ color: '#a5b4fc' }}>연간 연차휴가 일수 (선택, 일/년)</label>
+            <input type="number" className="text-input" placeholder="예: 15 (미사용 시 수당 분할 지급액 계산에 반영)" value={entry.annualLeaveDays === '0' || !entry.annualLeaveDays ? '' : entry.annualLeaveDays} onChange={(e) => update('annualLeaveDays')(e.target.value || '0')} min="0" />
+            <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>연간 연차 휴가 일수를 입력하시면 하루 8시간 시급을 기준하여 12개월 분할(1/12) 지급액을 매월 급여에 선반영합니다.</p>
           </div>
 
+
           <div className="form-group" style={{ background: 'rgba(245, 158, 11, 0.06)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(245, 158, 11, 0.3)' }}>
-            <label className="form-label" style={{ color: '#fbbf24' }}><Sun size={16} /> 월 휴일근로시간</label>
-            <HourMinuteInput
-              hourValue={entry.holidayWorkH} onHourChange={update('holidayWorkH')}
-              minuteValue={entry.holidayWorkM} onMinuteChange={update('holidayWorkM')}
-            />
+            <label className="form-label" style={{ color: '#fbbf24' }}><Sun size={16} /> 연간 휴일근로 일수 (선택, 일/년)</label>
+            <input type="number" className="text-input" placeholder="예: 12 (공휴일, 대체공휴일 등 연간 예상 근무일수)" value={entry.holidayWorkDays === '0' || !entry.holidayWorkDays ? '' : entry.holidayWorkDays} onChange={(e) => update('holidayWorkDays')(e.target.value || '0')} min="0" />
             <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
-              총 {formatMinutesAsHM(holidayWorkHours * 60)} · {entry.companySize === '5인 이상' ? '5인 이상 사업장 기준 50% 가산율이 자동 적용됩니다.' : '5인 미만 사업장은 가산 없이 기초시급만 적용됩니다.'}
+              공휴일이나 대체공휴일에 일하는 일수를 연간 단위로 입력하시면 하루 8시간 근로 및 가산율을 기준하여 12개월 분할(1/12) 지급액이 매월 자동 산정됩니다.
             </p>
           </div>
         </div>
@@ -229,19 +287,19 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
           </div>
 
           <div className="result-row">
-            <span className="result-row-label">기본급</span>
+            <span className="result-row-label">기본급 {result.regularWorkHoursMonthly > 0 && `(월 소정근로 ${result.regularWorkHoursMonthly}시간)`}</span>
             <span className="result-row-value">{result.basePay.toLocaleString()}원</span>
           </div>
           <div className="result-row">
-            <span className="result-row-label">주휴수당</span>
+            <span className="result-row-label">주휴수당 {result.weeklyHolidayHoursMonthly > 0 && `(월 주휴 ${result.weeklyHolidayHoursMonthly}시간)`}</span>
             <span className="result-row-value">{result.weeklyHolidayPay.toLocaleString()}원</span>
           </div>
           <div className="result-row">
-            <span className="result-row-label">연장수당</span>
+            <span className="result-row-label">연장수당 {result.overtimeHoursMonthly > 0 && `(월 연장 ${result.overtimeHoursMonthly}시간 · ${entry.companySize === '5인 이상' ? '1.5배' : '1.0배'} 가산)`}</span>
             <span className="result-row-value">{result.overtimePay.toLocaleString()}원</span>
           </div>
           <div className="result-row">
-            <span className="result-row-label">야간수당</span>
+            <span className="result-row-label">야간수당 {result.nightHoursMonthly > 0 && `(월 야간 ${result.nightHoursMonthly}시간 · ${entry.companySize === '5인 이상' ? '0.5배' : '0.0배'} 가산)`}</span>
             <span className="result-row-value">{result.nightPay.toLocaleString()}원</span>
           </div>
           <div className="result-row">
@@ -255,6 +313,48 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
           <div className="result-row" style={{ color: '#ef4444' }}>
             <span className="result-row-label">공제총액</span>
             <span className="result-row-value">-{result.totalDeductions.toLocaleString()}원</span>
+          </div>
+
+          <div style={{ paddingLeft: '1rem', borderLeft: '2px solid rgba(239, 68, 68, 0.2)', marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div className="result-row" style={{ fontSize: '0.8rem', opacity: 0.85, alignItems: 'center' }}>
+              <span className="result-row-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
+                └ 국민연금 ({(rates.pension * 100).toFixed(2)}%)
+                <input 
+                  type="text" 
+                  className="text-input" 
+                  placeholder="기준소득월액 입력"
+                  style={{ width: '120px', padding: '0.15rem 0.35rem', fontSize: '0.7rem', height: '22px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: '#fff', marginLeft: '0.25rem', display: 'inline-block' }} 
+                  value={entry.pensionBasis === '0' || !entry.pensionBasis ? '' : Number(entry.pensionBasis).toLocaleString()} 
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/,/g, '');
+                    if (/^\d*$/.test(raw)) {
+                      update('pensionBasis')(raw || '0');
+                    }
+                  }} 
+                />
+              </span>
+              <span className="result-row-value">-{result.nationalPension.toLocaleString()}원</span>
+            </div>
+            <div className="result-row" style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              <span className="result-row-label">└ 건강보험 ({(rates.health * 100).toFixed(3)}%)</span>
+              <span className="result-row-value">-{result.healthInsurance.toLocaleString()}원</span>
+            </div>
+            <div className="result-row" style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              <span className="result-row-label">└ 장기요양보험 ({(rates.care * 100).toFixed(2)}%)</span>
+              <span className="result-row-value">-{result.longTermCare.toLocaleString()}원</span>
+            </div>
+            <div className="result-row" style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              <span className="result-row-label">└ 고용보험 ({(rates.employment * 100).toFixed(1)}%)</span>
+              <span className="result-row-value">-{result.employmentInsurance.toLocaleString()}원</span>
+            </div>
+            <div className="result-row" style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              <span className="result-row-label">└ 근로소득세</span>
+              <span className="result-row-value">-{result.incomeTax.toLocaleString()}원</span>
+            </div>
+            <div className="result-row" style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              <span className="result-row-label">└ 지방소득세</span>
+              <span className="result-row-value">-{result.localIncomeTax.toLocaleString()}원</span>
+            </div>
           </div>
           <div className="result-row">
             <span className="result-row-label" style={{ color: '#38bdf8', fontWeight: 800 }}>월 총 지급액 (세전)</span>

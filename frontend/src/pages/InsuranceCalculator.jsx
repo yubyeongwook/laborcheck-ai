@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Wallet } from 'lucide-react';
-import { calculateEmployerInsurance } from '../utils/laborCalc.js';
+import { calculateEmployerInsurance, getDeductionRatesForYear } from '../utils/laborCalc.js';
 
 function InsuranceCalculator() {
+  const [year, setYear] = useState('2026');
   const [monthlyWage, setMonthlyWage] = useState('2500000');
   const [industrialAccidentRate, setIndustrialAccidentRate] = useState('0.7');
 
-  const result = calculateEmployerInsurance({ monthlyWage, industrialAccidentRate });
+  const result = calculateEmployerInsurance({ monthlyWage, industrialAccidentRate, year });
+  const rates = getDeductionRatesForYear(year);
 
   return (
     <div className="page-container">
@@ -20,6 +22,15 @@ function InsuranceCalculator() {
 
       <div className="tool-grid">
         <section className="glass-panel">
+          <div className="form-group">
+            <label className="form-label">기준 연도</label>
+            <select className="text-input" value={year} onChange={(e) => setYear(e.target.value)} style={{ padding: '0.85rem 0.5rem' }}>
+              {Array.from({ length: 10 }, (_, i) => {
+                const y = String(2026 - i);
+                return <option key={y} value={y}>{y}년</option>;
+              })}
+            </select>
+          </div>
           <div className="form-group">
             <label className="form-label">월 급여 (원)</label>
             <input type="number" className="text-input" value={monthlyWage} onChange={(e) => setMonthlyWage(e.target.value)} min="0" />

@@ -1,11 +1,45 @@
 import React, { useState } from 'react';
 import { Calendar } from 'lucide-react';
-import { calculateWeeklyHolidayPay, AVG_WEEKS_PER_MONTH } from '../utils/laborCalc.js';
+import { calculateWeeklyHolidayPay, AVG_WEEKS_PER_MONTH, calculateHoursAndNightHours } from '../utils/laborCalc.js';
+
+function TimeSelectInput({ value, onChange }) {
+  const [hStr, mStr] = (value || '00:00').split(':');
+
+  const handleHourChange = (e) => {
+    onChange(`${e.target.value}:${mStr}`);
+  };
+
+  const handleMinuteChange = (e) => {
+    onChange(`${hStr}:${e.target.value}`);
+  };
+
+  return (
+    <div style={{ display: 'flex', gap: '0.2rem', width: '100%' }}>
+      <select className="text-input" value={hStr} onChange={handleHourChange} style={{ padding: '0.75rem 0.2rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.85rem' }}>
+        {Array.from({ length: 24 }, (_, i) => {
+          const val = String(i).padStart(2, '0');
+          return <option key={val} value={val}>{val}시</option>;
+        })}
+      </select>
+      <select className="text-input" value={mStr} onChange={handleMinuteChange} style={{ padding: '0.75rem 0.2rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.85rem' }}>
+        {Array.from({ length: 60 }, (_, i) => {
+          const val = String(i).padStart(2, '0');
+          return <option key={val} value={val}>{val}분</option>;
+        })}
+      </select>
+    </div>
+  );
+}
 
 function WeeklyHolidayCalculator() {
   const [hourlyWage, setHourlyWage] = useState('10030');
   const [weeklyWorkDays, setWeeklyWorkDays] = useState('5');
-  const [weeklyWorkHours, setWeeklyWorkHours] = useState('40');
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('18:00');
+  const [breakMinutes, setBreakMinutes] = useState('60');
+
+  const p = calculateHoursAndNightHours(startTime, endTime, breakMinutes);
+  const weeklyWorkHours = p.workHours * (parseFloat(weeklyWorkDays) || 0);
 
   const result = calculateWeeklyHolidayPay({ hourlyWage, weeklyWorkDays, weeklyWorkHours });
   const monthlyEstimate = Math.round(result.weeklyHolidayPay * AVG_WEEKS_PER_MONTH);
@@ -30,10 +64,29 @@ function WeeklyHolidayCalculator() {
             <label className="form-label">주 소정근로일수 (일)</label>
             <input type="number" className="text-input" value={weeklyWorkDays} onChange={(e) => setWeeklyWorkDays(e.target.value)} min="0" max="7" />
           </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
+            <div>
+              <span style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 600 }}>출근 시간</span>
+              <TimeSelectInput value={startTime} onChange={setStartTime} />
+            </div>
+            <div>
+              <span style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 600 }}>퇴근 시간</span>
+              <TimeSelectInput value={endTime} onChange={setEndTime} />
+            </div>
+          </div>
+          
           <div className="form-group">
-            <label className="form-label">주 소정근로시간 (시간)</label>
-            <input type="number" className="text-input" value={weeklyWorkHours} onChange={(e) => setWeeklyWorkHours(e.target.value)} min="0" />
-            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>주휴수당은 1주 15시간 이상 근무하고, 소정근로일에 결근 없이 개근했을 때 발생합니다.</p>
+            <label className="form-label">하루 휴게시간 (분)</label>
+            <input type="number" className="text-input" value={breakMinutes} onChange={(e) => setBreakMinutes(e.target.value)} min="0" />
+          </div>
+
+          <div className="form-group" style={{ background: 'rgba(56, 189, 248, 0.08)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.2)', marginBottom: 0 }}>
+            <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 'bold', display: 'block', marginBottom: '0.25rem' }}>자동 계산된 근로시간</span>
+            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0, lineHeight: 1.5 }}>
+              하루 근로시간: <strong style={{ color: '#f8fafc' }}>{p.workHours}시간</strong> (휴게 {breakMinutes}분 제외)<br />
+              주 소정근로시간: <strong style={{ color: '#f8fafc' }}>{Math.round(weeklyWorkHours * 10) / 10}시간</strong> (주 {weeklyWorkDays}일 기준)
+            </p>
           </div>
         </section>
 

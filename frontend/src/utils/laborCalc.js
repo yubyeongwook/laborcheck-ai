@@ -25,12 +25,36 @@ export const getMinWageForYear = (year) => {
   return MIN_WAGE_BY_YEAR[closest];
 };
 
+export const DEDUCTION_RATES_BY_YEAR = {
+  2017: { health: 0.0306, care: 0.0655, pension: 0.045, employment: 0.0065 },
+  2018: { health: 0.0312, care: 0.0738, pension: 0.045, employment: 0.0065 },
+  2019: { health: 0.0323, care: 0.0851, pension: 0.045, employment: 0.0065 },
+  2020: { health: 0.03335, care: 0.1025, pension: 0.045, employment: 0.008 },
+  2021: { health: 0.0343, care: 0.1152, pension: 0.045, employment: 0.008 },
+  2022: { health: 0.03495, care: 0.1227, pension: 0.045, employment: 0.0085 },
+  2023: { health: 0.03545, care: 0.1281, pension: 0.045, employment: 0.009 },
+  2024: { health: 0.03545, care: 0.1295, pension: 0.045, employment: 0.009 },
+  2025: { health: 0.03545, care: 0.1295, pension: 0.045, employment: 0.009 },
+  2026: { health: 0.03595, care: 0.1314, pension: 0.0475, employment: 0.009 }
+};
+
+export const getDeductionRatesForYear = (year) => {
+  const y = parseInt(year, 10);
+  if (DEDUCTION_RATES_BY_YEAR[y]) return DEDUCTION_RATES_BY_YEAR[y];
+  const years = Object.keys(DEDUCTION_RATES_BY_YEAR).map(Number);
+  const closest = years.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
+  return DEDUCTION_RATES_BY_YEAR[closest];
+};
+
 // 월 급여 총액 기준 4대보험·소득세 공제 계산 (근로자 부담분, 참고용 개략치)
-export const applyDeductions = (totalPay) => {
-  const nationalPension = Math.round(totalPay * 0.045);
-  const healthInsurance = Math.round(totalPay * 0.03545);
-  const longTermCare = Math.round(healthInsurance * 0.1295);
-  const employmentInsurance = Math.round(totalPay * 0.009);
+export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0) => {
+  const rates = getDeductionRatesForYear(year);
+
+  const pensionTarget = pensionBasis > 0 ? pensionBasis : totalPay;
+  const nationalPension = Math.round(pensionTarget * rates.pension);
+  const healthInsurance = Math.round(totalPay * rates.health);
+  const longTermCare = Math.round(healthInsurance * rates.care);
+  const employmentInsurance = Math.round(totalPay * rates.employment);
   const totalInsurance = nationalPension + healthInsurance + longTermCare + employmentInsurance;
 
   let incomeTax = 0;
@@ -106,7 +130,9 @@ export const calculateSalaryBreakdown = ({
   pattern2Days = 0, pattern2Hours = 0,
   pattern3Days = 0, pattern3Hours = 0,
   weeklyNightHours = 0,
-  extraWeeklyOvertime = 0
+  extraWeeklyOvertime = 0,
+  year = 2026,
+  pensionBasis = 0
 }) => {
   const amt = parseFloat(salaryAmount) || 0;
 
@@ -202,7 +228,8 @@ export const calculateSalaryBreakdown = ({
     }
   }
 
-  const deductions = applyDeductions(totalPay);
+  const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (basePay + weeklyHolidayPay);
+  const deductions = applyDeductions(totalPay, year, defaultPensionBasis);
 
   return {
     hourlyWage: Math.round(hourlyWage),
@@ -323,15 +350,17 @@ export const calculateWeeklyHolidayPay = ({ hourlyWage, weeklyWorkDays, weeklyWo
 };
 
 // 4대보험 사업주 부담금 계산 (참고용 개략치)
-export const calculateEmployerInsurance = ({ monthlyWage, industrialAccidentRate = 0.7 }) => {
+export const calculateEmployerInsurance = ({ monthlyWage, industrialAccidentRate = 0.7, year = 2026 }) => {
   const wage = parseFloat(monthlyWage) || 0;
   const accidentRate = parseFloat(industrialAccidentRate) || 0;
 
-  const nationalPension = Math.round(wage * 0.045); // 사업주 4.5% (근로자와 동일 분담)
-  const healthInsurance = Math.round(wage * 0.03545); // 사업주 3.545%
-  const longTermCare = Math.round(healthInsurance * 0.1295); // 건강보험료의 12.95%
-  const employmentInsuranceBase = Math.round(wage * 0.009); // 실업급여 사업주분 0.9%
-  const employmentStabilityFund = Math.round(wage * 0.0025); // 고용안정·직업능력개발사업 (150인 미만 기준 최소요율 0.25% 예시)
+  const rates = getDeductionRatesForYear(year);
+
+  const nationalPension = Math.round(wage * rates.pension); // 사업주 4.5% (근로자와 동일 분담)
+  const healthInsurance = Math.round(wage * rates.health); // 사업주 건강보험
+  const longTermCare = Math.round(healthInsurance * rates.care); // 장기요양보험
+  const employmentInsuranceBase = Math.round(wage * rates.employment); // 실업급여 사업주분
+  const employmentStabilityFund = Math.round(wage * 0.0025); // 고용안정·직업능력개발사업
   const employmentInsurance = employmentInsuranceBase + employmentStabilityFund;
   const industrialAccidentInsurance = Math.round(wage * (accidentRate / 100)); // 업종별 상이, 전액 사업주 부담
 
@@ -349,7 +378,7 @@ export const calculateEmployerInsurance = ({ monthlyWage, industrialAccidentRate
   };
 };
 
-// 연도별 급여 이력 항목 계산 (해당 연도 기초시급 + 근무패턴 기준, 연차수당 선지급/휴일근로수당 수동 반영)
+// 연도별 급여 이력 항목 계산 (해당 연도 기초시급 + 근무패턴 기준, 연차일수/휴일근로일수 연간 기준 1/12 분할 반영)
 export const calculateYearlyEntryPay = ({
   year,
   companySize,
@@ -358,8 +387,10 @@ export const calculateYearlyEntryPay = ({
   pattern2Days = 0, pattern2Hours = 0,
   pattern3Days = 0, pattern3Hours = 0,
   weeklyNightHours = 0,
-  annualLeavePayTotal = 0, // 연간 연차수당 총액 (직접 입력) - 12개월 분할 선지급
-  holidayWorkHoursMonthly = 0 // 월 휴일근로시간 (직접 입력)
+  annualLeaveDays = 0, // 연간 연차일수 (1/12 분할 자동 산정)
+  holidayWorkDays = 0, // 연간 휴일근로일수 (1/12 분할 자동 산정)
+  pensionBasis = 0,
+  extraWeeklyOvertime = 0
 }) => {
   const breakdown = calculateSalaryBreakdown({
     salaryType: '시급',
@@ -368,18 +399,25 @@ export const calculateYearlyEntryPay = ({
     pattern1Days, pattern1Hours,
     pattern2Days, pattern2Hours,
     pattern3Days, pattern3Hours,
-    weeklyNightHours
+    weeklyNightHours,
+    year,
+    pensionBasis,
+    extraWeeklyOvertime
   });
 
   const is5Over = companySize === '5인 이상';
   const wage = parseFloat(baseHourlyWage) || 0;
-  const holidayHours = parseFloat(holidayWorkHoursMonthly) || 0;
-  const holidayWorkPay = Math.round(wage * holidayHours * (is5Over ? 1.5 : 1.0));
+  
+  // 휴일근로수당 연간 일수 기준 1/12 분할 지급
+  const holidayMultiplier = is5Over ? 1.5 : 1.0;
+  const holidayWorkPay = Math.round((parseFloat(holidayWorkDays) || 0) * 8 * wage * holidayMultiplier / 12);
 
-  const leavePayMonthly = Math.round((parseFloat(annualLeavePayTotal) || 0) / 12);
+  // 연차수당 연간 일수 기준 1/12 분할 지급
+  const leavePayMonthly = Math.round((parseFloat(annualLeaveDays) || 0) * 8 * wage / 12);
 
   const grossTotal = breakdown.totalPay + leavePayMonthly + holidayWorkPay;
-  const deductions = applyDeductions(grossTotal);
+  const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (breakdown.basePay + breakdown.weeklyHolidayPay);
+  const deductions = applyDeductions(grossTotal, year, defaultPensionBasis);
 
   const minWage = getMinWageForYear(year);
   const isMinWageCompliant = wage >= minWage;
@@ -399,6 +437,10 @@ export const calculateYearlyEntryPay = ({
     grossTotal,
     ...deductions,
     grossAnnual: grossTotal * 12,
-    netAnnual: deductions.netPay * 12
+    netAnnual: deductions.netPay * 12,
+    regularWorkHoursMonthly: breakdown.regularWorkHoursMonthly,
+    weeklyHolidayHoursMonthly: breakdown.weeklyHolidayHoursMonthly,
+    overtimeHoursMonthly: breakdown.overtimeHoursMonthly,
+    nightHoursMonthly: breakdown.nightHoursMonthly
   };
 };

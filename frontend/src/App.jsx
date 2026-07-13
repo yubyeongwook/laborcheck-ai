@@ -17,16 +17,23 @@ import ReportGenerator from './pages/ReportGenerator.jsx';
 import InjuryGuideWorker from './pages/InjuryGuideWorker.jsx';
 import InjuryGuideEmployer from './pages/InjuryGuideEmployer.jsx';
 
+import RemedyHub from './pages/RemedyHub.jsx';
+import InjuryHub from './pages/InjuryHub.jsx';
+import ReverseSalaryCalculator from './pages/ReverseSalaryCalculator.jsx';
+
 function App() {
   return (
     <AuthProvider>
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/remedy" element={<RemedyHub />} />
+        <Route path="/injury" element={<InjuryHub />} />
         <Route path="/worker" element={<WorkerHub />} />
         <Route path="/employer" element={<EmployerHub />} />
 
         <Route path="/tools/salary" element={<SalaryCalculator />} />
+        <Route path="/tools/reverse-salary" element={<ReverseSalaryCalculator />} />
         <Route path="/tools/weekly-holiday" element={<WeeklyHolidayCalculator />} />
         <Route path="/tools/annual-leave" element={<AnnualLeaveCalculator />} />
         <Route path="/tools/severance" element={<SeveranceCalculator />} />

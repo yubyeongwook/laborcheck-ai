@@ -49,6 +49,10 @@ app.post('/api/generate-report', async (req, res) => {
       daily_hours,
       weekly_days,
       break_time,
+      pension_basis,
+      extra_weekly_overtime,
+      holiday_work_days,
+      annual_leave_days,
       file_data,  // Base64 데이터 URL 또는 순수 Base64
       file_mime,  // mimeType
       pattern1_days,
@@ -113,6 +117,11 @@ app.post('/api/generate-report', async (req, res) => {
   * 주당 총 야간 근로시간 (22시 ~ 익일 06시): ${weekly_night_hours || 0}시간
   * 평균 1일 근로시간: 하루 ${daily_hours || 0}시간, 주 ${weekly_days || 0}일 근무
 - 휴게 시간 정보: 하루 ${break_time || 0}분 휴게
+- 세부 추가근무 및 고정 공제 설정:
+  * 국민연금 기준소득월액: ${pension_basis ? `${Number(pension_basis).toLocaleString()}원 (지정액)` : '미입력 (기본 소정급여 기준 자동 산정)'}
+  * 주당 추가 연장근로시간: ${extra_weekly_overtime || 0}시간
+  * 연간 휴일근로 일수: ${holiday_work_days || 0}일/년 (월 평균 ${(holiday_work_days / 12).toFixed(2)}일 분할 반영)
+  * 연간 연차유급 일수: ${annual_leave_days || 0}일/년 (월 평균 ${(annual_leave_days / 12).toFixed(2)}일 분할 반영)
 - 근로계약서상 수당 포함 여부 (5인 이상 전용): ${company_size === '5인 이상' ? (allowance_included || '해당 없음/확인불가') : '해당 없음 (5인 미만)'}
 - 사연: ${issue_text}
 - 첨부 파일 여부: ${filePart ? `있음 (MIME: ${file_mime}) - 이미지 또는 동영상 파일이 함께 입력되었습니다.` : '없음'}

@@ -7,6 +7,7 @@ import {
 
 const COMMON_TOOLS = [
   { to: '/tools/salary', icon: <Coins size={22} color="#f59e0b" />, title: '월급 계산기', desc: '기본급·주휴수당·연장/야간수당과 실수령액을 한 번에 계산합니다.', tag: '공용' },
+  { to: '/tools/reverse-salary', icon: <Coins size={22} color="#38bdf8" />, title: '역산 월급 계산기', desc: '받는 총 월급(세전)에서 근무 형태별 실제 시급과 수당 구성을 역산합니다.', tag: '공용' },
   { to: '/tools/weekly-holiday', icon: <Calendar size={22} color="#38bdf8" />, title: '주휴수당 계산기', desc: '주 15시간 이상 근무 시 발생하는 주휴수당을 빠르게 확인합니다.', tag: '공용' },
   { to: '/tools/annual-leave', icon: <Clock size={22} color="#a78bfa" />, title: '연차 계산기', desc: '입사일 기준 발생한 연차 개수와 미사용 연차수당을 계산합니다.', tag: '공용' },
   { to: '/tools/severance', icon: <PiggyBank size={22} color="#34d399" />, title: '퇴직금 계산기', desc: '평균임금과 재직일수를 기반으로 예상 퇴직금을 산출합니다.', tag: '공용' },
@@ -67,17 +68,6 @@ function Home() {
 
       <section>
         <div className="section-heading">
-          <div className="section-eyebrow">공용 계산기</div>
-          <h2 className="section-title">근로자와 사업주 모두 사용하는 도구</h2>
-          <p className="section-desc">급여, 주휴수당, 연차, 퇴직금 등 자주 확인하는 항목을 계산기로 바로 확인할 수 있습니다.</p>
-        </div>
-        <div className="card-grid">
-          {COMMON_TOOLS.map((t) => <ToolCard key={t.to} {...t} />)}
-        </div>
-      </section>
-
-      <section>
-        <div className="section-heading">
           <div className="section-eyebrow">근로자 전용</div>
           <h2 className="section-title">권리 구제와 산재 대응</h2>
           <p className="section-desc">부당한 처우를 겪고 있거나 산재를 당했을 때 무엇을 해야 하는지 안내합니다.</p>
@@ -95,6 +85,17 @@ function Home() {
         </div>
         <div className="card-grid">
           {EMPLOYER_TOOLS.map((t) => <ToolCard key={t.to} {...t} tag="사업주" tagClass="tag-employer" />)}
+        </div>
+      </section>
+
+      <section>
+        <div className="section-heading">
+          <div className="section-eyebrow">공용 계산기</div>
+          <h2 className="section-title">근로자와 사업주 모두 사용하는 도구</h2>
+          <p className="section-desc">급여, 주휴수당, 연차, 퇴직금 등 자주 확인하는 항목을 계산기로 바로 확인할 수 있습니다.</p>
+        </div>
+        <div className="card-grid">
+          {COMMON_TOOLS.map((t) => <ToolCard key={t.to} {...t} />)}
         </div>
       </section>
 
