@@ -194,6 +194,11 @@ export const calculateSalaryBreakdown = ({
   const weeklyRegularHours = (p1D * p1RegularDaily) + (p2D * p2RegularDaily) + (p3D * p3RegularDaily);
   const regularWorkHoursForBasePay = Math.min(weeklyRegularHours, 40);
 
+  // 연차수당/휴일근로수당 1/12 분할 지급 시 사용할 평균 1일 소정근로시간
+  // (근무 패턴의 소정근로시간을 근무일수로 가중평균, 단시간근로자의 경우 8시간이 아닌 실제 근로시간 반영)
+  const totalWeeklyDays = p1D + p2D + p3D;
+  const avgDailyHours = totalWeeklyDays > 0 ? regularWorkHoursForBasePay / totalWeeklyDays : 8;
+
   // 연장근로시간 계산 (1일 8시간 초과분 합산)
   const p1DailyOvertime = Math.max(p1H - 8, 0) * p1D;
   const p2DailyOvertime = Math.max(p2H - 8, 0) * p2D;
@@ -298,6 +303,7 @@ export const calculateSalaryBreakdown = ({
     totalNonTaxable: allowances.totalNonTaxable,
     totalTaxableExcess: allowances.totalTaxableExcess,
     totalPay,
+    avgDailyHours: Math.round(avgDailyHours * 100) / 100,
     ...deductions,
     regularWorkHoursMonthly: Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10,
     weeklyHolidayHoursMonthly: Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 10) / 10,
@@ -485,13 +491,16 @@ export const calculateYearlyEntryPay = ({
   // 휴일근로수당/연차수당 1/12 분할 지급 산정 및 최저임금 준수 여부 판단에는
   // 입력 급여 구분과 무관하게 산출된 실제 시급을 기준으로 삼는다
   const wage = breakdown.hourlyWage;
+  // 1일 소정근로시간도 8시간 고정이 아닌, 입력한 근무 패턴 기준 평균 소정근로시간을 사용
+  // (단시간근로자의 경우 실제 근로시간에 비례해 연차·휴일근로수당이 산정됨)
+  const dailyHours = breakdown.avgDailyHours;
 
   // 휴일근로수당 연간 일수 기준 1/12 분할 지급
   const holidayMultiplier = is5Over ? 1.5 : 1.0;
-  const holidayWorkPay = Math.round((parseFloat(holidayWorkDays) || 0) * 8 * wage * holidayMultiplier / 12);
+  const holidayWorkPay = Math.round((parseFloat(holidayWorkDays) || 0) * dailyHours * wage * holidayMultiplier / 12);
 
   // 연차수당 연간 일수 기준 1/12 분할 지급
-  const leavePayMonthly = Math.round((parseFloat(annualLeaveDays) || 0) * 8 * wage / 12);
+  const leavePayMonthly = Math.round((parseFloat(annualLeaveDays) || 0) * dailyHours * wage / 12);
 
   const grossTotal = breakdown.totalPay + leavePayMonthly + holidayWorkPay;
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (breakdown.basePay + breakdown.weeklyHolidayPay);
@@ -520,6 +529,7 @@ export const calculateYearlyEntryPay = ({
     taxableAllowance: breakdown.taxableAllowance,
     leavePayMonthly,
     holidayWorkPay,
+    avgDailyHours: dailyHours,
     grossTotal,
     ...deductions,
     grossAnnual: grossTotal * 12,

@@ -233,8 +233,11 @@ function ReverseSalaryCalculator() {
   const holHours = parseFloat(holidayWorkHoursPerDay) || 0;
   const monthlyHolidayWorkHours = (holDays * holHours) / 12;
 
+  // 연차수당 산정 시 8시간 고정이 아닌, 입력한 근무 패턴 기준 평균 1일 소정근로시간을 사용
+  const avgDailyHours = totalWeeklyDays > 0 ? regularWorkHoursForBasePay / totalWeeklyDays : 8;
+
   const annDays = parseFloat(annualLeaveDays) || 0;
-  const monthlyLeaveHours = (annDays * 8) / 12;
+  const monthlyLeaveHours = (annDays * avgDailyHours) / 12;
 
   // 분모(Paid hours factor) 계산
   const weeklyPaidHours = regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (weeklyNightHours * nightMultiplier);
@@ -421,7 +424,7 @@ function ReverseSalaryCalculator() {
               <span style={{ fontSize: '0.75rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem' }}>연간 연차수당 지급 대상 일수 (일/년)</span>
               <input type="number" className="text-input" placeholder="예: 15" value={annualLeaveDays} onChange={(e) => setAnnualLeaveDays(e.target.value)} min="0" />
               <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
-                연차휴가 미사용 수당이 월 급여에 정액 포괄로 합의되어 지급되는 경우, 반영할 연차 개수를 입력하세요 (12개월 분할 반영).
+                연차휴가 미사용 수당이 월 급여에 정액 포괄로 합의되어 지급되는 경우, 반영할 연차 개수를 입력하세요. 근무 패턴 기준 평균 1일 소정근로시간({Math.round(avgDailyHours * 100) / 100}시간) 기준 12개월 분할 반영됩니다.
               </p>
             </div>
           </div>

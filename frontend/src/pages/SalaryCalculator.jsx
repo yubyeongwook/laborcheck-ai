@@ -349,7 +349,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
           <div className="form-group" style={{ background: 'rgba(99, 102, 241, 0.06)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(99, 102, 241, 0.3)' }}>
             <label className="form-label" style={{ color: '#a5b4fc' }}>연간 연차휴가 일수 (선택, 일/년)</label>
             <input type="number" className="text-input" placeholder="예: 15 (미사용 시 수당 분할 지급액 계산에 반영)" value={entry.annualLeaveDays === '0' || !entry.annualLeaveDays ? '' : entry.annualLeaveDays} onChange={(e) => update('annualLeaveDays')(e.target.value || '0')} min="0" />
-            <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>연간 연차 휴가 일수를 입력하시면 하루 8시간 시급을 기준하여 12개월 분할(1/12) 지급액을 매월 급여에 선반영합니다.</p>
+            <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>연간 연차 휴가 일수를 입력하시면 입력하신 근무 패턴 기준 평균 1일 소정근로시간(<strong style={{ color: '#a5b4fc' }}>{result.avgDailyHours}시간</strong>)에 시급을 곱해 12개월 분할(1/12) 지급액을 매월 급여에 선반영합니다.</p>
           </div>
 
 
@@ -357,7 +357,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             <label className="form-label" style={{ color: '#fbbf24' }}><Sun size={16} /> 연간 휴일근로 일수 (선택, 일/년)</label>
             <input type="number" className="text-input" placeholder="예: 12 (공휴일, 대체공휴일 등 연간 예상 근무일수)" value={entry.holidayWorkDays === '0' || !entry.holidayWorkDays ? '' : entry.holidayWorkDays} onChange={(e) => update('holidayWorkDays')(e.target.value || '0')} min="0" />
             <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
-              공휴일이나 대체공휴일에 일하는 일수를 연간 단위로 입력하시면 하루 8시간 근로 및 가산율을 기준하여 12개월 분할(1/12) 지급액이 매월 자동 산정됩니다.
+              공휴일이나 대체공휴일에 일하는 일수를 연간 단위로 입력하시면 근무 패턴 기준 평균 1일 소정근로시간(<strong style={{ color: '#fbbf24' }}>{result.avgDailyHours}시간</strong>) 및 가산율을 기준하여 12개월 분할(1/12) 지급액이 매월 자동 산정됩니다.
             </p>
           </div>
 
