@@ -55,6 +55,8 @@ app.post('/api/generate-report', async (req, res) => {
       pattern1_hours,
       pattern2_days,
       pattern2_hours,
+      pattern3_days,
+      pattern3_hours,
       weekly_night_hours
     } = req.body;
 
@@ -107,6 +109,7 @@ app.post('/api/generate-report', async (req, res) => {
 - 근로 시간 정보:
   * 패턴 1: 주 ${pattern1_days || 0}일, 하루 ${pattern1_hours || 0}시간 근무
   * 패턴 2: 주 ${pattern2_days || 0}일, 하루 ${pattern2_hours || 0}시간 근무 (선택)
+  * 패턴 3: 주 ${pattern3_days || 0}일, 하루 ${pattern3_hours || 0}시간 근무 (선택)
   * 주당 총 야간 근로시간 (22시 ~ 익일 06시): ${weekly_night_hours || 0}시간
   * 평균 1일 근로시간: 하루 ${daily_hours || 0}시간, 주 ${weekly_days || 0}일 근무
 - 휴게 시간 정보: 하루 ${break_time || 0}분 휴게
@@ -227,6 +230,7 @@ ${user_type === '근로자'
 
 본 리포트는 AI가 생성한 참고용 정보이며 법률 자문이 아닙니다. 완전한 비식별·익명성을 보장하지 않으며, 구체적 사건 해결은 공인노무사·변호사 등 전문가와 직접 상담하시기 바랍니다.`;
 
+      }
       return res.json({ report: mockReport });
     }
 
