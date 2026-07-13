@@ -349,7 +349,13 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
           <div className="form-group" style={{ background: 'rgba(99, 102, 241, 0.06)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(99, 102, 241, 0.3)' }}>
             <label className="form-label" style={{ color: '#a5b4fc' }}>연간 연차휴가 일수 (선택, 일/년)</label>
             <input type="number" className="text-input" placeholder="예: 15 (미사용 시 수당 분할 지급액 계산에 반영)" value={entry.annualLeaveDays === '0' || !entry.annualLeaveDays ? '' : entry.annualLeaveDays} onChange={(e) => update('annualLeaveDays')(e.target.value || '0')} min="0" />
-            <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>연간 연차 휴가 일수를 입력하시면 입력하신 근무 패턴 기준 평균 1일 소정근로시간(<strong style={{ color: '#a5b4fc' }}>{result.avgDailyHours}시간</strong>)에 시급을 곱해 12개월 분할(1/12) 지급액을 매월 급여에 선반영합니다.</p>
+            {result.isEligibleForWeeklyBenefits ? (
+              <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>연간 연차 휴가 일수를 입력하시면 입력하신 근무 패턴 기준 평균 1일 소정근로시간(<strong style={{ color: '#a5b4fc' }}>{result.avgDailyHours}시간</strong>)에 시급을 곱해 12개월 분할(1/12) 지급액을 매월 급여에 선반영합니다.</p>
+            ) : (
+              <p style={{ fontSize: '0.7rem', color: '#fbbf24', marginTop: '0.5rem', marginBottom: 0 }}>
+                주 소정근로시간이 {result.weeklyHours}시간으로 15시간 미만이라 근로기준법 제18조 3항에 따라 연차유급휴가(제60조)가 적용되지 않아, 입력하셔도 연차수당은 0원으로 계산됩니다.
+              </p>
+            )}
           </div>
 
 

@@ -212,7 +212,7 @@ export const calculateSalaryBreakdown = ({
   const weeklyOvertimeLimit = Math.max(weeklyRegularHours - 40, 0);
   const weeklyOvertimeHours = dailyOvertime + weeklyOvertimeLimit + extraWeeklyOvertime;
 
-  // 주휴수당 기준: 1주 15시간 이상 근무
+  // 주휴수당·연차유급휴가 기준: 4주 평균 1주 소정근로시간 15시간 이상 근무 (근로기준법 제18조 3항 - 미만이면 제55조·제60조 적용 제외)
   const hasWeeklyHoliday = weeklyHours >= 15;
   const weeklyHolidayHours = hasWeeklyHoliday ? (regularWorkHoursForBasePay / 40) * 8 : 0;
 
@@ -307,6 +307,8 @@ export const calculateSalaryBreakdown = ({
     totalTaxableExcess: allowances.totalTaxableExcess,
     totalPay,
     avgDailyHours: Math.round(avgDailyHours * 100) / 100,
+    weeklyHours: Math.round(weeklyHours * 100) / 100,
+    isEligibleForWeeklyBenefits: hasWeeklyHoliday, // 주 15시간 미만이면 주휴수당·연차유급휴가 모두 적용 제외
     ...deductions,
     regularWorkHoursMonthly: Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10,
     weeklyHolidayHoursMonthly: Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 10) / 10,
@@ -504,7 +506,8 @@ export const calculateYearlyEntryPay = ({
   const holidayWorkPay = roundDownToTen(holidayWorkHoursMonthly * wage * holidayMultiplier);
 
   // 연차수당 연간 일수 기준 1/12 분할 지급
-  const leavePayHoursMonthly = (parseFloat(annualLeaveDays) || 0) * dailyHours / 12;
+  // 4주 평균 주 15시간 미만 근로자는 근로기준법 제18조 3항에 따라 연차유급휴가(제60조) 적용 제외
+  const leavePayHoursMonthly = breakdown.isEligibleForWeeklyBenefits ? (parseFloat(annualLeaveDays) || 0) * dailyHours / 12 : 0;
   const leavePayMonthly = roundDownToTen(leavePayHoursMonthly * wage);
 
   const grossTotal = breakdown.totalPay + leavePayMonthly + holidayWorkPay;
@@ -544,6 +547,8 @@ export const calculateYearlyEntryPay = ({
     overtimeHoursMonthly: breakdown.overtimeHoursMonthly,
     nightHoursMonthly: breakdown.nightHoursMonthly,
     leavePayHoursMonthly: Math.round(leavePayHoursMonthly * 100) / 100,
-    holidayWorkHoursMonthly: Math.round(holidayWorkHoursMonthly * 100) / 100
+    holidayWorkHoursMonthly: Math.round(holidayWorkHoursMonthly * 100) / 100,
+    weeklyHours: breakdown.weeklyHours,
+    isEligibleForWeeklyBenefits: breakdown.isEligibleForWeeklyBenefits
   };
 };
