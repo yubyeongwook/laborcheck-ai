@@ -172,7 +172,8 @@ export const calculateSalaryBreakdown = ({
   carAllowance = 0,
   childcareAllowance = 0,
   otherNonTaxable = 0,
-  taxableAllowance = 0
+  taxableAllowance = 0,
+  allowancesIncludedInTotal = false // true면 입력한 급여액에 비과세/과세 수당이 이미 포함된 것으로 보고 기본급에서 분리, false면 급여액과 별도로 추가 지급
 }) => {
   const amt = parseFloat(salaryAmount) || 0;
 
@@ -270,7 +271,15 @@ export const calculateSalaryBreakdown = ({
 
   const allowances = calculateNonTaxableBreakdown({ mealAllowance, carAllowance, childcareAllowance, otherNonTaxable });
   const taxableAllowanceAmt = parseFloat(taxableAllowance) || 0;
-  totalPay += allowances.totalAllowance + taxableAllowanceAmt;
+  const allowancesTotal = allowances.totalAllowance + taxableAllowanceAmt;
+
+  if (allowancesIncludedInTotal) {
+    // 입력한 급여액에 수당이 이미 포함되어 있으므로 총 지급액은 그대로 두고 기본급에서만 분리해 표시
+    basePay = Math.max(basePay - allowancesTotal, 0);
+  } else {
+    // 수당은 입력한 급여액과 별도로 추가 지급
+    totalPay += allowancesTotal;
+  }
 
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (basePay + weeklyHolidayPay);
   const deductions = applyDeductions(totalPay, year, defaultPensionBasis, allowances.totalNonTaxable);
@@ -449,7 +458,8 @@ export const calculateYearlyEntryPay = ({
   carAllowance = 0,
   childcareAllowance = 0,
   otherNonTaxable = 0,
-  taxableAllowance = 0
+  taxableAllowance = 0,
+  allowancesIncludedInTotal = false
 }) => {
   const breakdown = calculateSalaryBreakdown({
     salaryType,
@@ -467,7 +477,8 @@ export const calculateYearlyEntryPay = ({
     carAllowance,
     childcareAllowance,
     otherNonTaxable,
-    taxableAllowance
+    taxableAllowance,
+    allowancesIncludedInTotal
   });
 
   const is5Over = companySize === '5인 이상';

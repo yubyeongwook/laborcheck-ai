@@ -32,7 +32,8 @@ const makeDefaultEntry = (year) => ({
   carAllowance: '0',
   childcareAllowance: '0',
   otherNonTaxable: '0',
-  taxableAllowance: '0'
+  taxableAllowance: '0',
+  allowancesIncludedInTotal: false
 });
 
 // 비과세 항목(식대/자가운전보조금/육아수당) 공용 입력 필드. 한도(월 20만원) 초과 시 초과분은 과세로 안내
@@ -115,7 +116,8 @@ function computeDerived(entry) {
     carAllowance: parseFloat(entry.carAllowance) || 0,
     childcareAllowance: parseFloat(entry.childcareAllowance) || 0,
     otherNonTaxable: parseFloat(entry.otherNonTaxable) || 0,
-    taxableAllowance: parseFloat(entry.taxableAllowance) || 0
+    taxableAllowance: parseFloat(entry.taxableAllowance) || 0,
+    allowancesIncludedInTotal: entry.allowancesIncludedInTotal
   });
  
   return { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, holidayWorkDays: parseFloat(entry.holidayWorkDays) || 0, result };
@@ -359,6 +361,20 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             </p>
           </div>
 
+          <div className="form-group">
+            <label className="form-label" style={{ color: '#cbd5e1' }}>비과세·과세 수당 처리 방식</label>
+            <div className="radio-group">
+              <div className={`radio-card ${!entry.allowancesIncludedInTotal ? 'active' : ''}`} onClick={() => update('allowancesIncludedInTotal')(false)}>
+                <span className="radio-card-title">급여액과 별도 지급</span>
+                <span className="radio-card-desc">위 급여 금액과 별개로 추가 지급</span>
+              </div>
+              <div className={`radio-card ${entry.allowancesIncludedInTotal ? 'active' : ''}`} onClick={() => update('allowancesIncludedInTotal')(true)}>
+                <span className="radio-card-title">급여액에 이미 포함됨</span>
+                <span className="radio-card-desc">총 지급액은 그대로, 기본급에서 분리 표시</span>
+              </div>
+            </div>
+          </div>
+
           <div className="form-group" style={{ background: 'rgba(52, 211, 153, 0.06)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(52, 211, 153, 0.3)' }}>
             <label className="form-label" style={{ color: '#34d399' }}><Utensils size={16} /> 비과세 수당 (선택, 월 지급액)</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -380,7 +396,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               </div>
             </div>
             <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
-              식대·자가운전보조금·육아수당은 각각 월 20만원까지 비과세이며, 급여 총액에 더해지되 세금·4대보험 산정에서는 제외됩니다. 기타 비과세는 한도 없이 입력한 금액 그대로 반영됩니다.
+              식대·자가운전보조금·육아수당은 각각 월 20만원까지 비과세이며, 세금·4대보험 산정에서는 제외됩니다. {entry.allowancesIncludedInTotal ? '위에서 "급여액에 이미 포함됨"을 선택해 총 지급액은 그대로 유지되고 기본급에서 분리되어 표시됩니다.' : '위에서 "급여액과 별도 지급"을 선택해 급여 총액에 추가로 더해집니다.'} 기타 비과세는 한도 없이 입력한 금액 그대로 반영됩니다.
             </p>
           </div>
 
@@ -397,7 +413,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               }}
             />
             <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
-              직책수당·상여금 등 세금이 붙는 수당은 급여 총액에 더해지고, 비과세와 달리 세금·4대보험 산정 기준액에도 그대로 포함됩니다.
+              직책수당·상여금 등 세금이 붙는 수당은 비과세와 달리 세금·4대보험 산정 기준액에도 그대로 포함됩니다. {entry.allowancesIncludedInTotal ? '위에서 "급여액에 이미 포함됨"을 선택해 총 지급액은 그대로 유지됩니다.' : '위에서 "급여액과 별도 지급"을 선택해 급여 총액에 추가로 더해집니다.'}
             </p>
           </div>
         </div>
