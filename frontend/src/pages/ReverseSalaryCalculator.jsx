@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Coins, Building2, Clock, CalendarClock, Sun, ShieldAlert, BadgeAlert, Utensils } from 'lucide-react';
-import { calculateHoursAndNightHours, getMinWageForYear, applyDeductions, getDeductionRatesForYear, calculateNonTaxableBreakdown, NON_TAXABLE_MONTHLY_CAP, roundDownToTen } from '../utils/laborCalc.js';
+import { calculateHoursAndNightHours, getMinWageForYear, applyDeductions, getDeductionRatesForYear, calculateNonTaxableBreakdown, NON_TAXABLE_MONTHLY_CAP, roundDownToTen, calculateHolidayDayPay } from '../utils/laborCalc.js';
 
 const currentYear = new Date().getFullYear();
 
@@ -224,14 +224,16 @@ function ReverseSalaryCalculator() {
   const is5Over = companySize === '5인 이상';
   const overtimeMultiplier = is5Over ? 1.5 : 1.0;
   const nightMultiplier = is5Over ? 0.5 : 0.0;
-  const holidayMultiplier = is5Over ? 1.5 : 1.0;
 
   const AVG_WEEKS_PER_MONTH = 4.345;
 
   // 추가 수당 항목
+  // 휴일근로수당: 하루 8시간 이내분은 50% 가산, 8시간 초과분은 100% 가산 (근로기준법 제56조 2항)
   const holDays = parseFloat(holidayWorkDays) || 0;
   const holHours = parseFloat(holidayWorkHoursPerDay) || 0;
   const monthlyHolidayWorkHours = (holDays * holHours) / 12;
+  // 시급 1원을 대입해 가산율이 반영된 "유급환산시간"을 구함 (역산 분모 계산용)
+  const weightedHolidayHoursPerDay = calculateHolidayDayPay(holHours, 1, is5Over);
 
   // 연차수당 산정 시 8시간 고정이 아닌, 입력한 근무 패턴 기준 평균 1일 소정근로시간을 사용
   const avgDailyHours = totalWeeklyDays > 0 ? regularWorkHoursForBasePay / totalWeeklyDays : 8;
@@ -243,7 +245,7 @@ function ReverseSalaryCalculator() {
   // 분모(Paid hours factor) 계산
   const weeklyPaidHours = regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (weeklyNightHours * nightMultiplier);
   const monthlyPaidHoursFromWeekly = weeklyPaidHours * AVG_WEEKS_PER_MONTH;
-  const monthlyPaidHoursFromHoliday = monthlyHolidayWorkHours * holidayMultiplier;
+  const monthlyPaidHoursFromHoliday = (holDays * weightedHolidayHoursPerDay) / 12;
   const monthlyPaidHoursFromLeave = monthlyLeaveHours;
 
   const totalPaidHoursDivisor = monthlyPaidHoursFromWeekly + monthlyPaidHoursFromHoliday + monthlyPaidHoursFromLeave;
@@ -270,7 +272,8 @@ function ReverseSalaryCalculator() {
   const weeklyHolidayPay = roundDownToTen(calculatedHourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
   const overtimePay = roundDownToTen(calculatedHourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
   const nightPay = roundDownToTen(calculatedHourlyWage * weeklyNightHours * nightMultiplier * AVG_WEEKS_PER_MONTH);
-  const holidayWorkPay = roundDownToTen(calculatedHourlyWage * monthlyHolidayWorkHours * holidayMultiplier);
+  const holidayDayPay = calculateHolidayDayPay(holHours, calculatedHourlyWage, is5Over);
+  const holidayWorkPay = roundDownToTen((holDays * holidayDayPay) / 12);
   const annualLeavePay = roundDownToTen(calculatedHourlyWage * monthlyLeaveHours);
 
   // 세전 급여 합계 (검증용, 단수 차이가 있을 수 있음)
@@ -524,7 +527,9 @@ function ReverseSalaryCalculator() {
             )}
             {holidayWorkPay > 0 && (
               <div className="result-row">
-                <span className="result-row-label">휴일근로수당 (월 {monthlyHolidayWorkHours}시간분 · {holidayMultiplier}배 가산)</span>
+                <span className="result-row-label">
+                  휴일근로수당 (월 {Math.round(monthlyHolidayWorkHours * 100) / 100}시간분{is5Over ? (holHours > 8 ? ` · 8시간 이내 1.5배, 초과분 2.0배 가산` : ` · 1.5배 가산`) : ''})
+                </span>
                 <span className="result-row-value">{holidayWorkPay.toLocaleString()}원</span>
               </div>
             )}

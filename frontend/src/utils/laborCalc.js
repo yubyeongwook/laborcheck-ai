@@ -6,6 +6,17 @@ export const AVG_WEEKS_PER_MONTH = 4.345;
 // 금액(원) 계산 결과의 10원 미만을 절사 (엑셀 ROUNDDOWN(x, -1)와 동일)
 export const roundDownToTen = (amount) => Math.floor(amount / 10) * 10;
 
+// 하루 휴일근로에 대한 지급액 계산 (근로기준법 제56조 2항)
+// 5인 이상: 8시간 이내분은 통상임금의 50% 가산(1.5배), 8시간 초과분은 100% 가산(2.0배)
+// 5인 미만: 가산수당 적용 제외, 근로한 시간만큼만 지급
+export const calculateHolidayDayPay = (dailyHours, wage, is5Over) => {
+  const hours = Math.max(parseFloat(dailyHours) || 0, 0);
+  if (!is5Over) return hours * wage;
+  const within8 = Math.min(hours, 8);
+  const beyond8 = Math.max(hours - 8, 0);
+  return (within8 * wage * 1.5) + (beyond8 * wage * 2.0);
+};
+
 // 연도별 법정 최저시급 (원) - 고용노동부 고시 기준. 목록에 없는 연도는 가장 가까운 연도 값을 사용
 export const MIN_WAGE_BY_YEAR = {
   2017: 6470,
@@ -501,9 +512,10 @@ export const calculateYearlyEntryPay = ({
   const dailyHours = breakdown.avgDailyHours;
 
   // 휴일근로수당 연간 일수 기준 1/12 분할 지급
-  const holidayMultiplier = is5Over ? 1.5 : 1.0;
+  // 하루 8시간 이내분은 50% 가산, 8시간 초과분은 100% 가산 (근로기준법 제56조 2항)
   const holidayWorkHoursMonthly = (parseFloat(holidayWorkDays) || 0) * dailyHours / 12;
-  const holidayWorkPay = roundDownToTen(holidayWorkHoursMonthly * wage * holidayMultiplier);
+  const holidayDayPay = calculateHolidayDayPay(dailyHours, wage, is5Over);
+  const holidayWorkPay = roundDownToTen((parseFloat(holidayWorkDays) || 0) * holidayDayPay / 12);
 
   // 연차수당 연간 일수 기준 1/12 분할 지급
   // 4주 평균 주 15시간 미만 근로자는 근로기준법 제18조 3항에 따라 연차유급휴가(제60조) 적용 제외
