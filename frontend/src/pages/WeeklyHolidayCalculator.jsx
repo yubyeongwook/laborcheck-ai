@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar } from 'lucide-react';
-import { calculateWeeklyHolidayPay, AVG_WEEKS_PER_MONTH, calculateHoursAndNightHours } from '../utils/laborCalc.js';
+import { calculateWeeklyHolidayPay, AVG_WEEKS_PER_MONTH, calculateHoursAndNightHours, roundDownToTen } from '../utils/laborCalc.js';
 
 function TimeSelectInput({ value, onChange }) {
   const [hStr, mStr] = (value || '00:00').split(':');
@@ -42,7 +42,7 @@ function WeeklyHolidayCalculator() {
   const weeklyWorkHours = p.workHours * (parseFloat(weeklyWorkDays) || 0);
 
   const result = calculateWeeklyHolidayPay({ hourlyWage, weeklyWorkDays, weeklyWorkHours });
-  const monthlyEstimate = Math.round(result.weeklyHolidayPay * AVG_WEEKS_PER_MONTH);
+  const monthlyEstimate = roundDownToTen(result.weeklyHolidayPay * AVG_WEEKS_PER_MONTH);
 
   return (
     <div className="page-container">

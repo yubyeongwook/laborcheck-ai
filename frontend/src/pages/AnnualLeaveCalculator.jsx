@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Clock, Building2 } from 'lucide-react';
-import { calculateAnnualLeave } from '../utils/laborCalc.js';
+import { calculateAnnualLeave, roundDownToTen } from '../utils/laborCalc.js';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -15,7 +15,7 @@ function AnnualLeaveCalculator() {
   const result = hireDate ? calculateAnnualLeave(hireDate, refDate) : null;
   const remainingDays = result ? Math.max(result.leaveDays - (parseFloat(usedDays) || 0), 0) : 0;
   const wage = parseFloat(dailyWage) || 0;
-  const leavePayEstimate = wage > 0 ? Math.round(remainingDays * wage) : 0;
+  const leavePayEstimate = wage > 0 ? roundDownToTen(remainingDays * wage) : 0;
 
   return (
     <div className="page-container">

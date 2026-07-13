@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Coins, Building2, Clock, CalendarClock, Sun, ShieldAlert, BadgeAlert, Utensils } from 'lucide-react';
-import { calculateHoursAndNightHours, getMinWageForYear, applyDeductions, getDeductionRatesForYear, calculateNonTaxableBreakdown, NON_TAXABLE_MONTHLY_CAP } from '../utils/laborCalc.js';
+import { calculateHoursAndNightHours, getMinWageForYear, applyDeductions, getDeductionRatesForYear, calculateNonTaxableBreakdown, NON_TAXABLE_MONTHLY_CAP, roundDownToTen } from '../utils/laborCalc.js';
 
 const currentYear = new Date().getFullYear();
 
@@ -265,12 +265,12 @@ function ReverseSalaryCalculator() {
     calculatedHourlyWage = workRelatedGross / totalPaidHoursDivisor;
   }
 
-  const basePay = Math.round(calculatedHourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
-  const weeklyHolidayPay = Math.round(calculatedHourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
-  const overtimePay = Math.round(calculatedHourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
-  const nightPay = Math.round(calculatedHourlyWage * weeklyNightHours * nightMultiplier * AVG_WEEKS_PER_MONTH);
-  const holidayWorkPay = Math.round(calculatedHourlyWage * monthlyHolidayWorkHours * holidayMultiplier);
-  const annualLeavePay = Math.round(calculatedHourlyWage * monthlyLeaveHours);
+  const basePay = roundDownToTen(calculatedHourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
+  const weeklyHolidayPay = roundDownToTen(calculatedHourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
+  const overtimePay = roundDownToTen(calculatedHourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
+  const nightPay = roundDownToTen(calculatedHourlyWage * weeklyNightHours * nightMultiplier * AVG_WEEKS_PER_MONTH);
+  const holidayWorkPay = roundDownToTen(calculatedHourlyWage * monthlyHolidayWorkHours * holidayMultiplier);
+  const annualLeavePay = roundDownToTen(calculatedHourlyWage * monthlyLeaveHours);
 
   // 세전 급여 합계 (검증용, 단수 차이가 있을 수 있음)
   const computedGrossTotal = basePay + weeklyHolidayPay + overtimePay + nightPay + holidayWorkPay + annualLeavePay + allowances.totalAllowance + taxableAllowance;
@@ -281,7 +281,8 @@ function ReverseSalaryCalculator() {
   const rates = getDeductionRatesForYear(year);
   
   const minWage = getMinWageForYear(year);
-  const isMinWageCompliant = calculatedHourlyWage >= minWage;
+  const displayedHourlyWage = roundDownToTen(calculatedHourlyWage);
+  const isMinWageCompliant = displayedHourlyWage >= minWage;
 
   return (
     <div className="page-container">
@@ -478,7 +479,7 @@ function ReverseSalaryCalculator() {
           <div className="result-highlight" style={{ background: isMinWageCompliant ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)', borderColor: isMinWageCompliant ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)' }}>
             <div className="result-highlight-label">역산된 실제 기초시급</div>
             <div className="result-highlight-value" style={{ color: isMinWageCompliant ? '#10b981' : '#f87171' }}>
-              {Math.round(calculatedHourlyWage).toLocaleString()}원
+              {displayedHourlyWage.toLocaleString()}원
             </div>
             <div className="result-highlight-sub" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.5rem' }}>
               {isMinWageCompliant ? (
