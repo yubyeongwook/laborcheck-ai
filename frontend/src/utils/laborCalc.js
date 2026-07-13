@@ -94,28 +94,58 @@ export const calculateNonTaxableBreakdown = ({
 
 // 월 급여 총액 기준 4대보험·소득세 공제 계산 (근로자 부담분, 참고용 개략치)
 // nonTaxableAmount: 총 지급액(totalPay) 중 비과세로 인정되어 세금·4대보험 산정에서 제외되는 금액
-export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0, nonTaxableAmount = 0) => {
+export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0, nonTaxableAmount = 0, deductionType = '4대보험', workingDaysCount = 20) => {
   const rates = getDeductionRatesForYear(year);
   const taxableBase = Math.max(totalPay - (parseFloat(nonTaxableAmount) || 0), 0);
 
-  const pensionTarget = pensionBasis > 0 ? pensionBasis : taxableBase;
-  const nationalPension = roundDownToTen(pensionTarget * rates.pension);
-  const healthInsurance = roundDownToTen(taxableBase * rates.health);
-  const longTermCare = roundDownToTen(healthInsurance * rates.care);
-  const employmentInsurance = roundDownToTen(taxableBase * rates.employment);
-  const totalInsurance = nationalPension + healthInsurance + longTermCare + employmentInsurance;
-
+  let nationalPension = 0;
+  let healthInsurance = 0;
+  let longTermCare = 0;
+  let employmentInsurance = 0;
   let incomeTax = 0;
-  if (taxableBase >= 5000000) {
-    incomeTax = roundDownToTen(taxableBase * 0.05);
-  } else if (taxableBase >= 3000000) {
-    incomeTax = roundDownToTen(taxableBase * 0.03);
-  } else if (taxableBase >= 1500000) {
-    incomeTax = roundDownToTen(taxableBase * 0.015);
-  }
-  const localIncomeTax = roundDownToTen(incomeTax * 0.1);
-  const totalTax = incomeTax + localIncomeTax;
+  let localIncomeTax = 0;
 
+  if (deductionType === '3.3%') {
+    incomeTax = roundDownToTen(totalPay * 0.03);
+    localIncomeTax = roundDownToTen(incomeTax * 0.1);
+  } else if (deductionType === '일용직') {
+    // 고용보험 0.9% 적용
+    employmentInsurance = roundDownToTen(taxableBase * rates.employment);
+
+    // 일용직 소득세: 하루 평균 소정급여가 15만원 이하는 비과세
+    const days = Math.max(parseFloat(workingDaysCount) || 20, 1);
+    const dailyPay = totalPay / days;
+    const dailyTaxable = Math.max(dailyPay - 150000, 0);
+    let dailyIncomeTax = dailyTaxable * 0.06 * 0.45; // 55% 세액공제 감면
+    dailyIncomeTax = Math.floor(dailyIncomeTax);
+
+    // 소액부징수: 1일 산출소득세가 1,000원 미만 시 징수 면제
+    if (dailyIncomeTax < 1000) {
+      dailyIncomeTax = 0;
+    }
+
+    incomeTax = roundDownToTen(dailyIncomeTax * days);
+    localIncomeTax = roundDownToTen(incomeTax * 0.1);
+  } else {
+    // 일반 4대보험 적용 근로자
+    const pensionTarget = pensionBasis > 0 ? pensionBasis : taxableBase;
+    nationalPension = roundDownToTen(pensionTarget * rates.pension);
+    healthInsurance = roundDownToTen(taxableBase * rates.health);
+    longTermCare = roundDownToTen(healthInsurance * rates.care);
+    employmentInsurance = roundDownToTen(taxableBase * rates.employment);
+
+    if (taxableBase >= 5000000) {
+      incomeTax = roundDownToTen(taxableBase * 0.05);
+    } else if (taxableBase >= 3000000) {
+      incomeTax = roundDownToTen(taxableBase * 0.03);
+    } else if (taxableBase >= 1500000) {
+      incomeTax = roundDownToTen(taxableBase * 0.015);
+    }
+    localIncomeTax = roundDownToTen(incomeTax * 0.1);
+  }
+
+  const totalInsurance = nationalPension + healthInsurance + longTermCare + employmentInsurance;
+  const totalTax = incomeTax + localIncomeTax;
   const totalDeductions = totalInsurance + totalTax;
   const netPay = Math.max(totalPay - totalDeductions, 0);
 
@@ -169,6 +199,43 @@ export const calculateHoursAndNightHours = (startStr, endStr, breakMinutes, nigh
   };
 };
 
+// 근로기준법 제54조(휴게)에 따른 법정 최소 휴게시간(분)
+// 근로시간 4시간 이하: 0분, 4시간 초과 8시간 이하: 30분, 8시간 초과: 60분
+export const getStatutoryBreakMinutes = (elapsedHours) => {
+  const hours = parseFloat(elapsedHours) || 0;
+  if (hours > 8) return 60;
+  if (hours > 4) return 30;
+  return 0;
+};
+
+// 출퇴근 시각(HH:mm) 사이의 총 경과시간(휴게시간 차감 전, 자정 교차 포함)을 시간 단위로 반환
+export const calculateElapsedHours = (startStr, endStr) => {
+  if (!startStr || !endStr) return 0;
+  const [startH, startM] = startStr.split(':').map(Number);
+  const [endH, endM] = endStr.split(':').map(Number);
+  let startDecimal = startH + startM / 60;
+  let endDecimal = endH + endM / 60;
+  if (endDecimal <= startDecimal) endDecimal += 24;
+  return endDecimal - startDecimal;
+};
+
+// 출퇴근 시간(useState 세터 기반) 변경 시, 사용자가 휴게시간을 직접 수정한 적이 없다면(Auto 플래그)
+// 근로기준법 제54조 기준으로 휴게시간(시/분)을 자동 재계산해 주는 공용 핸들러 팩토리
+export const makeAutoBreakHandlers = ({ startVal, endVal, setStart, setEnd, setBreakH, setBreakM, breakAuto, setBreakAuto }) => {
+  const recalc = (start, end) => {
+    if (!breakAuto) return;
+    const minutes = getStatutoryBreakMinutes(calculateElapsedHours(start, end));
+    setBreakH(String(Math.floor(minutes / 60)));
+    setBreakM(String(minutes % 60));
+  };
+  return {
+    onStartChange: (value) => { setStart(value); recalc(value, endVal); },
+    onEndChange: (value) => { setEnd(value); recalc(startVal, value); },
+    onBreakHChange: (value) => { setBreakH(value); setBreakAuto(false); },
+    onBreakMChange: (value) => { setBreakM(value); setBreakAuto(false); }
+  };
+};
+
 // 근무 패턴(최대 3개) + 급여 정보로 월 예상 급여 항목을 산출
 export const calculateSalaryBreakdown = ({
   salaryType,
@@ -187,7 +254,15 @@ export const calculateSalaryBreakdown = ({
   childcareAllowance = 0,
   otherNonTaxable = 0,
   taxableAllowance = 0,
-  allowancesIncludedInTotal = false // true면 입력한 급여액에 비과세/과세 수당이 이미 포함된 것으로 보고 기본급에서 분리, false면 급여액과 별도로 추가 지급
+  allowancesIncludedInTotal = false,
+  scheduleType = '패턴별',
+  directWeeklyWorkDays = 5,
+  directWeeklyRegularHours = 40,
+  directWeeklyOvertimeHours = 0,
+  directWeeklyNightHours = 0,
+  directAvgDailyHours = 8,
+  deductionType = '4대보험',
+  workingDaysCount = 0
 }) => {
   const amt = parseFloat(salaryAmount) || 0;
 
@@ -199,29 +274,39 @@ export const calculateSalaryBreakdown = ({
   const p3H = parseFloat(pattern3Hours) || 0;
   const wNightHours = parseFloat(weeklyNightHours) || 0;
 
-  const weeklyHours = (p1D * p1H) + (p2D * p2H) + (p3D * p3H);
+  let weeklyHours = 0;
+  let regularWorkHoursForBasePay = 0;
+  let weeklyOvertimeHours = 0;
+  let weeklyNightHoursVal = 0;
+  let avgDailyHours = 8;
+  let totalWeeklyDays = 5;
 
-  // 소정근로시간 (하루 8시간 초과분 제외, 주 40시간 초과분 제외)
-  const p1RegularDaily = Math.min(p1H, 8);
-  const p2RegularDaily = Math.min(p2H, 8);
-  const p3RegularDaily = Math.min(p3H, 8);
-  const weeklyRegularHours = (p1D * p1RegularDaily) + (p2D * p2RegularDaily) + (p3D * p3RegularDaily);
-  const regularWorkHoursForBasePay = Math.min(weeklyRegularHours, 40);
+  if (scheduleType === '직접입력' || scheduleType === '요일별') {
+    totalWeeklyDays = parseFloat(directWeeklyWorkDays) || 5;
+    weeklyHours = parseFloat(directWeeklyRegularHours) || 0;
+    regularWorkHoursForBasePay = Math.min(weeklyHours, 40);
+    weeklyOvertimeHours = parseFloat(directWeeklyOvertimeHours) || 0;
+    weeklyNightHoursVal = parseFloat(directWeeklyNightHours) || 0;
+    avgDailyHours = parseFloat(directAvgDailyHours) || 8;
+  } else {
+    weeklyHours = (p1D * p1H) + (p2D * p2H) + (p3D * p3H);
+    const p1RegularDaily = Math.min(p1H, 8);
+    const p2RegularDaily = Math.min(p2H, 8);
+    const p3RegularDaily = Math.min(p3H, 8);
+    const weeklyRegularHours = (p1D * p1RegularDaily) + (p2D * p2RegularDaily) + (p3D * p3RegularDaily);
+    regularWorkHoursForBasePay = Math.min(weeklyRegularHours, 40);
+    totalWeeklyDays = p1D + p2D + p3D;
+    avgDailyHours = totalWeeklyDays > 0 ? regularWorkHoursForBasePay / totalWeeklyDays : 8;
 
-  // 연차수당/휴일근로수당 1/12 분할 지급 시 사용할 평균 1일 소정근로시간
-  // (근무 패턴의 소정근로시간을 근무일수로 가중평균, 단시간근로자의 경우 8시간이 아닌 실제 근로시간 반영)
-  const totalWeeklyDays = p1D + p2D + p3D;
-  const avgDailyHours = totalWeeklyDays > 0 ? regularWorkHoursForBasePay / totalWeeklyDays : 8;
+    const p1DailyOvertime = Math.max(p1H - 8, 0) * p1D;
+    const p2DailyOvertime = Math.max(p2H - 8, 0) * p2D;
+    const p3DailyOvertime = Math.max(p3H - 8, 0) * p3D;
+    const dailyOvertime = p1DailyOvertime + p2DailyOvertime + p3DailyOvertime;
 
-  // 연장근로시간 계산 (1일 8시간 초과분 합산)
-  const p1DailyOvertime = Math.max(p1H - 8, 0) * p1D;
-  const p2DailyOvertime = Math.max(p2H - 8, 0) * p2D;
-  const p3DailyOvertime = Math.max(p3H - 8, 0) * p3D;
-  const dailyOvertime = p1DailyOvertime + p2DailyOvertime + p3DailyOvertime;
-
-  // 주 40시간 초과분
-  const weeklyOvertimeLimit = Math.max(weeklyRegularHours - 40, 0);
-  const weeklyOvertimeHours = dailyOvertime + weeklyOvertimeLimit + extraWeeklyOvertime;
+    const weeklyOvertimeLimit = Math.max(weeklyRegularHours - 40, 0);
+    weeklyOvertimeHours = dailyOvertime + weeklyOvertimeLimit + parseFloat(extraWeeklyOvertime);
+    weeklyNightHoursVal = wNightHours;
+  }
 
   // 주휴수당·연차유급휴가 기준: 4주 평균 1주 소정근로시간 15시간 이상 근무 (근로기준법 제18조 3항 - 미만이면 제55조·제60조 적용 제외)
   const hasWeeklyHoliday = weeklyHours >= 15;
@@ -244,23 +329,23 @@ export const calculateSalaryBreakdown = ({
     basePay = roundDownToTen(hourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
     weeklyHolidayPay = roundDownToTen(hourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
     overtimePay = roundDownToTen(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
-    nightPay = roundDownToTen(hourlyWage * wNightHours * nightMultiplier * AVG_WEEKS_PER_MONTH);
+    nightPay = roundDownToTen(hourlyWage * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
     totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
   } else if (salaryType === '일급') {
-    const averageDailyHours = (p1D + p2D + p3D) > 0 ? weeklyHours / (p1D + p2D + p3D) : 8;
+    const averageDailyHours = scheduleType === '직접입력' ? avgDailyHours : (totalWeeklyDays > 0 ? weeklyHours / totalWeeklyDays : 8);
     hourlyWage = averageDailyHours > 0 ? amt / averageDailyHours : 0;
     basePay = roundDownToTen(hourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
     weeklyHolidayPay = roundDownToTen(hourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
     overtimePay = roundDownToTen(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
-    nightPay = roundDownToTen(hourlyWage * wNightHours * nightMultiplier * AVG_WEEKS_PER_MONTH);
+    nightPay = roundDownToTen(hourlyWage * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
     totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
   } else if (salaryType === '주급') {
-    const divisor = regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (wNightHours * nightMultiplier);
+    const divisor = regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (weeklyNightHoursVal * nightMultiplier);
     hourlyWage = divisor > 0 ? amt / divisor : 0;
     basePay = roundDownToTen(hourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
     weeklyHolidayPay = roundDownToTen(hourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
     overtimePay = roundDownToTen(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
-    nightPay = roundDownToTen(hourlyWage * wNightHours * nightMultiplier * AVG_WEEKS_PER_MONTH);
+    nightPay = roundDownToTen(hourlyWage * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
     totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
   } else { // 월급
     const weeklyBaseAndHoliday = regularWorkHoursForBasePay + weeklyHolidayHours;
@@ -270,17 +355,17 @@ export const calculateSalaryBreakdown = ({
     basePay = roundDownToTen(hourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
     weeklyHolidayPay = roundDownToTen(hourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
     overtimePay = roundDownToTen(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
-    nightPay = roundDownToTen(hourlyWage * wNightHours * nightMultiplier * AVG_WEEKS_PER_MONTH);
+    nightPay = roundDownToTen(hourlyWage * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
 
     if (is5Over && allowanceIncluded === '기본급 외 수당 모두 포함 (포괄임금)') {
-      const totalMultiplierDivisor = (regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (wNightHours * nightMultiplier)) * AVG_WEEKS_PER_MONTH;
+      const totalMultiplierDivisor = (regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (weeklyNightHoursVal * nightMultiplier)) * AVG_WEEKS_PER_MONTH;
       if (totalMultiplierDivisor > 0) {
         const actualHourly = amt / totalMultiplierDivisor;
         hourlyWage = actualHourly;
         basePay = roundDownToTen(actualHourly * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
         weeklyHolidayPay = roundDownToTen(actualHourly * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
         overtimePay = roundDownToTen(actualHourly * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
-        nightPay = roundDownToTen(actualHourly * wNightHours * nightMultiplier * AVG_WEEKS_PER_MONTH);
+        nightPay = roundDownToTen(actualHourly * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
       }
       totalPay = amt;
     } else {
@@ -300,8 +385,18 @@ export const calculateSalaryBreakdown = ({
     totalPay += allowancesTotal;
   }
 
+  const daysVal = parseFloat(workingDaysCount) || (totalWeeklyDays * AVG_WEEKS_PER_MONTH) || 20;
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (basePay + weeklyHolidayPay);
-  const deductions = applyDeductions(totalPay, year, defaultPensionBasis, allowances.totalNonTaxable);
+  const deductions = applyDeductions(totalPay, year, defaultPensionBasis, allowances.totalNonTaxable, deductionType, daysVal);
+
+  const monthlyTotalPay = totalPay;
+  const monthlyNetPay = deductions.netPay;
+
+  const weeklyTotalPay = roundDownToTen(monthlyTotalPay / AVG_WEEKS_PER_MONTH);
+  const weeklyNetPay = roundDownToTen(monthlyNetPay / AVG_WEEKS_PER_MONTH);
+
+  const dailyTotalPay = roundDownToTen(monthlyTotalPay / daysVal);
+  const dailyNetPay = roundDownToTen(monthlyNetPay / daysVal);
 
   return {
     hourlyWage: roundDownToTen(hourlyWage),
@@ -321,6 +416,14 @@ export const calculateSalaryBreakdown = ({
     weeklyHours: Math.round(weeklyHours * 100) / 100,
     isEligibleForWeeklyBenefits: hasWeeklyHoliday, // 주 15시간 미만이면 주휴수당·연차유급휴가 모두 적용 제외
     ...deductions,
+    monthlyTotalPay,
+    monthlyNetPay,
+    weeklyTotalPay,
+    weeklyNetPay,
+    dailyTotalPay,
+    dailyNetPay,
+    deductionType,
+    workingDaysCount: daysVal,
     regularWorkHoursMonthly: Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10,
     weeklyHolidayHoursMonthly: Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 10) / 10,
     overtimeHoursMonthly: Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 10) / 10,
@@ -481,7 +584,15 @@ export const calculateYearlyEntryPay = ({
   childcareAllowance = 0,
   otherNonTaxable = 0,
   taxableAllowance = 0,
-  allowancesIncludedInTotal = false
+  allowancesIncludedInTotal = false,
+  scheduleType = '패턴별',
+  directWeeklyWorkDays = 5,
+  directWeeklyRegularHours = 40,
+  directWeeklyOvertimeHours = 0,
+  directWeeklyNightHours = 0,
+  directAvgDailyHours = 8,
+  deductionType = '4대보험',
+  workingDaysCount = 0
 }) => {
   const breakdown = calculateSalaryBreakdown({
     salaryType,
@@ -500,7 +611,15 @@ export const calculateYearlyEntryPay = ({
     childcareAllowance,
     otherNonTaxable,
     taxableAllowance,
-    allowancesIncludedInTotal
+    allowancesIncludedInTotal,
+    scheduleType,
+    directWeeklyWorkDays,
+    directWeeklyRegularHours,
+    directWeeklyOvertimeHours,
+    directWeeklyNightHours,
+    directAvgDailyHours,
+    deductionType,
+    workingDaysCount
   });
 
   const is5Over = companySize === '5인 이상';
@@ -524,10 +643,21 @@ export const calculateYearlyEntryPay = ({
 
   const grossTotal = breakdown.totalPay + leavePayMonthly + holidayWorkPay;
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (breakdown.basePay + breakdown.weeklyHolidayPay);
-  const deductions = applyDeductions(grossTotal, year, defaultPensionBasis, breakdown.totalNonTaxable);
+
+  const daysVal = parseFloat(workingDaysCount) || (breakdown.workingDaysCount) || 20;
+  const deductions = applyDeductions(grossTotal, year, defaultPensionBasis, breakdown.totalNonTaxable, deductionType, daysVal);
 
   const minWage = getMinWageForYear(year);
   const isMinWageCompliant = wage >= minWage;
+
+  const monthlyTotalPay = grossTotal;
+  const monthlyNetPay = deductions.netPay;
+
+  const weeklyTotalPay = roundDownToTen(monthlyTotalPay / AVG_WEEKS_PER_MONTH);
+  const weeklyNetPay = roundDownToTen(monthlyNetPay / AVG_WEEKS_PER_MONTH);
+
+  const dailyTotalPay = roundDownToTen(monthlyTotalPay / daysVal);
+  const dailyNetPay = roundDownToTen(monthlyNetPay / daysVal);
 
   return {
     year,
@@ -561,6 +691,14 @@ export const calculateYearlyEntryPay = ({
     leavePayHoursMonthly: Math.round(leavePayHoursMonthly * 100) / 100,
     holidayWorkHoursMonthly: Math.round(holidayWorkHoursMonthly * 100) / 100,
     weeklyHours: breakdown.weeklyHours,
-    isEligibleForWeeklyBenefits: breakdown.isEligibleForWeeklyBenefits
+    isEligibleForWeeklyBenefits: breakdown.isEligibleForWeeklyBenefits,
+    monthlyTotalPay,
+    monthlyNetPay,
+    weeklyTotalPay,
+    weeklyNetPay,
+    dailyTotalPay,
+    dailyNetPay,
+    deductionType,
+    workingDaysCount: daysVal
   };
 };

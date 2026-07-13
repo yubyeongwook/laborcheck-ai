@@ -5,7 +5,8 @@ import {
   AlertCircle, Coins, Calendar, FileSignature, Upload, X, FileImage, FileVideo, Utensils
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { calculateHoursAndNightHours, NON_TAXABLE_MONTHLY_CAP } from '../utils/laborCalc.js';
+import { calculateHoursAndNightHours, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, makeAutoBreakHandlers } from '../utils/laborCalc.js';
+import LaborInfoSync from '../components/LaborInfoSync.jsx';
 
 const LOADING_TIPS = [
   "근로기준법 제18조: 4주 동안 평균하여 1주 동안의 소정근로시간이 15시간 미만인 근로자에게는 주휴수당 규정이 적용되지 않습니다.",
@@ -31,6 +32,7 @@ function ReportGenerator({ userType }) {
   const [pattern3Hours, setPattern3Hours] = useState('0');
   const [weeklyNightHours, setWeeklyNightHours] = useState('0');
   const [breakTime, setBreakTime] = useState('60');
+  const [breakTimeAuto, setBreakTimeAuto] = useState(true);
   const [pensionBasis, setPensionBasis] = useState('');
   const [extraWeeklyOvertime, setExtraWeeklyOvertime] = useState('');
   const [holidayWorkDays, setHolidayWorkDays] = useState('');
@@ -40,6 +42,81 @@ function ReportGenerator({ userType }) {
   const [childcareAllowance, setChildcareAllowance] = useState('');
   const [otherNonTaxable, setOtherNonTaxable] = useState('');
   const [taxableAllowance, setTaxableAllowance] = useState('');
+  const [deductionType, setDeductionType] = useState('4대보험');
+
+  // 직접 입력형 상태
+  const [scheduleType, setScheduleType] = useState('패턴별');
+  const [activeDay, setActiveDay] = useState('mon');
+
+  // 요일별 스케줄 상태 (기본 월~금 9 to 6)
+  const [monActive, setMonActive] = useState(true);
+  const [monStart, setMonStart] = useState('09:00');
+  const [monEnd, setMonEnd] = useState('18:00');
+  const [monBreakH, setMonBreakH] = useState('1');
+  const [monBreakM, setMonBreakM] = useState('0');
+  const [monBreakAuto, setMonBreakAuto] = useState(true);
+  const [monNightBreakH, setMonNightBreakH] = useState('0');
+  const [monNightBreakM, setMonNightBreakM] = useState('0');
+
+  const [tueActive, setTueActive] = useState(true);
+  const [tueStart, setTueStart] = useState('09:00');
+  const [tueEnd, setTueEnd] = useState('18:00');
+  const [tueBreakH, setTueBreakH] = useState('1');
+  const [tueBreakM, setTueBreakM] = useState('0');
+  const [tueBreakAuto, setTueBreakAuto] = useState(true);
+  const [tueNightBreakH, setTueNightBreakH] = useState('0');
+  const [tueNightBreakM, setTueNightBreakM] = useState('0');
+
+  const [wedActive, setWedActive] = useState(true);
+  const [wedStart, setWedStart] = useState('09:00');
+  const [wedEnd, setWedEnd] = useState('18:00');
+  const [wedBreakH, setWedBreakH] = useState('1');
+  const [wedBreakM, setWedBreakM] = useState('0');
+  const [wedBreakAuto, setWedBreakAuto] = useState(true);
+  const [wedNightBreakH, setWedNightBreakH] = useState('0');
+  const [wedNightBreakM, setWedNightBreakM] = useState('0');
+
+  const [thuActive, setThuActive] = useState(true);
+  const [thuStart, setThuStart] = useState('09:00');
+  const [thuEnd, setThuEnd] = useState('18:00');
+  const [thuBreakH, setThuBreakH] = useState('1');
+  const [thuBreakM, setThuBreakM] = useState('0');
+  const [thuBreakAuto, setThuBreakAuto] = useState(true);
+  const [thuNightBreakH, setThuNightBreakH] = useState('0');
+  const [thuNightBreakM, setThuNightBreakM] = useState('0');
+
+  const [friActive, setFriActive] = useState(true);
+  const [friStart, setFriStart] = useState('09:00');
+  const [friEnd, setFriEnd] = useState('18:00');
+  const [friBreakH, setFriBreakH] = useState('1');
+  const [friBreakM, setFriBreakM] = useState('0');
+  const [friBreakAuto, setFriBreakAuto] = useState(true);
+  const [friNightBreakH, setFriNightBreakH] = useState('0');
+  const [friNightBreakM, setFriNightBreakM] = useState('0');
+
+  const [satActive, setSatActive] = useState(false);
+  const [satStart, setSatStart] = useState('09:00');
+  const [satEnd, setSatEnd] = useState('18:00');
+  const [satBreakH, setSatBreakH] = useState('1');
+  const [satBreakM, setSatBreakM] = useState('0');
+  const [satBreakAuto, setSatBreakAuto] = useState(true);
+  const [satNightBreakH, setSatNightBreakH] = useState('0');
+  const [satNightBreakM, setSatNightBreakM] = useState('0');
+
+  const [sunActive, setSunActive] = useState(false);
+  const [sunStart, setSunStart] = useState('09:00');
+  const [sunEnd, setSunEnd] = useState('18:00');
+  const [sunBreakH, setSunBreakH] = useState('1');
+  const [sunBreakM, setSunBreakM] = useState('0');
+  const [sunBreakAuto, setSunBreakAuto] = useState(true);
+  const [sunNightBreakH, setSunNightBreakH] = useState('0');
+  const [sunNightBreakM, setSunNightBreakM] = useState('0');
+
+  const [directWeeklyWorkDays, setDirectWeeklyWorkDays] = useState('5');
+  const [directWeeklyRegularHours, setDirectWeeklyRegularHours] = useState('40');
+  const [directWeeklyOvertimeHours, setDirectWeeklyOvertimeHours] = useState('0');
+  const [directWeeklyNightHours, setDirectWeeklyNightHours] = useState('0');
+  const [directAvgDailyHours, setDirectAvgDailyHours] = useState('8');
 
   const [pattern1Start, setPattern1Start] = useState('09:00');
   const [pattern1End, setPattern1End] = useState('18:00');
@@ -47,6 +124,145 @@ function ReportGenerator({ userType }) {
   const [pattern2End, setPattern2End] = useState('18:00');
   const [pattern3Start, setPattern3Start] = useState('09:00');
   const [pattern3End, setPattern3End] = useState('18:00');
+
+  const handleLoadInfo = (loaded) => {
+    if (loaded.companySize) setCompanySize(loaded.companySize);
+    if (loaded.salaryType) setSalaryType(loaded.salaryType);
+    if (loaded.salaryAmount) setSalaryAmount(loaded.salaryAmount);
+    if (loaded.allowanceIncluded) setAllowanceIncluded(loaded.allowanceIncluded);
+    if (loaded.pattern1Days) setPattern1Days(loaded.pattern1Days);
+    if (loaded.pattern1Start) setPattern1Start(loaded.pattern1Start);
+    if (loaded.pattern1End) setPattern1End(loaded.pattern1End);
+    
+    const loadedBreakMin = (parseFloat(loaded.pattern1BreakH) || 0) * 60 + (parseFloat(loaded.pattern1BreakM) || 0);
+    if (loadedBreakMin > 0) setBreakTime(String(loadedBreakMin));
+
+    if (loaded.pensionBasis) setPensionBasis(loaded.pensionBasis);
+    if (loaded.extraWeeklyOvertime) setExtraWeeklyOvertime(loaded.extraWeeklyOvertime);
+    if (loaded.holidayWorkDays) setHolidayWorkDays(loaded.holidayWorkDays);
+    if (loaded.annualLeaveDays) setAnnualLeaveDays(loaded.annualLeaveDays);
+    
+    if (loaded.mealAllowance) setMealAllowance(loaded.mealAllowance);
+    if (loaded.carAllowance) setCarAllowance(loaded.carAllowance);
+    if (loaded.childcareAllowance) setChildcareAllowance(loaded.childcareAllowance);
+    if (loaded.otherNonTaxable) setOtherNonTaxable(loaded.otherNonTaxable);
+    if (loaded.taxableAllowance) setTaxableAllowance(loaded.taxableAllowance);
+    
+    if (loaded.pattern2Days !== undefined) setPattern2Days(loaded.pattern2Days);
+    if (loaded.pattern2Start) setPattern2Start(loaded.pattern2Start);
+    if (loaded.pattern2End) setPattern2End(loaded.pattern2End);
+    
+    if (loaded.pattern3Days !== undefined) setPattern3Days(loaded.pattern3Days);
+    if (loaded.pattern3Start) setPattern3Start(loaded.pattern3Start);
+    if (loaded.pattern3End) setPattern3End(loaded.pattern3End);
+
+    // 요일별 스케줄 로드
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    const setters = {
+      mon: { active: setMonActive, start: setMonStart, end: setMonEnd, breakH: setMonBreakH, breakM: setMonBreakM, nightBreakH: setMonNightBreakH, nightBreakM: setMonNightBreakM },
+      tue: { active: setTueActive, start: setTueStart, end: setTueEnd, breakH: setTueBreakH, breakM: setTueBreakM, nightBreakH: setTueNightBreakH, nightBreakM: setTueNightBreakM },
+      wed: { active: setWedActive, start: setWedStart, end: setWedEnd, breakH: setWedBreakH, breakM: setWedBreakM, nightBreakH: setWedNightBreakH, nightBreakM: setWedNightBreakM },
+      thu: { active: setThuActive, start: setThuStart, end: setThuEnd, breakH: setThuBreakH, breakM: setThuBreakM, nightBreakH: setThuNightBreakH, nightBreakM: setThuNightBreakM },
+      fri: { active: setFriActive, start: setFriStart, end: setFriEnd, breakH: setFriBreakH, breakM: setFriBreakM, nightBreakH: setFriNightBreakH, nightBreakM: setFriNightBreakM },
+      sat: { active: setSatActive, start: setSatStart, end: setSatEnd, breakH: setSatBreakH, breakM: setSatBreakM, nightBreakH: setSatNightBreakH, nightBreakM: setSatNightBreakM },
+      sun: { active: setSunActive, start: setSunStart, end: setSunEnd, breakH: setSunBreakH, breakM: setSunBreakM, nightBreakH: setSunNightBreakH, nightBreakM: setSunNightBreakM }
+    };
+    days.forEach(d => {
+      if (loaded[`${d}Active`] !== undefined) setters[d].active(loaded[`${d}Active`] === true || loaded[`${d}Active`] === 'true');
+      if (loaded[`${d}Start`]) setters[d].start(loaded[`${d}Start`]);
+      if (loaded[`${d}End`]) setters[d].end(loaded[`${d}End`]);
+      if (loaded[`${d}BreakH`]) setters[d].breakH(loaded[`${d}BreakH`]);
+      if (loaded[`${d}BreakM`]) setters[d].breakM(loaded[`${d}BreakM`]);
+      if (loaded[`${d}NightBreakH`]) setters[d].nightBreakH(loaded[`${d}NightBreakH`]);
+      if (loaded[`${d}NightBreakM`]) setters[d].nightBreakM(loaded[`${d}NightBreakM`]);
+    });
+
+    if (loaded.scheduleType) setScheduleType(loaded.scheduleType);
+    if (loaded.directWeeklyWorkDays) setDirectWeeklyWorkDays(loaded.directWeeklyWorkDays);
+    if (loaded.directWeeklyRegularHours) setDirectWeeklyRegularHours(loaded.directWeeklyRegularHours);
+    if (loaded.directWeeklyOvertimeHours) setDirectWeeklyOvertimeHours(loaded.directWeeklyOvertimeHours);
+    if (loaded.directWeeklyNightHours) setDirectWeeklyNightHours(loaded.directWeeklyNightHours);
+    if (loaded.directAvgDailyHours) setDirectAvgDailyHours(loaded.directAvgDailyHours);
+    if (loaded.deductionType) setDeductionType(loaded.deductionType);
+  };
+
+  const currentInfo = {
+    companySize,
+    salaryType,
+    salaryAmount,
+    allowanceIncluded,
+    pattern1Days,
+    pattern1Start,
+    pattern1End,
+    pattern1BreakH: String(Math.floor(parseFloat(breakTime) / 60) || 0),
+    pattern1BreakM: String(parseFloat(breakTime) % 60 || 0),
+    pattern2Days,
+    pattern2Start,
+    pattern2End,
+    pattern2BreakH: String(Math.floor(parseFloat(breakTime) / 60) || 0),
+    pattern2BreakM: String(parseFloat(breakTime) % 60 || 0),
+    pattern3Days,
+    pattern3Start,
+    pattern3End,
+    pattern3BreakH: String(Math.floor(parseFloat(breakTime) / 60) || 0),
+    pattern3BreakM: String(parseFloat(breakTime) % 60 || 0),
+    
+    // 요일별 설정 포함
+    monActive, monStart, monEnd, monBreakH, monBreakM, monNightBreakH, monNightBreakM,
+    tueActive, tueStart, tueEnd, tueBreakH, tueBreakM, tueNightBreakH, tueNightBreakM,
+    wedActive, wedStart, wedEnd, wedBreakH, wedBreakM, wedNightBreakH, wedNightBreakM,
+    thuActive, thuStart, thuEnd, thuBreakH, thuBreakM, thuNightBreakH, thuNightBreakM,
+    friActive, friStart, friEnd, friBreakH, friBreakM, friNightBreakH, friNightBreakM,
+    satActive, satStart, satEnd, satBreakH, satBreakM, satNightBreakH, satNightBreakM,
+    sunActive, sunStart, sunEnd, sunBreakH, sunBreakM, sunNightBreakH, sunNightBreakM,
+ 
+    pensionBasis,
+    extraWeeklyOvertime,
+    holidayWorkDays,
+    annualLeaveDays,
+    mealAllowance,
+    carAllowance,
+    childcareAllowance,
+    otherNonTaxable,
+    taxableAllowance,
+    scheduleType,
+    directWeeklyWorkDays,
+    directWeeklyRegularHours,
+    directWeeklyOvertimeHours,
+    directWeeklyNightHours,
+    directAvgDailyHours,
+    deductionType
+  };
+
+  const isDirect = scheduleType === '직접입력';
+  const isWeekly = scheduleType === '요일별';
+
+  // 요일별 스케줄 정보 집계용 매핑 객체 (각 요일의 실제 휴게시간 입력값을 사용)
+  const daysState = {
+    mon: { active: monActive, start: monStart, end: monEnd, breakMinutes: (parseFloat(monBreakH) || 0) * 60 + (parseFloat(monBreakM) || 0) },
+    tue: { active: tueActive, start: tueStart, end: tueEnd, breakMinutes: (parseFloat(tueBreakH) || 0) * 60 + (parseFloat(tueBreakM) || 0) },
+    wed: { active: wedActive, start: wedStart, end: wedEnd, breakMinutes: (parseFloat(wedBreakH) || 0) * 60 + (parseFloat(wedBreakM) || 0) },
+    thu: { active: thuActive, start: thuStart, end: thuEnd, breakMinutes: (parseFloat(thuBreakH) || 0) * 60 + (parseFloat(thuBreakM) || 0) },
+    fri: { active: friActive, start: friStart, end: friEnd, breakMinutes: (parseFloat(friBreakH) || 0) * 60 + (parseFloat(friBreakM) || 0) },
+    sat: { active: satActive, start: satStart, end: satEnd, breakMinutes: (parseFloat(satBreakH) || 0) * 60 + (parseFloat(satBreakM) || 0) },
+    sun: { active: sunActive, start: sunStart, end: sunEnd, breakMinutes: (parseFloat(sunBreakH) || 0) * 60 + (parseFloat(sunBreakM) || 0) }
+  };
+
+  let weeklyHoursFromDays = 0;
+  let weeklyNightHoursFromDays = 0;
+  let totalWeeklyDaysFromDays = 0;
+
+  if (isWeekly) {
+    Object.keys(daysState).forEach(day => {
+      const d = daysState[day];
+      if (d.active === true || d.active === 'true') {
+        const calc = calculateHoursAndNightHours(d.start, d.end, d.breakMinutes);
+        weeklyHoursFromDays += calc.workHours;
+        weeklyNightHoursFromDays += calc.nightHours;
+        totalWeeklyDaysFromDays += 1;
+      }
+    });
+  }
 
   useEffect(() => {
     const p1 = calculateHoursAndNightHours(pattern1Start, pattern1End, breakTime);
@@ -57,12 +273,40 @@ function ReportGenerator({ userType }) {
     setPattern2Hours(p2.workHours.toString());
     setPattern3Hours(p3.workHours.toString());
 
-    const p1DaysNum = parseFloat(pattern1Days) || 0;
-    const p2DaysNum = parseFloat(pattern2Days) || 0;
-    const p3DaysNum = parseFloat(pattern3Days) || 0;
-    const totalWeeklyNight = (p1.nightHours * p1DaysNum) + (p2.nightHours * p2DaysNum) + (p3.nightHours * p3DaysNum);
-    setWeeklyNightHours((Math.round(totalWeeklyNight * 100) / 100).toString());
-  }, [pattern1Start, pattern1End, pattern2Start, pattern2End, pattern3Start, pattern3End, breakTime, pattern1Days, pattern2Days, pattern3Days]);
+    if (scheduleType === '요일별') {
+      let totalWeeklyNight = 0;
+      Object.keys(daysState).forEach(d => {
+        const active = daysState[d].active === true || daysState[d].active === 'true';
+        if (active) {
+          const calc = calculateHoursAndNightHours(daysState[d].start, daysState[d].end, daysState[d].breakMinutes);
+          totalWeeklyNight += calc.nightHours;
+        }
+      });
+      setWeeklyNightHours((Math.round(totalWeeklyNight * 100) / 100).toString());
+    } else {
+      const p1DaysNum = parseFloat(pattern1Days) || 0;
+      const p2DaysNum = parseFloat(pattern2Days) || 0;
+      const p3DaysNum = parseFloat(pattern3Days) || 0;
+      const totalWeeklyNight = (p1.nightHours * p1DaysNum) + (p2.nightHours * p2DaysNum) + (p3.nightHours * p3DaysNum);
+      setWeeklyNightHours((Math.round(totalWeeklyNight * 100) / 100).toString());
+    }
+  }, [
+    pattern1Start, pattern1End, pattern2Start, pattern2End, pattern3Start, pattern3End, breakTime, pattern1Days, pattern2Days, pattern3Days,
+    scheduleType, monActive, monStart, monEnd, monBreakH, monBreakM, tueActive, tueStart, tueEnd, tueBreakH, tueBreakM, wedActive, wedStart, wedEnd, wedBreakH, wedBreakM, thuActive, thuStart, thuEnd, thuBreakH, thuBreakM, friActive, friStart, friEnd, friBreakH, friBreakM, satActive, satStart, satEnd, satBreakH, satBreakM, sunActive, sunStart, sunEnd, sunBreakH, sunBreakM
+  ]);
+
+  // 패턴1 출퇴근 시간 변경 시, 사용자가 휴게시간을 직접 수정한 적이 없다면(Auto 플래그) 공용 휴게시간(분)을 자동 재계산
+  const pattern1BreakTimeHandlers = {
+    onStartChange: (value) => {
+      setPattern1Start(value);
+      if (breakTimeAuto) setBreakTime(String(getStatutoryBreakMinutes(calculateElapsedHours(value, pattern1End))));
+    },
+    onEndChange: (value) => {
+      setPattern1End(value);
+      if (breakTimeAuto) setBreakTime(String(getStatutoryBreakMinutes(calculateElapsedHours(pattern1Start, value))));
+    },
+    onBreakTimeChange: (value) => { setBreakTime(value); setBreakTimeAuto(false); }
+  };
 
   const p1Days = parseFloat(pattern1Days) || 0;
   const p1Hours = parseFloat(pattern1Hours) || 0;
@@ -70,8 +314,18 @@ function ReportGenerator({ userType }) {
   const p2Hours = parseFloat(pattern2Hours) || 0;
   const p3Days = parseFloat(pattern3Days) || 0;
   const p3Hours = parseFloat(pattern3Hours) || 0;
-  const weeklyDays = p1Days + p2Days + p3Days;
-  const dailyHours = weeklyDays > 0 ? ((p1Days * p1Hours) + (p2Days * p2Hours) + (p3Days * p3Hours)) / weeklyDays : 0;
+
+  const weeklyDays = isDirect 
+    ? (parseFloat(directWeeklyWorkDays) || 5) 
+    : isWeekly 
+      ? totalWeeklyDaysFromDays 
+      : (p1Days + p2Days + p3Days);
+
+  const dailyHours = isDirect 
+    ? (parseFloat(directAvgDailyHours) || 8) 
+    : isWeekly 
+      ? (totalWeeklyDaysFromDays > 0 ? weeklyHoursFromDays / totalWeeklyDaysFromDays : 0) 
+      : (weeklyDays > 0 ? ((p1Days * p1Hours) + (p2Days * p2Hours) + (p3Days * p3Hours)) / weeklyDays : 0);
 
   const [fileBase64, setFileBase64] = useState('');
   const [fileMime, setFileMime] = useState('');
@@ -172,7 +426,23 @@ function ReportGenerator({ userType }) {
       work_hours: workHours,
       issue_text: issueText,
       file_data: fileBase64,
-      file_mime: fileMime
+      file_mime: fileMime,
+      schedule_type: scheduleType,
+      direct_weekly_work_days: Number(directWeeklyWorkDays),
+      direct_weekly_regular_hours: Number(directWeeklyRegularHours),
+      direct_weekly_overtime_hours: Number(directWeeklyOvertimeHours),
+      direct_weekly_night_hours: Number(directWeeklyNightHours),
+      direct_avg_daily_hours: Number(directAvgDailyHours),
+      deduction_type: deductionType,
+      
+      // 요일별 상세 데이터
+      mon_active: monActive, mon_start: monStart, mon_end: monEnd, mon_break_h: Number(monBreakH), mon_break_m: Number(monBreakM), mon_night_break_h: Number(monNightBreakH), mon_night_break_m: Number(monNightBreakM),
+      tue_active: tueActive, tue_start: tueStart, tue_end: tueEnd, tue_break_h: Number(tueBreakH), tue_break_m: Number(tueBreakM), tue_night_break_h: Number(tueNightBreakH), tue_night_break_m: Number(tueNightBreakM),
+      wed_active: wedActive, wed_start: wedStart, wed_end: wedEnd, wed_break_h: Number(wedBreakH), wed_break_m: Number(wedBreakM), wed_night_break_h: Number(wedNightBreakH), wed_night_break_m: Number(wedNightBreakM),
+      thu_active: thuActive, thu_start: thuStart, thu_end: thuEnd, thu_break_h: Number(thuBreakH), thu_break_m: Number(thuBreakM), thu_night_break_h: Number(thuNightBreakH), thu_night_break_m: Number(thuNightBreakM),
+      fri_active: friActive, fri_start: friStart, fri_end: friEnd, fri_break_h: Number(friBreakH), fri_break_m: Number(friBreakM), fri_night_break_h: Number(friNightBreakH), fri_night_break_m: Number(friNightBreakM),
+      sat_active: satActive, sat_start: satStart, sat_end: satEnd, sat_break_h: Number(satBreakH), sat_break_m: Number(satBreakM), sat_night_break_h: Number(satNightBreakH), sat_night_break_m: Number(satNightBreakM),
+      sun_active: sunActive, sun_start: sunStart, sun_end: sunEnd, sun_break_h: Number(sunBreakH), sun_break_m: Number(sunBreakM), sun_night_break_h: Number(sunNightBreakH), sun_night_break_m: Number(sunNightBreakM)
     };
 
     const headers = { 'Content-Type': 'application/json' };
@@ -250,6 +520,21 @@ function ReportGenerator({ userType }) {
     );
   }
 
+  function HourMinuteInput({ hourValue, onHourChange, minuteValue, onMinuteChange }) {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+        <div>
+          <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>시간</span>
+          <input type="number" className="text-input" value={hourValue} onChange={(e) => onHourChange(e.target.value)} min="0" />
+        </div>
+        <div>
+          <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>분</span>
+          <input type="number" className="text-input" value={minuteValue} onChange={(e) => onMinuteChange(e.target.value)} min="0" max="59" />
+        </div>
+      </div>
+    );
+  }
+
   const renderPattern = (label, days, setDays, start, setStart, end, setEnd, hours) => (
     <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
       <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>{label}</span>
@@ -273,6 +558,141 @@ function ReportGenerator({ userType }) {
     </div>
   );
 
+  const DAY_LABELS = {
+    mon: '월',
+    tue: '화',
+    wed: '수',
+    thu: '목',
+    fri: '금',
+    sat: '토',
+    sun: '일'
+  };
+
+  function DayOfWeekEditor({
+    activeDay, setActiveDay,
+    monActive, setMonActive, monStart, setMonStart, monEnd, setMonEnd, monBreakH, setMonBreakH, monBreakM, setMonBreakM, monBreakAuto, setMonBreakAuto, monNightBreakH, setMonNightBreakH, monNightBreakM, setMonNightBreakM,
+    tueActive, setTueActive, tueStart, setTueStart, tueEnd, setTueEnd, tueBreakH, setTueBreakH, tueBreakM, setTueBreakM, tueBreakAuto, setTueBreakAuto, tueNightBreakH, setTueNightBreakH, tueNightBreakM, setTueNightBreakM,
+    wedActive, setWedActive, wedStart, setWedStart, wedEnd, setWedEnd, wedBreakH, setWedBreakH, wedBreakM, setWedBreakM, wedBreakAuto, setWedBreakAuto, wedNightBreakH, setWedNightBreakH, wedNightBreakM, setWedNightBreakM,
+    thuActive, setThuActive, thuStart, setThuStart, thuEnd, setThuEnd, thuBreakH, setThuBreakH, thuBreakM, setThuBreakM, thuBreakAuto, setThuBreakAuto, thuNightBreakH, setThuNightBreakH, thuNightBreakM, setThuNightBreakM,
+    friActive, setFriActive, friStart, setFriStart, friEnd, setFriEnd, friBreakH, setFriBreakH, friBreakM, setFriBreakM, friBreakAuto, setFriBreakAuto, friNightBreakH, setFriNightBreakH, friNightBreakM, setFriNightBreakM,
+    satActive, setSatActive, satStart, setSatStart, satEnd, setSatEnd, satBreakH, setSatBreakH, satBreakM, setSatBreakM, satBreakAuto, setSatBreakAuto, satNightBreakH, setSatNightBreakH, satNightBreakM, setSatNightBreakM,
+    sunActive, setSunActive, sunStart, setSunStart, sunEnd, setSunEnd, sunBreakH, setSunBreakH, sunBreakM, setSunBreakM, sunBreakAuto, setSunBreakAuto, sunNightBreakH, setSunNightBreakH, sunNightBreakM, setSunNightBreakM
+  }) {
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+    const daysMap = {
+      mon: { active: monActive, setActive: setMonActive, start: monStart, setStart: setMonStart, end: monEnd, setEnd: setMonEnd, breakH: monBreakH, setBreakH: setMonBreakH, breakM: monBreakM, setBreakM: setMonBreakM, breakAuto: monBreakAuto, setBreakAuto: setMonBreakAuto, nightBreakH: monNightBreakH, setNightBreakH: setMonNightBreakH, nightBreakM: monNightBreakM, setNightBreakM: setMonNightBreakM },
+      tue: { active: tueActive, setActive: setTueActive, start: tueStart, setStart: setTueStart, end: tueEnd, setEnd: setTueEnd, breakH: tueBreakH, setBreakH: setTueBreakH, breakM: tueBreakM, setBreakM: setTueBreakM, breakAuto: tueBreakAuto, setBreakAuto: setTueBreakAuto, nightBreakH: tueNightBreakH, setNightBreakH: setTueNightBreakH, nightBreakM: tueNightBreakM, setNightBreakM: setTueNightBreakM },
+      wed: { active: wedActive, setActive: setWedActive, start: wedStart, setStart: setWedStart, end: wedEnd, setEnd: setWedEnd, breakH: wedBreakH, setBreakH: setWedBreakH, breakM: wedBreakM, setBreakM: setWedBreakM, breakAuto: wedBreakAuto, setBreakAuto: setWedBreakAuto, nightBreakH: wedNightBreakH, setNightBreakH: setWedNightBreakH, nightBreakM: wedNightBreakM, setNightBreakM: setWedNightBreakM },
+      thu: { active: thuActive, setActive: setThuActive, start: thuStart, setStart: setThuStart, end: thuEnd, setEnd: setThuEnd, breakH: thuBreakH, setBreakH: setThuBreakH, breakM: thuBreakM, setBreakM: setThuBreakM, breakAuto: thuBreakAuto, setBreakAuto: setThuBreakAuto, nightBreakH: thuNightBreakH, setNightBreakH: setThuNightBreakH, nightBreakM: thuNightBreakM, setNightBreakM: setThuNightBreakM },
+      fri: { active: friActive, setActive: setFriActive, start: friStart, setStart: setFriStart, end: friEnd, setEnd: setFriEnd, breakH: friBreakH, setBreakH: setFriBreakH, breakM: friBreakM, setBreakM: setFriBreakM, breakAuto: friBreakAuto, setBreakAuto: setFriBreakAuto, nightBreakH: friNightBreakH, setNightBreakH: setFriNightBreakH, nightBreakM: friNightBreakM, setNightBreakM: setFriNightBreakM },
+      sat: { active: satActive, setActive: setSatActive, start: satStart, setStart: setSatStart, end: satEnd, setEnd: setSatEnd, breakH: satBreakH, setBreakH: setSatBreakH, breakM: satBreakM, setBreakM: setSatBreakM, breakAuto: satBreakAuto, setBreakAuto: setSatBreakAuto, nightBreakH: satNightBreakH, setNightBreakH: setSatNightBreakH, nightBreakM: satNightBreakM, setNightBreakM: setSatNightBreakM },
+      sun: { active: sunActive, setActive: setSunActive, start: sunStart, setStart: setSunStart, end: sunEnd, setEnd: setSunEnd, breakH: sunBreakH, setBreakH: setSunBreakH, breakM: sunBreakM, setBreakM: setSunBreakM, breakAuto: sunBreakAuto, setBreakAuto: setSunBreakAuto, nightBreakH: sunNightBreakH, setNightBreakH: setSunNightBreakH, nightBreakM: sunNightBreakM, setNightBreakM: setSunNightBreakM }
+    };
+
+    const current = daysMap[activeDay];
+    const currentBreakHandlers = makeAutoBreakHandlers({
+      startVal: current.start, endVal: current.end,
+      setStart: current.setStart, setEnd: current.setEnd,
+      setBreakH: current.setBreakH, setBreakM: current.setBreakM,
+      breakAuto: current.breakAuto, setBreakAuto: current.setBreakAuto
+    });
+
+    return (
+      <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+        <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>요일별 상세 근무 설정</span>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.25rem', marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.4rem', borderRadius: '8px' }}>
+          {days.map(d => {
+            const active = daysMap[d].active;
+            const isSelected = activeDay === d;
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setActiveDay(d)}
+                style={{
+                  flex: 1,
+                  padding: '0.5rem 0',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: isSelected ? '#38bdf8' : active ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+                  color: isSelected ? '#0f172a' : active ? '#38bdf8' : '#64748b',
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  position: 'relative'
+                }}
+              >
+                {DAY_LABELS[d]}
+                {active && !isSelected && (
+                  <span style={{ position: 'absolute', top: '2px', right: '2px', width: '4px', height: '4px', borderRadius: '50%', background: '#38bdf8' }}></span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 'bold' }}>{DAY_LABELS[activeDay]}요일 근무 세부설정</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: '#38bdf8', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={current.active}
+                onChange={(e) => current.setActive(e.target.checked)}
+                style={{ accentColor: '#38bdf8' }}
+              />
+              {DAY_LABELS[activeDay]}요일 근무함
+            </label>
+          </div>
+
+          {current.active ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>출근 시간</span>
+                  <TimeSelectInput value={current.start} onChange={currentBreakHandlers.onStartChange} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>퇴근 시간</span>
+                  <TimeSelectInput value={current.end} onChange={currentBreakHandlers.onEndChange} />
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 요일의 총 휴게시간</span>
+                <HourMinuteInput
+                  hourValue={current.breakH}
+                  onHourChange={currentBreakHandlers.onBreakHChange}
+                  minuteValue={current.breakM}
+                  onMinuteChange={currentBreakHandlers.onBreakMChange}
+                />
+              </div>
+
+              <div style={{ background: 'rgba(165, 180, 252, 0.04)', padding: '0.6rem', borderRadius: '6px', border: '1px dashed rgba(165, 180, 252, 0.15)' }}>
+                <span style={{ fontSize: '0.7rem', color: '#a5b4fc', display: 'block', marginBottom: '0.25rem' }}>
+                  야간시간대(22:00~06:00) 중 사용한 휴게시간
+                </span>
+                <HourMinuteInput
+                  hourValue={current.nightBreakH}
+                  onHourChange={current.setNightBreakH}
+                  minuteValue={current.nightBreakM}
+                  onMinuteChange={current.setNightBreakM}
+                />
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '1.5rem 0', color: '#64748b', fontSize: '0.75rem' }}>
+              {DAY_LABELS[activeDay]}요일은 근무를 하지 않는 날(휴일)입니다.
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
       <div className="tool-page-header">
@@ -286,7 +706,10 @@ function ReportGenerator({ userType }) {
         </p>
       </div>
 
+      <LaborInfoSync onLoad={handleLoadInfo} currentInfo={currentInfo} />
+
       <main className="main-container">
+
         <section className="glass-panel">
           <form onSubmit={handleGenerateReport}>
             <div className="form-group">
@@ -316,6 +739,15 @@ function ReportGenerator({ userType }) {
               </div>
             </div>
 
+            <div className="form-group" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <label className="form-label"><Coins size={16} color="#34d399" /> 공제 구분 (세금/보험)</label>
+              <select className="text-input" value={deductionType} onChange={(e) => setDeductionType(e.target.value)} style={{ padding: '0.85rem 0.5rem' }}>
+                <option value="4대보험">4대보험 적용 (국민/건강/장기요양/고용보험 + 근소세)</option>
+                <option value="3.3%">3.3% 프리랜서 원천징수 (사업소득세)</option>
+                <option value="일용직">일용직 적용 (고용보험 0.9% + 소액부징수법 반영 소득세)</option>
+              </select>
+            </div>
+
             {companySize === '5인 이상' && (
               <div className="form-group" style={{ background: 'rgba(99, 102, 241, 0.06)', padding: '1.25rem', borderRadius: '16px', border: '1px dashed rgba(99, 102, 241, 0.3)' }}>
                 <label className="form-label" style={{ color: '#a5b4fc', fontWeight: 'bold' }}><FileSignature size={16} /> 근로계약서 수당 포함 여부</label>
@@ -330,43 +762,176 @@ function ReportGenerator({ userType }) {
             )}
 
             <div className="form-group" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-              <label className="form-label"><Clock size={16} color="#38bdf8" /> 상세 근로 및 휴게 시간</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                {renderPattern('근무 패턴 1', pattern1Days, setPattern1Days, pattern1Start, setPattern1Start, pattern1End, setPattern1End, pattern1Hours)}
-                {renderPattern('근무 패턴 2 (선택)', pattern2Days, setPattern2Days, pattern2Start, setPattern2Start, pattern2End, setPattern2End, pattern2Hours)}
-                {renderPattern('근무 패턴 3 (선택)', pattern3Days, setPattern3Days, pattern3Start, setPattern3Start, pattern3End, setPattern3End, pattern3Hours)}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>하루 평균 휴게시간 (분)</span>
-                  <input type="number" className="text-input" value={breakTime} onChange={(e) => setBreakTime(e.target.value)} min="0" />
+              <label className="form-label"><Clock size={16} color="#38bdf8" /> 근무 형태 선택</label>
+              <div className="radio-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem', marginBottom: '1rem' }}>
+                <div className={`radio-card ${scheduleType === '요일별' ? 'active' : ''}`} onClick={() => setScheduleType('요일별')} style={{ padding: '0.5rem 0.25rem' }}>
+                  <span className="radio-card-title" style={{ fontSize: '0.75rem' }}>요일별 상세 입력</span>
+                  <span className="radio-card-desc" style={{ fontSize: '0.6rem' }}>매일 다른 알바생 등</span>
                 </div>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>국민연금 기준소득월액 (선택, 원)</span>
-                  <input type="number" className="text-input" placeholder="예: 2500000" value={pensionBasis} onChange={(e) => setPensionBasis(e.target.value)} min="0" />
+                <div className={`radio-card ${scheduleType === '패턴별' || !scheduleType ? 'active' : ''}`} onClick={() => setScheduleType('패턴별')} style={{ padding: '0.5rem 0.25rem' }}>
+                  <span className="radio-card-title" style={{ fontSize: '0.75rem' }}>고정 패턴별 입력</span>
+                  <span className="radio-card-desc" style={{ fontSize: '0.6rem' }}>주 5일 고정 직장인</span>
+                </div>
+                <div className={`radio-card ${scheduleType === '직접입력' ? 'active' : ''}`} onClick={() => setScheduleType('직접입력')} style={{ padding: '0.5rem 0.25rem' }}>
+                  <span className="radio-card-title" style={{ fontSize: '0.75rem' }}>교대제/스케줄 입력</span>
+                  <span className="radio-card-desc" style={{ fontSize: '0.6rem' }}>간호사, 유동 근무 등</span>
                 </div>
               </div>
-              <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
-                * 국민연금 기준소득월액 미입력 시에는 소정근로 계약급(기본급+주휴수당) 기준으로 자동 산출됩니다.
-              </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주당 추가 연장근로시간 (선택)</span>
-                  <input type="number" className="text-input" placeholder="예: 5" value={extraWeeklyOvertime} onChange={(e) => setExtraWeeklyOvertime(e.target.value)} min="0" />
+              {scheduleType === '요일별' ? (
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <DayOfWeekEditor
+                      activeDay={activeDay} setActiveDay={setActiveDay}
+                      monActive={monActive} setMonActive={setMonActive} monStart={monStart} setMonStart={setMonStart} monEnd={monEnd} setMonEnd={setMonEnd} monBreakH={monBreakH} setMonBreakH={setMonBreakH} monBreakM={monBreakM} setMonBreakM={setMonBreakM} monBreakAuto={monBreakAuto} setMonBreakAuto={setMonBreakAuto} monNightBreakH={monNightBreakH} setMonNightBreakH={setMonNightBreakH} monNightBreakM={monNightBreakM} setMonNightBreakM={setMonNightBreakM}
+                      tueActive={tueActive} setTueActive={setTueActive} tueStart={tueStart} setTueStart={setTueStart} tueEnd={tueEnd} setTueEnd={setTueEnd} tueBreakH={tueBreakH} setTueBreakH={setTueBreakH} tueBreakM={tueBreakM} setTueBreakM={setTueBreakM} tueBreakAuto={tueBreakAuto} setTueBreakAuto={setTueBreakAuto} tueNightBreakH={tueNightBreakH} setTueNightBreakH={setTueNightBreakH} tueNightBreakM={tueNightBreakM} setTueNightBreakM={setTueNightBreakM}
+                      wedActive={wedActive} setWedActive={setWedActive} wedStart={wedStart} setWedStart={setWedStart} wedEnd={wedEnd} setWedEnd={setWedEnd} wedBreakH={wedBreakH} setWedBreakH={setWedBreakH} wedBreakM={wedBreakM} setWedBreakM={setWedBreakM} wedBreakAuto={wedBreakAuto} setWedBreakAuto={setWedBreakAuto} wedNightBreakH={wedNightBreakH} setWedNightBreakH={setWedNightBreakH} wedNightBreakM={wedNightBreakM} setWedNightBreakM={setWedNightBreakM}
+                      thuActive={thuActive} setThuActive={setThuActive} thuStart={thuStart} setThuStart={setThuStart} thuEnd={thuEnd} setThuEnd={setThuEnd} thuBreakH={thuBreakH} setThuBreakH={setThuBreakH} thuBreakM={thuBreakM} setThuBreakM={setThuBreakM} thuBreakAuto={thuBreakAuto} setThuBreakAuto={setThuBreakAuto} thuNightBreakH={thuNightBreakH} setThuNightBreakH={setThuNightBreakH} thuNightBreakM={thuNightBreakM} setThuNightBreakM={setThuNightBreakM}
+                      friActive={friActive} setFriActive={setFriActive} friStart={friStart} setFriStart={setFriStart} friEnd={friEnd} setFriEnd={setFriEnd} friBreakH={friBreakH} setFriBreakH={setFriBreakH} friBreakM={friBreakM} setFriBreakM={setFriBreakM} friBreakAuto={friBreakAuto} setFriBreakAuto={setFriBreakAuto} friNightBreakH={friNightBreakH} setFriNightBreakH={setFriNightBreakH} friNightBreakM={friNightBreakM} setFriNightBreakM={setFriNightBreakM}
+                      satActive={satActive} setSatActive={setSatActive} satStart={satStart} setSatStart={setSatStart} satEnd={satEnd} setSatEnd={setSatEnd} satBreakH={satBreakH} setSatBreakH={setSatBreakH} satBreakM={satBreakM} setSatBreakM={setSatBreakM} satBreakAuto={satBreakAuto} setSatBreakAuto={setSatBreakAuto} satNightBreakH={satNightBreakH} setSatNightBreakH={setSatNightBreakH} satNightBreakM={satNightBreakM} setSatNightBreakM={setSatNightBreakM}
+                      sunActive={sunActive} setSunActive={setSunActive} sunStart={sunStart} setSunStart={setSunStart} sunEnd={sunEnd} setSunEnd={setSunEnd} sunBreakH={sunBreakH} setSunBreakH={setSunBreakH} sunBreakM={sunBreakM} setSunBreakM={setSunBreakM} sunBreakAuto={sunBreakAuto} setSunBreakAuto={setSunBreakAuto} sunNightBreakH={sunNightBreakH} setSunNightBreakH={setSunNightBreakH} sunNightBreakM={sunNightBreakM} setSunNightBreakM={setSunNightBreakM}
+                    />
+                  </div>
+                  
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>국민연금 기준소득월액 (선택, 원)</span>
+                    <input type="number" className="text-input" placeholder="예: 2500000" value={pensionBasis} onChange={(e) => setPensionBasis(e.target.value)} min="0" />
+                  </div>
+                  <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                    * 국민연금 기준소득월액 미입력 시에는 소정근로 계약급(기본급+주휴수당) 기준으로 자동 산출됩니다.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주당 추가 연장근로시간 (선택)</span>
+                      <input type="number" className="text-input" placeholder="예: 5" value={extraWeeklyOvertime} onChange={(e) => setExtraWeeklyOvertime(e.target.value)} min="0" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 휴일근로 일수 (선택)</span>
+                      <input type="number" className="text-input" placeholder="예: 12" value={holidayWorkDays} onChange={(e) => setHolidayWorkDays(e.target.value)} min="0" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 연차유급 일수 (선택)</span>
+                      <input type="number" className="text-input" placeholder="예: 15" value={annualLeaveDays} onChange={(e) => setAnnualLeaveDays(e.target.value)} min="0" />
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                    * 매주 고정적으로 발생하는 추가 연장근로, 연간 휴일근로 일수, 연간 연차유급 일수가 있다면 입력하세요. AI 진단 리포트에 반영됩니다.
+                  </p>
+                  {weeklyDays > 6 && (
+                    <div className="info-callout warning" style={{ marginTop: '0.75rem' }}>
+                      요일별 근무일수 합계가 {weeklyDays}일입니다. 주휴일을 위해 주 근무일수가 6일을 넘지 않도록 조정해 주세요.
+                    </div>
+                  )}
+                </>
+              ) : scheduleType === '직접입력' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem' }}>주 소정근로일수 (일/주)</span>
+                      <input type="number" className="text-input" placeholder="예: 5" value={directWeeklyWorkDays} onChange={(e) => setDirectWeeklyWorkDays(e.target.value)} min="1" max="7" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem' }}>하루 평균 근로시간 (시간)</span>
+                      <input type="number" className="text-input" placeholder="예: 8" value={directAvgDailyHours} onChange={(e) => {
+                        const value = e.target.value;
+                        setDirectAvgDailyHours(value);
+                        if (breakTimeAuto) setBreakTime(String(getStatutoryBreakMinutes(parseFloat(value) || 0)));
+                      }} min="1" max="24" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem' }}>주 평균 총 소정근로시간 (시간)</span>
+                    <input type="number" className="text-input" placeholder="예: 40" value={directWeeklyRegularHours} onChange={(e) => setDirectWeeklyRegularHours(e.target.value)} min="0" />
+                    <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>* 주 최대 40시간까지만 기본 소정시간으로 연산됩니다.</p>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem' }}>주 평균 연장근로시간 (시간)</span>
+                      <input type="number" className="text-input" placeholder="예: 5" value={directWeeklyOvertimeHours} onChange={(e) => setDirectWeeklyOvertimeHours(e.target.value)} min="0" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.7rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem' }}>주 평균 야간근로시간 (시간)</span>
+                      <input type="number" className="text-input" placeholder="예: 4" value={directWeeklyNightHours} onChange={(e) => setDirectWeeklyNightHours(e.target.value)} min="0" />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>하루 평균 휴게시간 (분)</span>
+                      <input type="number" className="text-input" value={breakTime} onChange={(e) => pattern1BreakTimeHandlers.onBreakTimeChange(e.target.value)} min="0" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>국민연금 기준소득월액 (선택, 원)</span>
+                      <input type="number" className="text-input" placeholder="예: 2500000" value={pensionBasis} onChange={(e) => setPensionBasis(e.target.value)} min="0" />
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                    * 국민연금 기준소득월액 미입력 시에는 소정근로 계약급(기본급+주휴수당) 기준으로 자동 산출됩니다.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 휴일근로 일수 (선택)</span>
+                      <input type="number" className="text-input" placeholder="예: 12" value={holidayWorkDays} onChange={(e) => setHolidayWorkDays(e.target.value)} min="0" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 연차유급 일수 (선택)</span>
+                      <input type="number" className="text-input" placeholder="예: 15" value={annualLeaveDays} onChange={(e) => setAnnualLeaveDays(e.target.value)} min="0" />
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                    * 연간 휴일근로 일수, 연간 연차유급 일수가 있다면 입력하세요. AI 진단 리포트에 반영됩니다.
+                  </p>
                 </div>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 휴일근로 일수 (선택)</span>
-                  <input type="number" className="text-input" placeholder="예: 12" value={holidayWorkDays} onChange={(e) => setHolidayWorkDays(e.target.value)} min="0" />
-                </div>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 연차유급 일수 (선택)</span>
-                  <input type="number" className="text-input" placeholder="예: 15" value={annualLeaveDays} onChange={(e) => setAnnualLeaveDays(e.target.value)} min="0" />
-                </div>
-              </div>
-              <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
-                * 매주 고정적으로 발생하는 추가 연장근로, 연간 휴일근로 일수, 연간 연차유급 일수가 있다면 입력하세요. AI 진단 리포트에 반영됩니다.
-              </p>
+              ) : (
+                <>
+                  <label className="form-label" style={{ marginBottom: '0.5rem' }}><Clock size={16} color="#38bdf8" /> 상세 근로 및 휴게 시간</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                    {renderPattern('근무 패턴 1', pattern1Days, setPattern1Days, pattern1Start, pattern1BreakTimeHandlers.onStartChange, pattern1End, pattern1BreakTimeHandlers.onEndChange, pattern1Hours)}
+                    {renderPattern('근무 패턴 2 (선택)', pattern2Days, setPattern2Days, pattern2Start, setPattern2Start, pattern2End, setPattern2End, pattern2Hours)}
+                    {renderPattern('근무 패턴 3 (선택)', pattern3Days, setPattern3Days, pattern3Start, setPattern3Start, pattern3End, setPattern3End, pattern3Hours)}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>하루 평균 휴게시간 (분)</span>
+                      <input type="number" className="text-input" value={breakTime} onChange={(e) => pattern1BreakTimeHandlers.onBreakTimeChange(e.target.value)} min="0" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>국민연금 기준소득월액 (선택, 원)</span>
+                      <input type="number" className="text-input" placeholder="예: 2500000" value={pensionBasis} onChange={(e) => setPensionBasis(e.target.value)} min="0" />
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                    * 국민연금 기준소득월액 미입력 시에는 소정근로 계약급(기본급+주휴수당) 기준으로 자동 산출됩니다.
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주당 추가 연장근로시간 (선택)</span>
+                      <input type="number" className="text-input" placeholder="예: 5" value={extraWeeklyOvertime} onChange={(e) => setExtraWeeklyOvertime(e.target.value)} min="0" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 휴일근로 일수 (선택)</span>
+                      <input type="number" className="text-input" placeholder="예: 12" value={holidayWorkDays} onChange={(e) => setHolidayWorkDays(e.target.value)} min="0" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 연차유급 일수 (선택)</span>
+                      <input type="number" className="text-input" placeholder="예: 15" value={annualLeaveDays} onChange={(e) => setAnnualLeaveDays(e.target.value)} min="0" />
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                    * 매주 고정적으로 발생하는 추가 연장근로, 연간 휴일근로 일수, 연간 연차유급 일수가 있다면 입력하세요. AI 진단 리포트에 반영됩니다.
+                  </p>
+                  {weeklyDays > 6 && (
+                    <div className="info-callout warning" style={{ marginTop: '0.75rem' }}>
+                      패턴 1~3의 근무일수 합계가 {weeklyDays}일입니다. 주휴일을 위해 주 근무일수가 6일을 넘지 않도록 조정해 주세요.
+                    </div>
+                  )}
+                </>
+              )}
 
               <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <span style={{ fontSize: '0.85rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600, marginBottom: '0.5rem' }}>

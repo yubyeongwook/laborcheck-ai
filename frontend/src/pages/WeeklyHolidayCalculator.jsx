@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar } from 'lucide-react';
-import { calculateWeeklyHolidayPay, AVG_WEEKS_PER_MONTH, calculateHoursAndNightHours, roundDownToTen } from '../utils/laborCalc.js';
+import { calculateWeeklyHolidayPay, AVG_WEEKS_PER_MONTH, calculateHoursAndNightHours, roundDownToTen, calculateElapsedHours, getStatutoryBreakMinutes } from '../utils/laborCalc.js';
+import LaborInfoSync from '../components/LaborInfoSync.jsx';
 
 function TimeSelectInput({ value, onChange }) {
   const [hStr, mStr] = (value || '00:00').split(':');
@@ -37,6 +38,42 @@ function WeeklyHolidayCalculator() {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('18:00');
   const [breakMinutes, setBreakMinutes] = useState('60');
+  const [breakMinutesAuto, setBreakMinutesAuto] = useState(true);
+
+  // 출퇴근 시간이 바뀔 때, 사용자가 휴게시간을 직접 수정한 적이 없다면(Auto 플래그) 근로기준법 제54조 기준으로 휴게시간을 자동 재계산
+  const handleStartChange = (value) => {
+    setStartTime(value);
+    if (breakMinutesAuto) setBreakMinutes(String(getStatutoryBreakMinutes(calculateElapsedHours(value, endTime))));
+  };
+  const handleEndChange = (value) => {
+    setEndTime(value);
+    if (breakMinutesAuto) setBreakMinutes(String(getStatutoryBreakMinutes(calculateElapsedHours(startTime, value))));
+  };
+  const handleBreakMinutesChange = (value) => {
+    setBreakMinutes(value);
+    setBreakMinutesAuto(false);
+  };
+
+  const handleLoadInfo = (loaded) => {
+    const loadedWage = loaded.baseHourlyWage || (loaded.salaryType === '시급' ? loaded.salaryAmount : '');
+    if (loadedWage) setHourlyWage(String(loadedWage));
+    if (loaded.pattern1Days) setWeeklyWorkDays(loaded.pattern1Days);
+    if (loaded.pattern1Start) setStartTime(loaded.pattern1Start);
+    if (loaded.pattern1End) setEndTime(loaded.pattern1End);
+    
+    const loadedBreakMin = (parseFloat(loaded.pattern1BreakH) || 0) * 60 + (parseFloat(loaded.pattern1BreakM) || 0);
+    if (loadedBreakMin > 0) setBreakMinutes(String(loadedBreakMin));
+  };
+
+  const currentInfo = {
+    salaryType: '시급',
+    salaryAmount: hourlyWage,
+    pattern1Days: weeklyWorkDays,
+    pattern1Start: startTime,
+    pattern1End: endTime,
+    pattern1BreakH: String(Math.floor(parseFloat(breakMinutes) / 60) || 0),
+    pattern1BreakM: String(parseFloat(breakMinutes) % 60 || 0)
+  };
 
   const p = calculateHoursAndNightHours(startTime, endTime, breakMinutes);
   const weeklyWorkHours = p.workHours * (parseFloat(weeklyWorkDays) || 0);
@@ -54,7 +91,10 @@ function WeeklyHolidayCalculator() {
         </p>
       </div>
 
+      <LaborInfoSync onLoad={handleLoadInfo} currentInfo={currentInfo} />
+
       <div className="tool-grid">
+
         <section className="glass-panel">
           <div className="form-group">
             <label className="form-label">시급 (원)</label>
@@ -68,17 +108,17 @@ function WeeklyHolidayCalculator() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1.25rem' }}>
             <div>
               <span style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 600 }}>출근 시간</span>
-              <TimeSelectInput value={startTime} onChange={setStartTime} />
+              <TimeSelectInput value={startTime} onChange={handleStartChange} />
             </div>
             <div>
               <span style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 600 }}>퇴근 시간</span>
-              <TimeSelectInput value={endTime} onChange={setEndTime} />
+              <TimeSelectInput value={endTime} onChange={handleEndChange} />
             </div>
           </div>
-          
+
           <div className="form-group">
             <label className="form-label">하루 휴게시간 (분)</label>
-            <input type="number" className="text-input" value={breakMinutes} onChange={(e) => setBreakMinutes(e.target.value)} min="0" />
+            <input type="number" className="text-input" value={breakMinutes} onChange={(e) => handleBreakMinutesChange(e.target.value)} min="0" />
           </div>
 
           <div className="form-group" style={{ background: 'rgba(56, 189, 248, 0.08)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.2)', marginBottom: 0 }}>
