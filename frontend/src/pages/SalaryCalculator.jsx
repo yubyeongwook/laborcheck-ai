@@ -22,7 +22,8 @@ const makeDefaultEntry = (year) => ({
   mealAllowance: '0',
   carAllowance: '0',
   childcareAllowance: '0',
-  otherNonTaxable: '0'
+  otherNonTaxable: '0',
+  taxableAllowance: '0'
 });
 
 // 비과세 항목(식대/자가운전보조금/육아수당) 공용 입력 필드. 한도(월 20만원) 초과 시 초과분은 과세로 안내
@@ -102,7 +103,8 @@ function computeDerived(entry) {
     mealAllowance: parseFloat(entry.mealAllowance) || 0,
     carAllowance: parseFloat(entry.carAllowance) || 0,
     childcareAllowance: parseFloat(entry.childcareAllowance) || 0,
-    otherNonTaxable: parseFloat(entry.otherNonTaxable) || 0
+    otherNonTaxable: parseFloat(entry.otherNonTaxable) || 0,
+    taxableAllowance: parseFloat(entry.taxableAllowance) || 0
   });
  
   return { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, holidayWorkDays: parseFloat(entry.holidayWorkDays) || 0, result };
@@ -336,6 +338,23 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               식대·자가운전보조금·육아수당은 각각 월 20만원까지 비과세이며, 급여 총액에 더해지되 세금·4대보험 산정에서는 제외됩니다. 기타 비과세는 한도 없이 입력한 금액 그대로 반영됩니다.
             </p>
           </div>
+
+          <div className="form-group" style={{ background: 'rgba(248, 113, 113, 0.06)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(248, 113, 113, 0.3)' }}>
+            <label className="form-label" style={{ color: '#f87171' }}><Coins size={16} /> 과세 수당 (선택, 직책수당·상여금 등)</label>
+            <input
+              type="text"
+              className="text-input"
+              placeholder="0"
+              value={entry.taxableAllowance === '0' || !entry.taxableAllowance ? '' : Number(entry.taxableAllowance).toLocaleString()}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/,/g, '');
+                if (/^\d*$/.test(raw)) update('taxableAllowance')(raw || '0');
+              }}
+            />
+            <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
+              직책수당·상여금 등 세금이 붙는 수당은 급여 총액에 더해지고, 비과세와 달리 세금·4대보험 산정 기준액에도 그대로 포함됩니다.
+            </p>
+          </div>
         </div>
 
         <div>
@@ -373,6 +392,12 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             <div className="result-row">
               <span className="result-row-label" style={{ color: '#34d399' }}>비과세 수당 (식대·차량·육아·기타)</span>
               <span className="result-row-value" style={{ color: '#34d399' }}>{(result.totalNonTaxable + result.totalTaxableExcess).toLocaleString()}원</span>
+            </div>
+          )}
+          {result.taxableAllowance > 0 && (
+            <div className="result-row">
+              <span className="result-row-label" style={{ color: '#f87171' }}>과세 수당 (직책수당·상여금 등)</span>
+              <span className="result-row-value" style={{ color: '#f87171' }}>{result.taxableAllowance.toLocaleString()}원</span>
             </div>
           )}
           <div className="result-row" style={{ color: '#ef4444' }}>

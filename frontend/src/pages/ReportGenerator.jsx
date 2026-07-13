@@ -39,6 +39,7 @@ function ReportGenerator({ userType }) {
   const [carAllowance, setCarAllowance] = useState('');
   const [childcareAllowance, setChildcareAllowance] = useState('');
   const [otherNonTaxable, setOtherNonTaxable] = useState('');
+  const [taxableAllowance, setTaxableAllowance] = useState('');
 
   const [pattern1Start, setPattern1Start] = useState('09:00');
   const [pattern1End, setPattern1End] = useState('18:00');
@@ -167,6 +168,7 @@ function ReportGenerator({ userType }) {
       car_allowance: carAllowance ? Number(carAllowance) : 0,
       childcare_allowance: childcareAllowance ? Number(childcareAllowance) : 0,
       other_non_taxable: otherNonTaxable ? Number(otherNonTaxable) : 0,
+      taxable_allowance: taxableAllowance ? Number(taxableAllowance) : 0,
       work_hours: workHours,
       issue_text: issueText,
       file_data: fileBase64,
@@ -390,6 +392,14 @@ function ReportGenerator({ userType }) {
                 </div>
                 <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
                   식대·자가운전보조금·육아수당은 각각 월 {NON_TAXABLE_MONTHLY_CAP.toLocaleString()}원까지 비과세로 인정되어 세금·4대보험 산정에서 제외됩니다. 급여명세서에 별도 항목으로 표기되어 있다면 입력하세요.
+                </p>
+              </div>
+
+              <div style={{ marginTop: '1rem' }}>
+                <span style={{ fontSize: '0.85rem', color: '#f87171', display: 'block', fontWeight: 600, marginBottom: '0.5rem' }}>과세 수당 (선택, 직책수당·상여금 등)</span>
+                <input type="number" className="text-input" placeholder="예: 0" value={taxableAllowance} onChange={(e) => setTaxableAllowance(e.target.value)} min="0" />
+                <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                  비과세와 달리 세금·4대보험 산정 기준액에도 그대로 포함되는 직책수당·상여금 등이 있다면 입력하세요.
                 </p>
               </div>
             </div>

@@ -57,6 +57,7 @@ app.post('/api/generate-report', async (req, res) => {
       car_allowance,
       childcare_allowance,
       other_non_taxable,
+      taxable_allowance,
       file_data,  // Base64 데이터 URL 또는 순수 Base64
       file_mime,  // mimeType
       pattern1_days,
@@ -131,6 +132,7 @@ app.post('/api/generate-report', async (req, res) => {
   * 자가운전보조금: ${car_allowance ? `${Number(car_allowance).toLocaleString()}원` : '0원'}
   * 육아수당(6세 이하): ${childcare_allowance ? `${Number(childcare_allowance).toLocaleString()}원` : '0원'}
   * 기타 비과세: ${other_non_taxable ? `${Number(other_non_taxable).toLocaleString()}원` : '0원'}
+- 과세 수당 (급여 총액에 포함되며, 비과세와 달리 세금·4대보험 산정 기준액에도 그대로 포함되는 금액. 직책수당·상여금 등): ${taxable_allowance ? `${Number(taxable_allowance).toLocaleString()}원` : '0원'}
 - 근로계약서상 수당 포함 여부 (5인 이상 전용): ${company_size === '5인 이상' ? (allowance_included || '해당 없음/확인불가') : '해당 없음 (5인 미만)'}
 - 사연: ${issue_text}
 - 첨부 파일 여부: ${filePart ? `있음 (MIME: ${file_mime}) - 이미지 또는 동영상 파일이 함께 입력되었습니다.` : '없음'}

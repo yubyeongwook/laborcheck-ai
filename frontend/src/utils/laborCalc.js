@@ -171,7 +171,8 @@ export const calculateSalaryBreakdown = ({
   mealAllowance = 0,
   carAllowance = 0,
   childcareAllowance = 0,
-  otherNonTaxable = 0
+  otherNonTaxable = 0,
+  taxableAllowance = 0
 }) => {
   const amt = parseFloat(salaryAmount) || 0;
 
@@ -268,13 +269,15 @@ export const calculateSalaryBreakdown = ({
   }
 
   const allowances = calculateNonTaxableBreakdown({ mealAllowance, carAllowance, childcareAllowance, otherNonTaxable });
-  totalPay += allowances.totalAllowance;
+  const taxableAllowanceAmt = parseFloat(taxableAllowance) || 0;
+  totalPay += allowances.totalAllowance + taxableAllowanceAmt;
 
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (basePay + weeklyHolidayPay);
   const deductions = applyDeductions(totalPay, year, defaultPensionBasis, allowances.totalNonTaxable);
 
   return {
     hourlyWage: Math.round(hourlyWage),
+    taxableAllowance: taxableAllowanceAmt,
     basePay,
     weeklyHolidayPay,
     overtimePay,
@@ -442,7 +445,8 @@ export const calculateYearlyEntryPay = ({
   mealAllowance = 0,
   carAllowance = 0,
   childcareAllowance = 0,
-  otherNonTaxable = 0
+  otherNonTaxable = 0,
+  taxableAllowance = 0
 }) => {
   const breakdown = calculateSalaryBreakdown({
     salaryType: '시급',
@@ -458,7 +462,8 @@ export const calculateYearlyEntryPay = ({
     mealAllowance,
     carAllowance,
     childcareAllowance,
-    otherNonTaxable
+    otherNonTaxable,
+    taxableAllowance
   });
 
   const is5Over = companySize === '5인 이상';
@@ -494,6 +499,7 @@ export const calculateYearlyEntryPay = ({
     otherNonTaxable: breakdown.otherNonTaxable,
     totalNonTaxable: breakdown.totalNonTaxable,
     totalTaxableExcess: breakdown.totalTaxableExcess,
+    taxableAllowance: breakdown.taxableAllowance,
     leavePayMonthly,
     holidayWorkPay,
     grossTotal,

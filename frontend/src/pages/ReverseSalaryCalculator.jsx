@@ -171,6 +171,7 @@ function ReverseSalaryCalculator() {
   const [carAllowanceInput, setCarAllowanceInput] = useState('0');
   const [childcareAllowanceInput, setChildcareAllowanceInput] = useState('0');
   const [otherNonTaxableInput, setOtherNonTaxableInput] = useState('0');
+  const [taxableAllowanceInput, setTaxableAllowanceInput] = useState('0');
 
   // 역산 계산 유틸
   const breakMinutesOf = (h, m) => (parseFloat(h) || 0) * 60 + (parseFloat(m) || 0);
@@ -253,7 +254,8 @@ function ReverseSalaryCalculator() {
     childcareAllowance: childcareAllowanceInput,
     otherNonTaxable: otherNonTaxableInput
   });
-  const workRelatedGross = Math.max(grossSalary - allowances.totalAllowance, 0);
+  const taxableAllowance = parseFloat(taxableAllowanceInput) || 0;
+  const workRelatedGross = Math.max(grossSalary - allowances.totalAllowance - taxableAllowance, 0);
 
   let calculatedHourlyWage = 0;
   if (totalPaidHoursDivisor > 0) {
@@ -268,7 +270,7 @@ function ReverseSalaryCalculator() {
   const annualLeavePay = Math.round(calculatedHourlyWage * monthlyLeaveHours);
 
   // 세전 급여 합계 (검증용, 단수 차이가 있을 수 있음)
-  const computedGrossTotal = basePay + weeklyHolidayPay + overtimePay + nightPay + holidayWorkPay + annualLeavePay + allowances.totalAllowance;
+  const computedGrossTotal = basePay + weeklyHolidayPay + overtimePay + nightPay + holidayWorkPay + annualLeavePay + allowances.totalAllowance + taxableAllowance;
 
   // 공제 및 실수령액
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (basePay + weeklyHolidayPay);
@@ -448,6 +450,23 @@ function ReverseSalaryCalculator() {
               위 총 세전 월급액에 이미 포함된 비과세 항목 금액을 입력하세요. 식대·자가운전보조금·육아수당은 각각 월 20만원까지 비과세이며, 시급 역산 시 근로시간 관련 금액에서 제외되고 세금·4대보험 산정 기준에서도 빠집니다.
             </p>
           </div>
+
+          <div className="form-group" style={{ background: 'rgba(248, 113, 113, 0.06)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(248, 113, 113, 0.3)', marginTop: '1.25rem' }}>
+            <label className="form-label" style={{ color: '#f87171' }}><Coins size={16} /> 과세 수당 (선택, 총 세전 월급액에 포함된 직책수당·상여금 등)</label>
+            <input
+              type="text"
+              className="text-input"
+              placeholder="0"
+              value={taxableAllowanceInput === '0' || !taxableAllowanceInput ? '' : Number(taxableAllowanceInput).toLocaleString()}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/,/g, '');
+                if (/^\d*$/.test(raw)) setTaxableAllowanceInput(raw || '0');
+              }}
+            />
+            <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
+              위 총 세전 월급액에 이미 포함된 직책수당·상여금 등 과세 수당 금액을 입력하세요. 비과세와 달리 시급 역산 시 근로시간 관련 금액에서는 제외되지만, 세금·4대보험 산정 기준액에는 그대로 포함됩니다.
+            </p>
+          </div>
         </section>
 
         <section className="glass-panel">
@@ -508,6 +527,12 @@ function ReverseSalaryCalculator() {
               <div className="result-row">
                 <span className="result-row-label" style={{ color: '#34d399' }}>비과세 수당 (식대·차량·육아·기타)</span>
                 <span className="result-row-value" style={{ color: '#34d399' }}>{allowances.totalAllowance.toLocaleString()}원</span>
+              </div>
+            )}
+            {taxableAllowance > 0 && (
+              <div className="result-row">
+                <span className="result-row-label" style={{ color: '#f87171' }}>과세 수당 (직책수당·상여금 등)</span>
+                <span className="result-row-value" style={{ color: '#f87171' }}>{taxableAllowance.toLocaleString()}원</span>
               </div>
             )}
             <div className="result-row" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.8rem', marginTop: '0.4rem' }}>
