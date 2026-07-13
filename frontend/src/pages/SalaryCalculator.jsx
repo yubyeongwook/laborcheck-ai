@@ -7,11 +7,20 @@ const currentYear = new Date().getFullYear();
 let idCounter = 0;
 const nextId = () => `entry-${Date.now()}-${idCounter++}`;
 
+const SALARY_TYPE_LABELS = {
+  '시급': '기초시급',
+  '일급': '일급',
+  '주급': '주급',
+  '월급': '월급'
+};
+
 const makeDefaultEntry = (year) => ({
   id: nextId(),
   year: String(year),
   companySize: '5인 이상',
-  baseHourlyWage: String(getMinWageForYear(year)),
+  salaryType: '시급',
+  salaryAmount: String(getMinWageForYear(year)),
+  allowanceIncluded: '확인불가',
   pattern1Days: '5', pattern1Start: '09:00', pattern1End: '18:00', pattern1BreakH: '1', pattern1BreakM: '0', pattern1NightBreakH: '0', pattern1NightBreakM: '0',
   pattern2Days: '0', pattern2Start: '09:00', pattern2End: '18:00', pattern2BreakH: '1', pattern2BreakM: '0', pattern2NightBreakH: '0', pattern2NightBreakM: '0',
   pattern3Days: '0', pattern3Start: '09:00', pattern3End: '18:00', pattern3BreakH: '1', pattern3BreakM: '0', pattern3NightBreakH: '0', pattern3NightBreakM: '0',
@@ -91,7 +100,9 @@ function computeDerived(entry) {
   const result = calculateYearlyEntryPay({
     year: entry.year,
     companySize: entry.companySize,
-    baseHourlyWage: entry.baseHourlyWage,
+    salaryType: entry.salaryType,
+    salaryAmount: entry.salaryAmount,
+    allowanceIncluded: entry.allowanceIncluded,
     pattern1Days: entry.pattern1Days, pattern1Hours: p1.workHours,
     pattern2Days: entry.pattern2Days, pattern2Hours: p2.workHours,
     pattern3Days: entry.pattern3Days, pattern3Hours: p3.workHours,
@@ -220,10 +231,10 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               const oldYear = entry.year;
               const oldMinWage = getMinWageForYear(oldYear);
               const newMinWage = getMinWageForYear(newYear);
-              
+
               const updated = { year: newYear };
-              if (parseInt(entry.baseHourlyWage, 10) === oldMinWage) {
-                updated.baseHourlyWage = String(newMinWage);
+              if (entry.salaryType === '시급' && parseInt(entry.salaryAmount, 10) === oldMinWage) {
+                updated.salaryAmount = String(newMinWage);
               }
               onChange({ ...entry, ...updated });
             }}
@@ -263,19 +274,53 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label"><Coins size={16} color="#f59e0b" /> 이 연도 기초시급 (원)</label>
-            <input 
-              type="text" 
-              className="text-input" 
-              value={entry.baseHourlyWage === '0' || !entry.baseHourlyWage ? '' : Number(entry.baseHourlyWage).toLocaleString()} 
+            <label className="form-label"><Coins size={16} color="#f59e0b" /> 급여 구분</label>
+            <select
+              className="text-input"
+              value={entry.salaryType}
+              onChange={(e) => update('salaryType')(e.target.value)}
+              style={{ padding: '0.85rem 0.5rem' }}
+            >
+              <option value="시급">시급</option>
+              <option value="일급">일급</option>
+              <option value="주급">주급</option>
+              <option value="월급">월급</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label"><Coins size={16} color="#f59e0b" /> 이 연도 {SALARY_TYPE_LABELS[entry.salaryType] || '급여'} (원)</label>
+            <input
+              type="text"
+              className="text-input"
+              value={entry.salaryAmount === '0' || !entry.salaryAmount ? '' : Number(entry.salaryAmount).toLocaleString()}
               onChange={(e) => {
                 const raw = e.target.value.replace(/,/g, '');
                 if (/^\d*$/.test(raw)) {
-                  update('baseHourlyWage')(raw || '0');
+                  update('salaryAmount')(raw || '0');
                 }
-              }} 
+              }}
             />
           </div>
+
+          {entry.salaryType === '월급' && entry.companySize === '5인 이상' && (
+            <div className="form-group">
+              <label className="form-label" style={{ color: '#a5b4fc' }}>근로계약서 수당 포함 여부</label>
+              <select
+                className="text-input"
+                value={entry.allowanceIncluded}
+                onChange={(e) => update('allowanceIncluded')(e.target.value)}
+              >
+                <option value="확인불가">계약서 조항 확인 불가 / 모름</option>
+                <option value="기본급 외 수당 모두 포함 (포괄임금)">수당 모두 포함 (포괄임금제 형태)</option>
+                <option value="기본급 외 일부 수당만 포함">일부 수당만 급여에 포함</option>
+                <option value="포함되지 않음 (기본급 기준 연장수당 별도 계산)">포함 안 됨 (연장 등 수당 매월 별도 계산)</option>
+              </select>
+              <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
+                "수당 모두 포함"을 선택하면 입력한 월급액을 총 지급액으로 보고 그 안에서 실제 기초시급을 역산합니다.
+              </p>
+            </div>
+          )}
 
           <div className="form-group" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
             <label className="form-label"><Clock size={16} color="#38bdf8" /> 근무 시간 (패턴별 휴게시간 각각 적용)</label>
@@ -458,7 +503,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
 
           {!result.isMinWageCompliant && (
             <div className="info-callout warning" style={{ marginTop: '1rem' }}>
-              입력하신 기초시급({result.baseHourlyWage.toLocaleString()}원)이 {result.year}년 법정 최저시급({result.minWage.toLocaleString()}원)에 미달합니다.
+              산출된 시급({result.baseHourlyWage.toLocaleString()}원)이 {result.year}년 법정 최저시급({result.minWage.toLocaleString()}원)에 미달합니다.
             </div>
           )}
         </div>

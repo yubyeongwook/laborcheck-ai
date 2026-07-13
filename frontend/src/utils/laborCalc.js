@@ -429,11 +429,14 @@ export const calculateEmployerInsurance = ({ monthlyWage, industrialAccidentRate
   };
 };
 
-// 연도별 급여 이력 항목 계산 (해당 연도 기초시급 + 근무패턴 기준, 연차일수/휴일근로일수 연간 기준 1/12 분할 반영)
+// 연도별 급여 이력 항목 계산 (해당 연도 급여액 + 근무패턴 기준, 연차일수/휴일근로일수 연간 기준 1/12 분할 반영)
+// salaryType: '시급' | '일급' | '주급' | '월급' - salaryAmount는 해당 급여 구분의 금액
 export const calculateYearlyEntryPay = ({
   year,
   companySize,
-  baseHourlyWage,
+  salaryType = '시급',
+  salaryAmount,
+  allowanceIncluded,
   pattern1Days, pattern1Hours,
   pattern2Days = 0, pattern2Hours = 0,
   pattern3Days = 0, pattern3Hours = 0,
@@ -449,9 +452,10 @@ export const calculateYearlyEntryPay = ({
   taxableAllowance = 0
 }) => {
   const breakdown = calculateSalaryBreakdown({
-    salaryType: '시급',
-    salaryAmount: baseHourlyWage,
+    salaryType,
+    salaryAmount,
     companySize,
+    allowanceIncluded,
     pattern1Days, pattern1Hours,
     pattern2Days, pattern2Hours,
     pattern3Days, pattern3Hours,
@@ -467,8 +471,10 @@ export const calculateYearlyEntryPay = ({
   });
 
   const is5Over = companySize === '5인 이상';
-  const wage = parseFloat(baseHourlyWage) || 0;
-  
+  // 휴일근로수당/연차수당 1/12 분할 지급 산정 및 최저임금 준수 여부 판단에는
+  // 입력 급여 구분과 무관하게 산출된 실제 시급을 기준으로 삼는다
+  const wage = breakdown.hourlyWage;
+
   // 휴일근로수당 연간 일수 기준 1/12 분할 지급
   const holidayMultiplier = is5Over ? 1.5 : 1.0;
   const holidayWorkPay = Math.round((parseFloat(holidayWorkDays) || 0) * 8 * wage * holidayMultiplier / 12);
@@ -486,6 +492,7 @@ export const calculateYearlyEntryPay = ({
   return {
     year,
     companySize,
+    salaryType,
     baseHourlyWage: wage,
     minWage,
     isMinWageCompliant,
