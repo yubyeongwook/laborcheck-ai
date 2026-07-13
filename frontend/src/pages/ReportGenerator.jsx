@@ -339,6 +339,24 @@ function ReportGenerator({ userType }) {
               <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
                 * 국민연금 기준소득월액 미입력 시에는 소정근로 계약급(기본급+주휴수당) 기준으로 자동 산출됩니다.
               </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주당 추가 연장근로시간 (선택)</span>
+                  <input type="number" className="text-input" placeholder="예: 5" value={extraWeeklyOvertime} onChange={(e) => setExtraWeeklyOvertime(e.target.value)} min="0" />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 휴일근로 일수 (선택)</span>
+                  <input type="number" className="text-input" placeholder="예: 12" value={holidayWorkDays} onChange={(e) => setHolidayWorkDays(e.target.value)} min="0" />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>연간 연차유급 일수 (선택)</span>
+                  <input type="number" className="text-input" placeholder="예: 15" value={annualLeaveDays} onChange={(e) => setAnnualLeaveDays(e.target.value)} min="0" />
+                </div>
+              </div>
+              <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                * 매주 고정적으로 발생하는 추가 연장근로, 연간 휴일근로 일수, 연간 연차유급 일수가 있다면 입력하세요. AI 진단 리포트에 반영됩니다.
+              </p>
             </div>
 
             <div className="form-group">

@@ -167,7 +167,7 @@ function HourMinuteInput({ hourValue, onHourChange, minuteValue, onMinuteChange 
 
 function YearEntryCard({ entry, onChange, onRemove, removable }) {
   const update = (key) => (value) => onChange({ ...entry, [key]: value });
-  const { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, holidayWorkHours, result } = computeDerived(entry);
+  const { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, result } = computeDerived(entry);
   const rates = getDeductionRatesForYear(entry.year);
 
   return (

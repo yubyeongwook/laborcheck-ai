@@ -54,19 +54,19 @@ function InsuranceCalculator() {
           </div>
 
           <div className="result-row">
-            <span className="result-row-label">국민연금 (4.5%)</span>
+            <span className="result-row-label">국민연금 ({(rates.pension * 100).toFixed(2)}%)</span>
             <span className="result-row-value">{result.nationalPension.toLocaleString()}원</span>
           </div>
           <div className="result-row">
-            <span className="result-row-label">건강보험 (3.545%)</span>
+            <span className="result-row-label">건강보험 ({(rates.health * 100).toFixed(3)}%)</span>
             <span className="result-row-value">{result.healthInsurance.toLocaleString()}원</span>
           </div>
           <div className="result-row">
-            <span className="result-row-label">장기요양보험 (건강보험료의 12.95%)</span>
+            <span className="result-row-label">장기요양보험 (건강보험료의 {(rates.care * 100).toFixed(2)}%)</span>
             <span className="result-row-value">{result.longTermCare.toLocaleString()}원</span>
           </div>
           <div className="result-row">
-            <span className="result-row-label">고용보험 (실업급여 0.9% + 고용안정·직업능력개발)</span>
+            <span className="result-row-label">고용보험 (실업급여 {(rates.employment * 100).toFixed(1)}% + 고용안정·직업능력개발)</span>
             <span className="result-row-value">{result.employmentInsurance.toLocaleString()}원</span>
           </div>
           <div className="result-row">
