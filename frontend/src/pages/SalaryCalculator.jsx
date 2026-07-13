@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Coins, Building2, Clock, Plus, Trash2, Sun, CalendarClock } from 'lucide-react';
-import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear } from '../utils/laborCalc.js';
+import { Coins, Building2, Clock, Plus, Trash2, Sun, CalendarClock, Utensils } from 'lucide-react';
+import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP } from '../utils/laborCalc.js';
 
 const currentYear = new Date().getFullYear();
 
@@ -18,8 +18,38 @@ const makeDefaultEntry = (year) => ({
   annualLeaveDays: '0',
   holidayWorkDays: '0',
   pensionBasis: '0',
-  extraWeeklyOvertime: '0'
+  extraWeeklyOvertime: '0',
+  mealAllowance: '0',
+  carAllowance: '0',
+  childcareAllowance: '0',
+  otherNonTaxable: '0'
 });
+
+// 비과세 항목(식대/자가운전보조금/육아수당) 공용 입력 필드. 한도(월 20만원) 초과 시 초과분은 과세로 안내
+function NonTaxableAmountInput({ label, value, onChange, cap = NON_TAXABLE_MONTHLY_CAP }) {
+  const amt = parseFloat(value) || 0;
+  const isOverCap = amt > cap;
+  return (
+    <div>
+      <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>{label}</span>
+      <input
+        type="text"
+        className="text-input"
+        value={value === '0' || !value ? '' : Number(value).toLocaleString()}
+        onChange={(e) => {
+          const raw = e.target.value.replace(/,/g, '');
+          if (/^\d*$/.test(raw)) onChange(raw || '0');
+        }}
+        placeholder="0"
+      />
+      {isOverCap && (
+        <p style={{ fontSize: '0.65rem', color: '#fbbf24', margin: '0.25rem 0 0 0' }}>
+          비과세 한도(월 {cap.toLocaleString()}원) 초과분 {(amt - cap).toLocaleString()}원은 과세로 처리됩니다.
+        </p>
+      )}
+    </div>
+  );
+}
 
 // "1시간 30분" 형태로 표시
 export const formatMinutesAsHM = (totalMinutes) => {
@@ -68,7 +98,11 @@ function computeDerived(entry) {
     annualLeaveDays: parseFloat(entry.annualLeaveDays) || 0,
     holidayWorkDays: parseFloat(entry.holidayWorkDays) || 0,
     pensionBasis: parseFloat(entry.pensionBasis) || 0,
-    extraWeeklyOvertime: parseFloat(entry.extraWeeklyOvertime) || 0
+    extraWeeklyOvertime: parseFloat(entry.extraWeeklyOvertime) || 0,
+    mealAllowance: parseFloat(entry.mealAllowance) || 0,
+    carAllowance: parseFloat(entry.carAllowance) || 0,
+    childcareAllowance: parseFloat(entry.childcareAllowance) || 0,
+    otherNonTaxable: parseFloat(entry.otherNonTaxable) || 0
   });
  
   return { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, holidayWorkDays: parseFloat(entry.holidayWorkDays) || 0, result };
@@ -277,6 +311,31 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               공휴일이나 대체공휴일에 일하는 일수를 연간 단위로 입력하시면 하루 8시간 근로 및 가산율을 기준하여 12개월 분할(1/12) 지급액이 매월 자동 산정됩니다.
             </p>
           </div>
+
+          <div className="form-group" style={{ background: 'rgba(52, 211, 153, 0.06)', padding: '1rem', borderRadius: '12px', border: '1px dashed rgba(52, 211, 153, 0.3)' }}>
+            <label className="form-label" style={{ color: '#34d399' }}><Utensils size={16} /> 비과세 수당 (선택, 월 지급액)</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <NonTaxableAmountInput label="식대" value={entry.mealAllowance} onChange={update('mealAllowance')} />
+              <NonTaxableAmountInput label="자가운전보조금" value={entry.carAllowance} onChange={update('carAllowance')} />
+              <NonTaxableAmountInput label="육아수당 (6세 이하)" value={entry.childcareAllowance} onChange={update('childcareAllowance')} />
+              <div>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>기타 비과세</span>
+                <input
+                  type="text"
+                  className="text-input"
+                  value={entry.otherNonTaxable === '0' || !entry.otherNonTaxable ? '' : Number(entry.otherNonTaxable).toLocaleString()}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/,/g, '');
+                    if (/^\d*$/.test(raw)) update('otherNonTaxable')(raw || '0');
+                  }}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <p style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', marginBottom: 0 }}>
+              식대·자가운전보조금·육아수당은 각각 월 20만원까지 비과세이며, 급여 총액에 더해지되 세금·4대보험 산정에서는 제외됩니다. 기타 비과세는 한도 없이 입력한 금액 그대로 반영됩니다.
+            </p>
+          </div>
         </div>
 
         <div>
@@ -310,11 +369,22 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             <span className="result-row-label">휴일근로수당</span>
             <span className="result-row-value">{result.holidayWorkPay.toLocaleString()}원</span>
           </div>
+          {result.totalNonTaxable + result.totalTaxableExcess > 0 && (
+            <div className="result-row">
+              <span className="result-row-label" style={{ color: '#34d399' }}>비과세 수당 (식대·차량·육아·기타)</span>
+              <span className="result-row-value" style={{ color: '#34d399' }}>{(result.totalNonTaxable + result.totalTaxableExcess).toLocaleString()}원</span>
+            </div>
+          )}
           <div className="result-row" style={{ color: '#ef4444' }}>
             <span className="result-row-label">공제총액</span>
             <span className="result-row-value">-{result.totalDeductions.toLocaleString()}원</span>
           </div>
 
+          {result.totalNonTaxable > 0 && (
+            <p style={{ fontSize: '0.7rem', color: '#34d399', margin: '0 0 0.5rem 0' }}>
+              비과세 {result.totalNonTaxable.toLocaleString()}원은 아래 건강보험·고용보험·소득세 산정 기준액에서 제외되었습니다.
+            </p>
+          )}
           <div style={{ paddingLeft: '1rem', borderLeft: '2px solid rgba(239, 68, 68, 0.2)', marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
             <div className="result-row" style={{ fontSize: '0.8rem', opacity: 0.85, alignItems: 'center' }}>
               <span className="result-row-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>

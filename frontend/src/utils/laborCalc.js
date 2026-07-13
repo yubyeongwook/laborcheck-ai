@@ -46,24 +46,58 @@ export const getDeductionRatesForYear = (year) => {
   return DEDUCTION_RATES_BY_YEAR[closest];
 };
 
-// 월 급여 총액 기준 4대보험·소득세 공제 계산 (근로자 부담분, 참고용 개략치)
-export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0) => {
-  const rates = getDeductionRatesForYear(year);
+// 비과세 항목 월 한도 (소득세법 시행령 기준, 참고용) - 식대/자가운전보조금/육아수당 각각 월 20만원
+export const NON_TAXABLE_MONTHLY_CAP = 200000;
 
-  const pensionTarget = pensionBasis > 0 ? pensionBasis : totalPay;
+// 비과세 수당(식대/자가운전보조금/육아수당/기타비과세) 입력을 받아 과세제외액과 한도초과(과세) 금액을 산출
+export const calculateNonTaxableBreakdown = ({
+  mealAllowance = 0,
+  carAllowance = 0,
+  childcareAllowance = 0,
+  otherNonTaxable = 0
+} = {}) => {
+  const meal = parseFloat(mealAllowance) || 0;
+  const car = parseFloat(carAllowance) || 0;
+  const childcare = parseFloat(childcareAllowance) || 0;
+  const other = parseFloat(otherNonTaxable) || 0;
+
+  const mealExcess = Math.max(meal - NON_TAXABLE_MONTHLY_CAP, 0);
+  const carExcess = Math.max(car - NON_TAXABLE_MONTHLY_CAP, 0);
+  const childcareExcess = Math.max(childcare - NON_TAXABLE_MONTHLY_CAP, 0);
+
+  const totalAllowance = meal + car + childcare + other; // 급여에 더해지는 전체 수당액
+  const totalTaxableExcess = mealExcess + carExcess + childcareExcess; // 한도초과분 (과세대상으로 편입)
+  const totalNonTaxable = totalAllowance - totalTaxableExcess; // 실제 비과세로 인정되는 금액
+
+  return {
+    meal, car, childcare, other,
+    mealExcess, carExcess, childcareExcess,
+    totalAllowance,
+    totalNonTaxable,
+    totalTaxableExcess
+  };
+};
+
+// 월 급여 총액 기준 4대보험·소득세 공제 계산 (근로자 부담분, 참고용 개략치)
+// nonTaxableAmount: 총 지급액(totalPay) 중 비과세로 인정되어 세금·4대보험 산정에서 제외되는 금액
+export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0, nonTaxableAmount = 0) => {
+  const rates = getDeductionRatesForYear(year);
+  const taxableBase = Math.max(totalPay - (parseFloat(nonTaxableAmount) || 0), 0);
+
+  const pensionTarget = pensionBasis > 0 ? pensionBasis : taxableBase;
   const nationalPension = Math.round(pensionTarget * rates.pension);
-  const healthInsurance = Math.round(totalPay * rates.health);
+  const healthInsurance = Math.round(taxableBase * rates.health);
   const longTermCare = Math.round(healthInsurance * rates.care);
-  const employmentInsurance = Math.round(totalPay * rates.employment);
+  const employmentInsurance = Math.round(taxableBase * rates.employment);
   const totalInsurance = nationalPension + healthInsurance + longTermCare + employmentInsurance;
 
   let incomeTax = 0;
-  if (totalPay >= 5000000) {
-    incomeTax = Math.round(totalPay * 0.05);
-  } else if (totalPay >= 3000000) {
-    incomeTax = Math.round(totalPay * 0.03);
-  } else if (totalPay >= 1500000) {
-    incomeTax = Math.round(totalPay * 0.015);
+  if (taxableBase >= 5000000) {
+    incomeTax = Math.round(taxableBase * 0.05);
+  } else if (taxableBase >= 3000000) {
+    incomeTax = Math.round(taxableBase * 0.03);
+  } else if (taxableBase >= 1500000) {
+    incomeTax = Math.round(taxableBase * 0.015);
   }
   const localIncomeTax = Math.round(incomeTax * 0.1);
   const totalTax = incomeTax + localIncomeTax;
@@ -81,7 +115,8 @@ export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0) => {
     localIncomeTax,
     totalTax,
     totalDeductions,
-    netPay
+    netPay,
+    taxableBase
   };
 };
 
@@ -132,7 +167,11 @@ export const calculateSalaryBreakdown = ({
   weeklyNightHours = 0,
   extraWeeklyOvertime = 0,
   year = 2026,
-  pensionBasis = 0
+  pensionBasis = 0,
+  mealAllowance = 0,
+  carAllowance = 0,
+  childcareAllowance = 0,
+  otherNonTaxable = 0
 }) => {
   const amt = parseFloat(salaryAmount) || 0;
 
@@ -228,8 +267,11 @@ export const calculateSalaryBreakdown = ({
     }
   }
 
+  const allowances = calculateNonTaxableBreakdown({ mealAllowance, carAllowance, childcareAllowance, otherNonTaxable });
+  totalPay += allowances.totalAllowance;
+
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (basePay + weeklyHolidayPay);
-  const deductions = applyDeductions(totalPay, year, defaultPensionBasis);
+  const deductions = applyDeductions(totalPay, year, defaultPensionBasis, allowances.totalNonTaxable);
 
   return {
     hourlyWage: Math.round(hourlyWage),
@@ -237,6 +279,12 @@ export const calculateSalaryBreakdown = ({
     weeklyHolidayPay,
     overtimePay,
     nightPay,
+    mealAllowance: allowances.meal,
+    carAllowance: allowances.car,
+    childcareAllowance: allowances.childcare,
+    otherNonTaxable: allowances.other,
+    totalNonTaxable: allowances.totalNonTaxable,
+    totalTaxableExcess: allowances.totalTaxableExcess,
     totalPay,
     ...deductions,
     regularWorkHoursMonthly: Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10,
@@ -390,7 +438,11 @@ export const calculateYearlyEntryPay = ({
   annualLeaveDays = 0, // 연간 연차일수 (1/12 분할 자동 산정)
   holidayWorkDays = 0, // 연간 휴일근로일수 (1/12 분할 자동 산정)
   pensionBasis = 0,
-  extraWeeklyOvertime = 0
+  extraWeeklyOvertime = 0,
+  mealAllowance = 0,
+  carAllowance = 0,
+  childcareAllowance = 0,
+  otherNonTaxable = 0
 }) => {
   const breakdown = calculateSalaryBreakdown({
     salaryType: '시급',
@@ -402,7 +454,11 @@ export const calculateYearlyEntryPay = ({
     weeklyNightHours,
     year,
     pensionBasis,
-    extraWeeklyOvertime
+    extraWeeklyOvertime,
+    mealAllowance,
+    carAllowance,
+    childcareAllowance,
+    otherNonTaxable
   });
 
   const is5Over = companySize === '5인 이상';
@@ -417,7 +473,7 @@ export const calculateYearlyEntryPay = ({
 
   const grossTotal = breakdown.totalPay + leavePayMonthly + holidayWorkPay;
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (breakdown.basePay + breakdown.weeklyHolidayPay);
-  const deductions = applyDeductions(grossTotal, year, defaultPensionBasis);
+  const deductions = applyDeductions(grossTotal, year, defaultPensionBasis, breakdown.totalNonTaxable);
 
   const minWage = getMinWageForYear(year);
   const isMinWageCompliant = wage >= minWage;
@@ -432,6 +488,12 @@ export const calculateYearlyEntryPay = ({
     weeklyHolidayPay: breakdown.weeklyHolidayPay,
     overtimePay: breakdown.overtimePay,
     nightPay: breakdown.nightPay,
+    mealAllowance: breakdown.mealAllowance,
+    carAllowance: breakdown.carAllowance,
+    childcareAllowance: breakdown.childcareAllowance,
+    otherNonTaxable: breakdown.otherNonTaxable,
+    totalNonTaxable: breakdown.totalNonTaxable,
+    totalTaxableExcess: breakdown.totalTaxableExcess,
     leavePayMonthly,
     holidayWorkPay,
     grossTotal,

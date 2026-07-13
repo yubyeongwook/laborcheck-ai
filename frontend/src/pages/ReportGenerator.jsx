@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
   FileText, Building2, Clock, Clipboard, Check, Download, Briefcase,
-  AlertCircle, Coins, Calendar, FileSignature, Upload, X, FileImage, FileVideo
+  AlertCircle, Coins, Calendar, FileSignature, Upload, X, FileImage, FileVideo, Utensils
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { calculateHoursAndNightHours } from '../utils/laborCalc.js';
+import { calculateHoursAndNightHours, NON_TAXABLE_MONTHLY_CAP } from '../utils/laborCalc.js';
 
 const LOADING_TIPS = [
   "근로기준법 제18조: 4주 동안 평균하여 1주 동안의 소정근로시간이 15시간 미만인 근로자에게는 주휴수당 규정이 적용되지 않습니다.",
@@ -35,6 +35,10 @@ function ReportGenerator({ userType }) {
   const [extraWeeklyOvertime, setExtraWeeklyOvertime] = useState('');
   const [holidayWorkDays, setHolidayWorkDays] = useState('');
   const [annualLeaveDays, setAnnualLeaveDays] = useState('');
+  const [mealAllowance, setMealAllowance] = useState('');
+  const [carAllowance, setCarAllowance] = useState('');
+  const [childcareAllowance, setChildcareAllowance] = useState('');
+  const [otherNonTaxable, setOtherNonTaxable] = useState('');
 
   const [pattern1Start, setPattern1Start] = useState('09:00');
   const [pattern1End, setPattern1End] = useState('18:00');
@@ -159,6 +163,10 @@ function ReportGenerator({ userType }) {
       extra_weekly_overtime: extraWeeklyOvertime ? Number(extraWeeklyOvertime) : 0,
       holiday_work_days: holidayWorkDays ? Number(holidayWorkDays) : 0,
       annual_leave_days: annualLeaveDays ? Number(annualLeaveDays) : 0,
+      meal_allowance: mealAllowance ? Number(mealAllowance) : 0,
+      car_allowance: carAllowance ? Number(carAllowance) : 0,
+      childcare_allowance: childcareAllowance ? Number(childcareAllowance) : 0,
+      other_non_taxable: otherNonTaxable ? Number(otherNonTaxable) : 0,
       work_hours: workHours,
       issue_text: issueText,
       file_data: fileBase64,
@@ -357,6 +365,33 @@ function ReportGenerator({ userType }) {
               <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
                 * 매주 고정적으로 발생하는 추가 연장근로, 연간 휴일근로 일수, 연간 연차유급 일수가 있다면 입력하세요. AI 진단 리포트에 반영됩니다.
               </p>
+
+              <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontSize: '0.85rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                  <Utensils size={14} /> 비과세 수당 (선택, 월 지급액)
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>식대</span>
+                    <input type="number" className="text-input" placeholder="예: 200000" value={mealAllowance} onChange={(e) => setMealAllowance(e.target.value)} min="0" />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>자가운전보조금</span>
+                    <input type="number" className="text-input" placeholder="예: 200000" value={carAllowance} onChange={(e) => setCarAllowance(e.target.value)} min="0" />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>육아수당 (6세 이하)</span>
+                    <input type="number" className="text-input" placeholder="예: 200000" value={childcareAllowance} onChange={(e) => setChildcareAllowance(e.target.value)} min="0" />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>기타 비과세</span>
+                    <input type="number" className="text-input" placeholder="예: 0" value={otherNonTaxable} onChange={(e) => setOtherNonTaxable(e.target.value)} min="0" />
+                  </div>
+                </div>
+                <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                  식대·자가운전보조금·육아수당은 각각 월 {NON_TAXABLE_MONTHLY_CAP.toLocaleString()}원까지 비과세로 인정되어 세금·4대보험 산정에서 제외됩니다. 급여명세서에 별도 항목으로 표기되어 있다면 입력하세요.
+                </p>
+              </div>
             </div>
 
             <div className="form-group">
