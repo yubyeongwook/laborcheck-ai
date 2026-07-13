@@ -497,10 +497,12 @@ export const calculateYearlyEntryPay = ({
 
   // 휴일근로수당 연간 일수 기준 1/12 분할 지급
   const holidayMultiplier = is5Over ? 1.5 : 1.0;
-  const holidayWorkPay = Math.round((parseFloat(holidayWorkDays) || 0) * dailyHours * wage * holidayMultiplier / 12);
+  const holidayWorkHoursMonthly = (parseFloat(holidayWorkDays) || 0) * dailyHours / 12;
+  const holidayWorkPay = Math.round(holidayWorkHoursMonthly * wage * holidayMultiplier);
 
   // 연차수당 연간 일수 기준 1/12 분할 지급
-  const leavePayMonthly = Math.round((parseFloat(annualLeaveDays) || 0) * dailyHours * wage / 12);
+  const leavePayHoursMonthly = (parseFloat(annualLeaveDays) || 0) * dailyHours / 12;
+  const leavePayMonthly = Math.round(leavePayHoursMonthly * wage);
 
   const grossTotal = breakdown.totalPay + leavePayMonthly + holidayWorkPay;
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (breakdown.basePay + breakdown.weeklyHolidayPay);
@@ -537,6 +539,8 @@ export const calculateYearlyEntryPay = ({
     regularWorkHoursMonthly: breakdown.regularWorkHoursMonthly,
     weeklyHolidayHoursMonthly: breakdown.weeklyHolidayHoursMonthly,
     overtimeHoursMonthly: breakdown.overtimeHoursMonthly,
-    nightHoursMonthly: breakdown.nightHoursMonthly
+    nightHoursMonthly: breakdown.nightHoursMonthly,
+    leavePayHoursMonthly: Math.round(leavePayHoursMonthly * 100) / 100,
+    holidayWorkHoursMonthly: Math.round(holidayWorkHoursMonthly * 100) / 100
   };
 };

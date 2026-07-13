@@ -522,7 +522,7 @@ function ReverseSalaryCalculator() {
             )}
             {annualLeavePay > 0 && (
               <div className="result-row">
-                <span className="result-row-label">연차수당 (연간 {annDays}일 미사용 분할지급)</span>
+                <span className="result-row-label">연차수당 (연간 {annDays}일 미사용 분할지급, 월 {Math.round(monthlyLeaveHours * 100) / 100}시간분)</span>
                 <span className="result-row-value">{annualLeavePay.toLocaleString()}원</span>
               </div>
             )}

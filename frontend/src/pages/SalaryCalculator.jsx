@@ -442,11 +442,11 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             <span className="result-row-value">{result.nightPay.toLocaleString()}원</span>
           </div>
           <div className="result-row">
-            <span className="result-row-label">연차수당 (선지급 월분할)</span>
+            <span className="result-row-label">연차수당 {result.leavePayHoursMonthly > 0 && `(선지급 월분할, 월 ${result.leavePayHoursMonthly}시간)`}</span>
             <span className="result-row-value">{result.leavePayMonthly.toLocaleString()}원</span>
           </div>
           <div className="result-row">
-            <span className="result-row-label">휴일근로수당</span>
+            <span className="result-row-label">휴일근로수당 {result.holidayWorkHoursMonthly > 0 && `(월 ${result.holidayWorkHoursMonthly}시간 · ${entry.companySize === '5인 이상' ? '1.5배' : '1.0배'} 가산)`}</span>
             <span className="result-row-value">{result.holidayWorkPay.toLocaleString()}원</span>
           </div>
           {result.totalNonTaxable + result.totalTaxableExcess > 0 && (
