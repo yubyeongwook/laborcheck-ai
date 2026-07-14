@@ -22,6 +22,7 @@ export function AuthProvider({ children }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [loginPhone, setLoginPhone] = useState('');
   const [authError, setAuthError] = useState('');
   const [isSigningUp, setIsSigningUp] = useState(false);
 
@@ -74,16 +75,49 @@ export function AuthProvider({ children }) {
       setAuthError('Supabase가 구성되지 않았습니다. .env 파일을 확인해 주세요.');
       return;
     }
+    const cleanPhone = (loginPhone || '').replace(/[^0-9]/g, '');
+    if (!/^01[016789]\d{7,8}$/.test(cleanPhone)) {
+      setAuthError('올바른 휴대폰 번호 형식이 아닙니다. (예: 010-1234-5678)');
+      return;
+    }
     try {
       const { error } = await supabase.auth.signUp({
         email: loginEmail,
         password: loginPassword,
+        options: {
+          data: {
+            phone_number: loginPhone
+          }
+        }
       });
       if (error) throw error;
-      alert('회원가입 확인 메일이 발송되었습니다! 이메일 링크를 확인해 주세요.');
+
+      // 가입 성공 시 백엔드 API를 호출해 카카오 가입 환영 메시지 발송
+      let kakaoSent = false;
+      try {
+        const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+        const kakaoRes = await fetch(`${apiBaseUrl}/api/send-kakao`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: loginPhone,
+            type: 'signup'
+          })
+        });
+        kakaoSent = kakaoRes.ok;
+      } catch (kakaoErr) {
+        console.error('카카오 가입 환영 메시지 발송 실패:', kakaoErr);
+      }
+
+      alert(
+        kakaoSent
+          ? '회원가입이 완료되었습니다! 가입 환영 카카오톡 메시지가 발송되었습니다. (인증이 필요한 경우 이메일을 확인해 주세요.)'
+          : '회원가입이 완료되었습니다! (카카오톡 환영 메시지 발송에는 실패했지만 가입에는 문제가 없습니다. 인증이 필요한 경우 이메일을 확인해 주세요.)'
+      );
       setIsSigningUp(false);
       setLoginEmail('');
       setLoginPassword('');
+      setLoginPhone('');
     } catch (err) {
       setAuthError(err.message || '회원가입에 실패했습니다.');
     }
@@ -124,6 +158,8 @@ export function AuthProvider({ children }) {
     setLoginEmail,
     loginPassword,
     setLoginPassword,
+    loginPhone,
+    setLoginPhone,
     authError,
     setAuthError,
     isSigningUp,

@@ -19,6 +19,9 @@ const LOADING_TIPS = [
 function ReportGenerator({ userType }) {
   const { session, user, setAuthError, setShowLoginModal } = useAuth();
   const isWorker = userType === '근로자';
+  
+  // 유료화 연동 플래그 (향후 결제 연동 도입 시 true로 설정)
+  const REQUIRE_PAYMENT = false;
 
   const [companySize, setCompanySize] = useState('5인 이상');
   const [salaryType, setSalaryType] = useState('월급');
@@ -343,6 +346,7 @@ function ReportGenerator({ userType }) {
   const [report, setReport] = useState('');
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
+  const [isSendingKakao, setIsSendingKakao] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -488,7 +492,74 @@ function ReportGenerator({ userType }) {
       setShowLoginModal(true);
       return;
     }
+
+    if (REQUIRE_PAYMENT) {
+      // 결제 체크 플레이스홀더 (향후 결제 연동 완료 후 상태 확인 적용)
+      const hasPaid = false; 
+      if (!hasPaid) {
+        alert('이 기능은 결제가 필요한 서비스입니다. 결제 모듈을 연동해 주세요.');
+        return;
+      }
+    }
+
     window.print();
+  };
+
+  const handleSendViaKakao = async () => {
+    if (!report) return;
+    if (!user) {
+      setAuthError('카카오톡 자료 수신은 회원가입 후 이용하실 수 있습니다.');
+      setShowLoginModal(true);
+      return;
+    }
+
+    if (REQUIRE_PAYMENT) {
+      // 결제 체크 플레이스홀더 (향후 결제 연동 완료 후 상태 확인 적용)
+      const hasPaid = false;
+      if (!hasPaid) {
+        alert('이 기능은 결제가 필요한 서비스입니다. 결제 모듈을 연동해 주세요.');
+        return;
+      }
+    }
+
+    const defaultPhone = user?.user_metadata?.phone_number || '';
+    const phone = prompt('자료를 전송받을 휴대폰 번호를 입력해 주세요. (예: 010-1234-5678)', defaultPhone);
+    
+    if (phone === null) return; // 취소
+    if (!phone.trim()) {
+      alert('휴대폰 번호를 입력해 주세요.');
+      return;
+    }
+
+    try {
+      setIsSendingKakao(true);
+      const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiBaseUrl}/api/send-kakao`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({
+          phone: phone,
+          type: 'download',
+          data: {
+            title: `${userType || '노무'} 자가진단 리포트 결과`
+          }
+        })
+      });
+
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.error || '알림톡 전송에 실패했습니다.');
+      }
+      
+      alert('입력하신 휴대폰 번호의 카카오톡으로 자료 다운로드 링크가 발송되었습니다!');
+    } catch (err) {
+      alert(err.message || '전송 실패');
+    } finally {
+      setIsSendingKakao(false);
+    }
   };
 
   function TimeSelectInput({ value, onChange }) {
@@ -569,7 +640,6 @@ function ReportGenerator({ userType }) {
   };
 
   function DayOfWeekEditor({
-    activeDay, setActiveDay,
     monActive, setMonActive, monStart, setMonStart, monEnd, setMonEnd, monBreakH, setMonBreakH, monBreakM, setMonBreakM, monBreakAuto, setMonBreakAuto, monNightBreakH, setMonNightBreakH, monNightBreakM, setMonNightBreakM,
     tueActive, setTueActive, tueStart, setTueStart, tueEnd, setTueEnd, tueBreakH, setTueBreakH, tueBreakM, setTueBreakM, tueBreakAuto, setTueBreakAuto, tueNightBreakH, setTueNightBreakH, tueNightBreakM, setTueNightBreakM,
     wedActive, setWedActive, wedStart, setWedStart, wedEnd, setWedEnd, wedBreakH, setWedBreakH, wedBreakM, setWedBreakM, wedBreakAuto, setWedBreakAuto, wedNightBreakH, setWedNightBreakH, wedNightBreakM, setWedNightBreakM,
@@ -590,105 +660,103 @@ function ReportGenerator({ userType }) {
       sun: { active: sunActive, setActive: setSunActive, start: sunStart, setStart: setSunStart, end: sunEnd, setEnd: setSunEnd, breakH: sunBreakH, setBreakH: setSunBreakH, breakM: sunBreakM, setBreakM: setSunBreakM, breakAuto: sunBreakAuto, setBreakAuto: setSunBreakAuto, nightBreakH: sunNightBreakH, setNightBreakH: setSunNightBreakH, nightBreakM: sunNightBreakM, setNightBreakM: setSunNightBreakM }
     };
 
-    const current = daysMap[activeDay];
-    const currentBreakHandlers = makeAutoBreakHandlers({
-      startVal: current.start, endVal: current.end,
-      setStart: current.setStart, setEnd: current.setEnd,
-      setBreakH: current.setBreakH, setBreakM: current.setBreakM,
-      breakAuto: current.breakAuto, setBreakAuto: current.setBreakAuto
-    });
+    const isActive = (d) => daysMap[d].active === true || daysMap[d].active === 'true';
+    const activeDays = days.filter(isActive);
 
     return (
-      <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-        <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>요일별 상세 근무 설정</span>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.25rem', marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.4rem', borderRadius: '8px' }}>
-          {days.map(d => {
-            const active = daysMap[d].active;
-            const isSelected = activeDay === d;
-            return (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setActiveDay(d)}
-                style={{
-                  flex: 1,
-                  padding: '0.5rem 0',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: isSelected ? '#38bdf8' : active ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-                  color: isSelected ? '#0f172a' : active ? '#38bdf8' : '#64748b',
-                  fontSize: '0.8rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  position: 'relative'
-                }}
-              >
-                {DAY_LABELS[d]}
-                {active && !isSelected && (
-                  <span style={{ position: 'absolute', top: '2px', right: '2px', width: '4px', height: '4px', borderRadius: '50%', background: '#38bdf8' }}></span>
-                )}
-              </button>
-            );
-          })}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+          <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>근무 요일 선택</span>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            {days.map(d => {
+              const active = isActive(d);
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => daysMap[d].setActive(!active)}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 0',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: active ? '#38bdf8' : 'rgba(255, 255, 255, 0.05)',
+                    color: active ? '#0f172a' : '#64748b',
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {DAY_LABELS[d]}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.03)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 'bold' }}>{DAY_LABELS[activeDay]}요일 근무 세부설정</span>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: '#38bdf8', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={current.active}
-                onChange={(e) => current.setActive(e.target.checked)}
-                style={{ accentColor: '#38bdf8' }}
-              />
-              {DAY_LABELS[activeDay]}요일 근무함
-            </label>
+        {activeDays.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '1.5rem 0', color: '#64748b', fontSize: '0.75rem' }}>
+            근무 요일을 1개 이상 선택해 주세요.
           </div>
+        )}
 
-          {current.active ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+        {activeDays.map((d) => {
+          const item = daysMap[d];
+          const breakHandlers = makeAutoBreakHandlers({
+            startVal: item.start, endVal: item.end,
+            setStart: item.setStart, setEnd: item.setEnd,
+            setBreakH: item.setBreakH, setBreakM: item.setBreakM,
+            breakAuto: item.breakAuto, setBreakAuto: item.setBreakAuto
+          });
+          const isBreakMinutes = (parseFloat(item.breakH) || 0) * 60 + (parseFloat(item.breakM) || 0);
+          const elapsed = calculateElapsedHours(item.start, item.end);
+          const workHours = Math.max(0, elapsed - isBreakMinutes / 60);
+
+          return (
+            <div key={d} style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold' }}>{DAY_LABELS[d]}요일</span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <div>
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>출근 시간</span>
-                  <TimeSelectInput value={current.start} onChange={currentBreakHandlers.onStartChange} />
+                  <TimeSelectInput value={item.start} onChange={breakHandlers.onStartChange} />
                 </div>
                 <div>
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>퇴근 시간</span>
-                  <TimeSelectInput value={current.end} onChange={currentBreakHandlers.onEndChange} />
+                  <TimeSelectInput value={item.end} onChange={breakHandlers.onEndChange} />
                 </div>
               </div>
 
-              <div>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 요일의 총 휴게시간</span>
-                <HourMinuteInput
-                  hourValue={current.breakH}
-                  onHourChange={currentBreakHandlers.onBreakHChange}
-                  minuteValue={current.breakM}
-                  onMinuteChange={currentBreakHandlers.onBreakMChange}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <div>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 근무일의 총 휴게시간</span>
+                  <HourMinuteInput
+                    hourValue={item.breakH}
+                    onHourChange={breakHandlers.onBreakHChange}
+                    minuteValue={item.breakM}
+                    onMinuteChange={breakHandlers.onBreakMChange}
+                  />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>야간시간대(22~06) 휴게시간</span>
+                  <HourMinuteInput
+                    hourValue={item.nightBreakH}
+                    onHourChange={item.setNightBreakH}
+                    minuteValue={item.nightBreakM}
+                    onMinuteChange={item.setNightBreakM}
+                  />
+                </div>
               </div>
 
-              <div style={{ background: 'rgba(165, 180, 252, 0.04)', padding: '0.6rem', borderRadius: '6px', border: '1px dashed rgba(165, 180, 252, 0.15)' }}>
-                <span style={{ fontSize: '0.7rem', color: '#a5b4fc', display: 'block', marginBottom: '0.25rem' }}>
-                  야간시간대(22:00~06:00) 중 사용한 휴게시간
-                </span>
-                <HourMinuteInput
-                  hourValue={current.nightBreakH}
-                  onHourChange={current.setNightBreakH}
-                  minuteValue={current.nightBreakM}
-                  onMinuteChange={current.setNightBreakM}
-                />
+              <div style={{ fontSize: '0.7rem', color: '#38bdf8', textAlign: 'right', fontWeight: '500' }}>
+                실근로시간: <strong>{(Math.round(workHours * 100) / 100).toFixed(1)}시간</strong> (휴게 {isBreakMinutes}분 제외)
               </div>
             </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '1.5rem 0', color: '#64748b', fontSize: '0.75rem' }}>
-              {DAY_LABELS[activeDay]}요일은 근무를 하지 않는 날(휴일)입니다.
-            </div>
-          )}
-        </div>
+          );
+        })}
       </div>
     );
   }
@@ -782,7 +850,6 @@ function ReportGenerator({ userType }) {
                 <>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     <DayOfWeekEditor
-                      activeDay={activeDay} setActiveDay={setActiveDay}
                       monActive={monActive} setMonActive={setMonActive} monStart={monStart} setMonStart={setMonStart} monEnd={monEnd} setMonEnd={setMonEnd} monBreakH={monBreakH} setMonBreakH={setMonBreakH} monBreakM={monBreakM} setMonBreakM={setMonBreakM} monBreakAuto={monBreakAuto} setMonBreakAuto={setMonBreakAuto} monNightBreakH={monNightBreakH} setMonNightBreakH={setMonNightBreakH} monNightBreakM={monNightBreakM} setMonNightBreakM={setMonNightBreakM}
                       tueActive={tueActive} setTueActive={setTueActive} tueStart={tueStart} setTueStart={setTueStart} tueEnd={tueEnd} setTueEnd={setTueEnd} tueBreakH={tueBreakH} setTueBreakH={setTueBreakH} tueBreakM={tueBreakM} setTueBreakM={setTueBreakM} tueBreakAuto={tueBreakAuto} setTueBreakAuto={setTueBreakAuto} tueNightBreakH={tueNightBreakH} setTueNightBreakH={setTueNightBreakH} tueNightBreakM={tueNightBreakM} setTueNightBreakM={setTueNightBreakM}
                       wedActive={wedActive} setWedActive={setWedActive} wedStart={wedStart} setWedStart={setWedStart} wedEnd={wedEnd} setWedEnd={setWedEnd} wedBreakH={wedBreakH} setWedBreakH={setWedBreakH} wedBreakM={wedBreakM} setWedBreakM={setWedBreakM} wedBreakAuto={wedBreakAuto} setWedBreakAuto={setWedBreakAuto} wedNightBreakH={wedNightBreakH} setWedNightBreakH={setWedNightBreakH} wedNightBreakM={wedNightBreakM} setWedNightBreakM={setWedNightBreakM}
@@ -1054,7 +1121,13 @@ function ReportGenerator({ userType }) {
                   {copied ? <><Check size={14} color="#10b981" /> 복사 완료</> : <><Clipboard size={14} /> 텍스트 복사</>}
                 </button>
                 <button className="btn-action" onClick={handlePrintPDF}><Download size={14} /> PDF/인쇄 다운로드</button>
+                <button className="btn-action" onClick={handleSendViaKakao} disabled={isSendingKakao}>
+                  {isSendingKakao ? '전송 중...' : '💬 카카오톡으로 받기'}
+                </button>
               </div>
+              <p style={{ fontSize: '0.75rem', color: '#818cf8', marginTop: '0.5rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center' }}>
+                <span>🎁</span> <strong>오픈 베타 특별 혜택:</strong> 회원가입 시 전체 상세 분석 및 다운로드/카카오톡 발송 무료 제공 (추후 유료 전환 예정)
+              </p>
 
               {!user ? (
                 (() => {

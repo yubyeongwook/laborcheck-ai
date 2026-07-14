@@ -7,6 +7,7 @@ function AuthModal() {
     showLoginModal, setShowLoginModal,
     loginEmail, setLoginEmail,
     loginPassword, setLoginPassword,
+    loginPhone, setLoginPhone,
     authError, setAuthError,
     isSigningUp, setIsSigningUp,
     handleEmailLogin, handleEmailSignUp, handleOAuthLogin
@@ -63,6 +64,19 @@ function AuthModal() {
               required
             />
           </div>
+          {isSigningUp && (
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>휴대폰 번호 (카카오톡 수신용)</span>
+              <input
+                type="tel"
+                className="text-input"
+                placeholder="010-1234-5678"
+                value={loginPhone}
+                onChange={(e) => setLoginPhone(e.target.value)}
+                required
+              />
+            </div>
+          )}
 
           <button
             type="submit"

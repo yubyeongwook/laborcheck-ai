@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 const NAV_LINKS = [
   { to: '/remedy', label: '권리구제(AI)' },
   { to: '/injury', label: '산재가이드' },
-  { to: '/tools/salary', label: '월급계산기' },
+  { to: '/tools/salary', label: '월급·명세서' },
   { to: '/tools/reverse-salary', label: '역산계산기' },
   { to: '/worker', label: '근로자' },
   { to: '/employer', label: '사업주' },

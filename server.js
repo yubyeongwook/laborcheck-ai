@@ -35,6 +35,41 @@ if (!apiKey || apiKey === 'your_gemini_api_key_here') {
 
 const genAI = new GoogleGenerativeAI(apiKey || '');
 
+// 카카오 알림톡 발송 자료 링크용 고정 사이트 주소 (클라이언트가 임의 URL을 주입하지 못하도록 서버에서 고정)
+const SITE_URL = process.env.SITE_URL || 'https://www.xn--ai-h74ir53a94vh9e.com';
+
+// Authorization 헤더의 Supabase Bearer 토큰을 검증해 로그인 사용자를 반환 (미로그인 시 null)
+async function getAuthenticatedUser(req) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ') && supabase) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (!error && user) return user;
+    } catch (err) {
+      console.error('Supabase JWT verification error:', err.message);
+    }
+  }
+  return null;
+}
+
+// 카카오 발송 API 남용 방지를 위한 간단한 인메모리 요청 빈도 제한 (전화번호/IP 기준)
+const kakaoRateLimitStore = new Map();
+const KAKAO_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1시간
+const KAKAO_RATE_LIMIT_MAX = 5; // 시간당 최대 5회
+
+function checkKakaoRateLimit(key) {
+  const now = Date.now();
+  const timestamps = (kakaoRateLimitStore.get(key) || []).filter(t => now - t < KAKAO_RATE_LIMIT_WINDOW_MS);
+  if (timestamps.length >= KAKAO_RATE_LIMIT_MAX) {
+    kakaoRateLimitStore.set(key, timestamps);
+    return false;
+  }
+  timestamps.push(now);
+  kakaoRateLimitStore.set(key, timestamps);
+  return true;
+}
+
 // 리포트 생성 API 엔드포인트
 app.post('/api/generate-report', async (req, res) => {
   try {
@@ -305,6 +340,126 @@ ${user_type === '근로자'
   } catch (error) {
     console.error('Gemini API Error:', error);
     res.status(500).json({ error: '리포트 생성 도중 오류가 발생했습니다.', details: error.message });
+  }
+});
+
+// 카카오 알림톡/문자 발송 API 엔드포인트
+app.post('/api/send-kakao', async (req, res) => {
+  try {
+    const { phone, type, data } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ error: '수신인 휴대폰 번호가 누락되었습니다.' });
+    }
+    if (type !== 'signup' && type !== 'download') {
+      return res.status(400).json({ error: '올바르지 않은 메시지 발송 형식(type)입니다.' });
+    }
+
+    // 휴대폰 번호 정규화 (숫자만 추출) 및 형식 검증
+    const cleanPhone = phone.replace(/[^0-9]/g, '').trim();
+    if (!/^01[016789]\d{7,8}$/.test(cleanPhone)) {
+      return res.status(400).json({ error: '올바른 휴대폰 번호 형식이 아닙니다.' });
+    }
+
+    // 리포트 다운로드 링크 발송은 임의 번호로 피싱 링크를 뿌리는 것을 막기 위해 로그인 사용자만 허용
+    const authedUser = await getAuthenticatedUser(req);
+    if (type === 'download' && !authedUser) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    // 남용 방지를 위한 요청 빈도 제한 (전화번호/IP 기준 시간당 5회)
+    const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+    if (!checkKakaoRateLimit(`phone:${cleanPhone}`) || !checkKakaoRateLimit(`ip:${clientIp}`)) {
+      return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
+    }
+
+    // 환경 변수에서 Solapi API 키 등 설정 로드
+    const solapiApiKey = process.env.SOLAPI_API_KEY || '';
+    const solapiApiSecret = process.env.SOLAPI_API_SECRET || '';
+    const senderNumber = process.env.SOLAPI_SENDER_NUMBER || '';
+    const kakaoChannelId = process.env.SOLAPI_CHANNEL_ID || '';
+    
+    // 알림톡 템플릿 코드
+    const templateSignup = process.env.SOLAPI_TEMPLATE_SIGNUP || 'TPL_SIGNUP_WELCOME';
+    const templateDownload = process.env.SOLAPI_TEMPLATE_DOWNLOAD || 'TPL_DOWNLOAD_REPORT';
+
+    let text = '';
+    let templateId = '';
+
+    if (type === 'signup') {
+      templateId = templateSignup;
+      text = `[노무체크 AI] 회원가입을 진심으로 축하드립니다!\n\n근로자와 사업주를 위한 법정 노무 계산기 및 AI 자가진단 리포트 작성을 이제 무료로 무제한 이용하실 수 있습니다.\n\n- 공식 홈페이지: https://www.xn--ai-h74ir53a94vh9e.com`;
+    } else {
+      templateId = templateDownload;
+      // 자료명은 표시용으로만 사용하고, 줄바꿈 제거 및 길이 제한으로 메시지 본문 조작을 방지
+      const reportTitle = (typeof data?.title === 'string' && data.title.trim())
+        ? data.title.replace(/[\r\n]+/g, ' ').slice(0, 60)
+        : '노무 자가진단 리포트';
+      // 링크는 클라이언트 입력을 신뢰하지 않고 서버에서 고정된 자사 도메인만 사용 (피싱 링크 주입 방지)
+      const downloadUrl = SITE_URL;
+      text = `[노무체크 AI] 요청하신 분석 자료의 확인 링크가 준비되었습니다.\n\n- 자료명: ${reportTitle}\n- 바로가기 링크: ${downloadUrl}\n\n* 언제든지 링크에 접속하여 상세 분석 리포트를 다시 확인할 수 있습니다.`;
+    }
+
+    // Solapi API 키가 설정되지 않았거나 기본값인 경우 데모 모드로 가상 발송 로그 출력
+    if (!solapiApiKey || solapiApiKey === 'your_solapi_key_here' || solapiApiKey === '') {
+      console.log('\n=========================================');
+      console.log('ℹ️ [데모 모드] 카카오톡 알림톡 발송 내역');
+      console.log(`- 수신자 번호: ${cleanPhone}`);
+      console.log(`- 발송 유형: ${type === 'signup' ? '회원가입 환영' : '자료 다운로드 링크'}`);
+      console.log(`- 템플릿 ID: ${templateId}`);
+      console.log(`- 발송 메시지 본문:\n${text}`);
+      console.log('=========================================\n');
+      
+      return res.json({ 
+        success: true, 
+        message: '데모 모드로 알림톡 전송이 가상으로 성공 처리되었습니다. (서버 콘솔에서 메시지 로그를 확인할 수 있습니다.)', 
+        mock: true,
+        details: { phone: cleanPhone, type, text }
+      });
+    }
+
+    // Solapi API 연동 전송 처리 (HMAC SHA256 서명 사용)
+    const crypto = require('crypto');
+    const date = new Date().toISOString();
+    const salt = crypto.randomBytes(16).toString('hex');
+    const signature = crypto
+      .createHmac('sha256', solapiApiSecret)
+      .update(date + salt)
+      .digest('hex');
+
+    const authHeader = `HMAC-SHA256 apiKey=${solapiApiKey}, date=${date}, salt=${salt}, signature=${signature}`;
+
+    const payload = {
+      message: {
+        to: cleanPhone,
+        from: senderNumber,
+        text: text,
+        kakaoOptions: {
+          pfId: kakaoChannelId,
+          templateId: templateId
+        }
+      }
+    };
+
+    // fetch를 활용하여 Solapi 발송 요청
+    const response = await fetch('https://api.solapi.com/messages/v4/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.errorMessage || '알림톡 발송 중 API 오류가 발생했습니다.');
+    }
+
+    return res.json({ success: true, result });
+  } catch (error) {
+    console.error('Kakao notification API error:', error);
+    res.status(500).json({ error: '카카오톡 메시지 발송 도중 오류가 발생했습니다.', details: error.message });
   }
 });
 

@@ -22,6 +22,56 @@ import InjuryHub from './pages/InjuryHub.jsx';
 import ReverseSalaryCalculator from './pages/ReverseSalaryCalculator.jsx';
 
 function App() {
+  React.useEffect(() => {
+    // 1. 우클릭 메뉴 방지
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+    };
+
+    // 2. 키보드 단축키 방지 (Ctrl+C, Ctrl+X, Ctrl+U, F12, Ctrl+Shift+I 등)
+    const handleKeyDown = (e) => {
+      const isCtrl = e.ctrlKey || e.metaKey; // Windows Ctrl or Mac Cmd
+      const tag = e.target?.tagName;
+      const isEditableField = tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable;
+
+      // 입력창 안에서는 값 복사/잘라내기 편의를 위해 Ctrl+C, Ctrl+X는 막지 않음
+      if (
+        !isEditableField && (
+          (isCtrl && (e.key === 'c' || e.key === 'C')) || // 복사
+          (isCtrl && (e.key === 'x' || e.key === 'X'))    // 잘라내기
+        )
+      ) {
+        e.preventDefault();
+        return;
+      }
+
+      if (
+        (isCtrl && (e.key === 'u' || e.key === 'U')) || // 소스 보기
+        e.key === 'F12' || // 개발자 도구
+        (isCtrl && e.shiftKey && (e.key === 'i' || e.key === 'I')) || // 개발자 도구
+        (isCtrl && e.shiftKey && (e.key === 'c' || e.key === 'C')) || // 요소 선택
+        (isCtrl && e.shiftKey && (e.key === 'j' || e.key === 'J'))    // 콘솔
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    // 3. 드래그 시작 방지
+    const handleDragStart = (e) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('dragstart', handleDragStart);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('dragstart', handleDragStart);
+    };
+  }, []);
+
   return (
     <AuthProvider>
       <Navbar />

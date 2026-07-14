@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Coins, Building2, Clock, Plus, Trash2, Sun, CalendarClock, Utensils } from 'lucide-react';
-import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes } from '../utils/laborCalc.js';
+import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, applyDeductions } from '../utils/laborCalc.js';
 
 const currentYear = new Date().getFullYear();
 
@@ -306,116 +306,188 @@ const DAY_LABELS = {
   sun: '일'
 };
 
-function DayOfWeekEditor({ entry, update, updateTime, updateBreak, activeDay, setActiveDay }) {
+function DayOfWeekEditor({ entry, update, updateTime, updateBreak }) {
   const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  const isActive = (d) => entry[`${d}Active`] === true || entry[`${d}Active`] === 'true';
+  const activeDays = days.filter(isActive);
 
   return (
-    <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-      <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>요일별 상세 근무 설정</span>
-      
-      {/* 7요일 활성화 선택 칩 */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.25rem', marginBottom: '1rem', background: 'rgba(0,0,0,0.2)', padding: '0.4rem', borderRadius: '8px' }}>
-        {days.map(d => {
-          const active = entry[`${d}Active`] === true || entry[`${d}Active`] === 'true';
-          const isSelected = activeDay === d;
-          return (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setActiveDay(d)}
-              style={{
-                flex: 1,
-                padding: '0.5rem 0',
-                borderRadius: '6px',
-                border: 'none',
-                background: isSelected ? '#38bdf8' : active ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-                color: isSelected ? '#0f172a' : active ? '#38bdf8' : '#64748b',
-                fontSize: '0.8rem',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                position: 'relative'
-              }}
-            >
-              {DAY_LABELS[d]}
-              {active && !isSelected && (
-                <span style={{ position: 'absolute', top: '2px', right: '2px', width: '4px', height: '4px', borderRadius: '50%', background: '#38bdf8' }}></span>
-              )}
-            </button>
-          );
-        })}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+        <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>근무 요일 선택</span>
+        <div style={{ display: 'flex', gap: '0.25rem' }}>
+          {days.map(d => {
+            const active = isActive(d);
+            return (
+              <button
+                key={d}
+                type="button"
+                onClick={() => update(`${d}Active`)(!active)}
+                style={{
+                  flex: 1,
+                  padding: '0.5rem 0',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: active ? '#38bdf8' : 'rgba(255, 255, 255, 0.05)',
+                  color: active ? '#0f172a' : '#64748b',
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {DAY_LABELS[d]}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* 현재 선택된 요일의 세부 설정 */}
-      <div style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 'bold' }}>{DAY_LABELS[activeDay]}요일 근무 세부설정</span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: '#38bdf8', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={entry[`${activeDay}Active`] === true || entry[`${activeDay}Active`] === 'true'}
-              onChange={(e) => update(`${activeDay}Active`)(e.target.checked)}
-              style={{ accentColor: '#38bdf8' }}
-            />
-            {DAY_LABELS[activeDay]}요일 근무함
-          </label>
+      {activeDays.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '1.5rem 0', color: '#64748b', fontSize: '0.75rem' }}>
+          근무 요일을 1개 이상 선택해 주세요.
         </div>
+      )}
 
-        {(entry[`${activeDay}Active`] === true || entry[`${activeDay}Active`] === 'true') ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+      {activeDays.map((d) => {
+        const isBreakMinutes = (parseFloat(entry[`${d}BreakH`]) || 0) * 60 + (parseFloat(entry[`${d}BreakM`]) || 0);
+        const elapsed = calculateElapsedHours(entry[`${d}Start`], entry[`${d}End`]);
+        const workHours = Math.max(0, elapsed - isBreakMinutes / 60);
+
+        return (
+          <div key={d} style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold' }}>{DAY_LABELS[d]}요일</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <div>
                 <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>출근 시간</span>
-                <TimeSelectInput value={entry[`${activeDay}Start`]} onChange={updateTime(activeDay, 'Start')} />
+                <TimeSelectInput value={entry[`${d}Start`]} onChange={updateTime(d, 'Start')} />
               </div>
               <div>
                 <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>퇴근 시간</span>
-                <TimeSelectInput value={entry[`${activeDay}End`]} onChange={updateTime(activeDay, 'End')} />
+                <TimeSelectInput value={entry[`${d}End`]} onChange={updateTime(d, 'End')} />
               </div>
             </div>
 
-            <div>
-              <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 요일의 총 휴게시간</span>
-              <HourMinuteInput
-                hourValue={entry[`${activeDay}BreakH`]}
-                onHourChange={updateBreak(activeDay, 'BreakH')}
-                minuteValue={entry[`${activeDay}BreakM`]}
-                onMinuteChange={updateBreak(activeDay, 'BreakM')}
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <div>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 근무일의 총 휴게시간</span>
+                <HourMinuteInput
+                  hourValue={entry[`${d}BreakH`]}
+                  onHourChange={updateBreak(d, 'BreakH')}
+                  minuteValue={entry[`${d}BreakM`]}
+                  onMinuteChange={updateBreak(d, 'BreakM')}
+                />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>야간시간대(22~06) 휴게시간</span>
+                <HourMinuteInput
+                  hourValue={entry[`${d}NightBreakH`]}
+                  onHourChange={update(`${d}NightBreakH`)}
+                  minuteValue={entry[`${d}NightBreakM`]}
+                  onMinuteChange={update(`${d}NightBreakM`)}
+                />
+              </div>
             </div>
 
-            {/* 야간 연장 휴게시간 */}
-            <div style={{ background: 'rgba(165, 180, 252, 0.04)', padding: '0.6rem', borderRadius: '6px', border: '1px dashed rgba(165, 180, 252, 0.15)' }}>
-              <span style={{ fontSize: '0.7rem', color: '#a5b4fc', display: 'block', marginBottom: '0.25rem' }}>
-                야간시간대(22:00~06:00) 중 사용한 휴게시간
-              </span>
-              <HourMinuteInput
-                hourValue={entry[`${activeDay}NightBreakH`]}
-                onHourChange={update(`${activeDay}NightBreakH`)}
-                minuteValue={entry[`${activeDay}NightBreakM`]}
-                onMinuteChange={update(`${activeDay}NightBreakM`)}
-              />
+            <div style={{ fontSize: '0.7rem', color: '#38bdf8', textAlign: 'right', fontWeight: '500' }}>
+              실근로시간: <strong>{(Math.round(workHours * 100) / 100).toFixed(1)}시간</strong> (휴게 {isBreakMinutes}분 제외)
             </div>
           </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '1.5rem 0', color: '#64748b', fontSize: '0.75rem' }}>
-            {DAY_LABELS[activeDay]}요일은 근무를 하지 않는 날(휴일)입니다.
-          </div>
-        )}
-      </div>
+        );
+      })}
     </div>
   );
 }
 
 function YearEntryCard({ entry, onChange, onRemove, removable }) {
+  const [payStubOpen, setPayStubOpen] = useState(false);
+  const [employeeName, setEmployeeName] = useState('홍길동');
+  const [employeeBirth, setEmployeeBirth] = useState('1990-01-01');
+  const [paymentDate, setPaymentDate] = useState('매월 25일');
+  const [paymentMonth, setPaymentMonth] = useState(`${entry.year}-07`);
+  const [companyName, setCompanyName] = useState('대박 사업장');
+  const [absenceDays, setAbsenceDays] = useState('0');
+  const [weeklyHoliday, setWeeklyHoliday] = useState('0'); // 0: 일요일, 1: 월요일, ...
+
   const update = (key) => (value) => onChange({ ...entry, [key]: value });
   // 출퇴근 시간 변경 시 휴게시간 자동 재계산(사용자가 직접 수정하지 않은 경우에 한함)
   const updateTime = (prefix, field) => (value) => onChange(applyAutoBreak({ ...entry, [`${prefix}${field}`]: value }, prefix));
   // 휴게시간 직접 수정 시 해당 패턴/요일의 자동계산을 비활성화
   const updateBreak = (prefix, field) => (value) => onChange({ ...entry, [`${prefix}${field}`]: value, [`${prefix}BreakAuto`]: false });
-  const [activeDay, setActiveDay] = useState('mon');
   const { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, result } = computeDerived(entry);
   const rates = getDeductionRatesForYear(entry.year);
+
+  // 1. 귀속월 분석을 통한 근무일수/주휴일수 자동 계산
+  const [pYear, pMonth] = paymentMonth.split('-').map(Number);
+  let workDaysOfWeek = [];
+  const holiday = parseInt(weeklyHoliday, 10);
+  if (entry.scheduleType === '요일별') {
+    const daysMap = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 0 };
+    ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(day => {
+      if (entry[`${day}Active`] && daysMap[day] !== holiday) {
+        workDaysOfWeek.push(daysMap[day]);
+      }
+    });
+  } else {
+    const daysOrder = [1, 2, 3, 4, 5, 6, 0]; // 월~토, 일 순
+    const filtered = daysOrder.filter(d => d !== holiday);
+    const count = Math.min(Math.max(parseInt(totalWeeklyDays, 10) || 5, 0), 6);
+    workDaysOfWeek = filtered.slice(0, count);
+  }
+
+  let scheduledWorkDaysInMonth = 0;
+  let holidaysInMonth = 0;
+  if (pYear && pMonth) {
+    const date = new Date(pYear, pMonth - 1, 1);
+    while (date.getMonth() === pMonth - 1) {
+      const dayOfWeek = date.getDay();
+      if (dayOfWeek === holiday) {
+        holidaysInMonth++;
+      } else if (workDaysOfWeek.includes(dayOfWeek)) {
+        scheduledWorkDaysInMonth++;
+      }
+      date.setDate(date.getDate() + 1);
+    }
+  }
+
+  // 2. 결근 공제액 및 실제 근무일수 계산
+  const isLessThan6Days = totalWeeklyDays < 6;
+  const absDays = Math.max(0, parseFloat(absenceDays) || 0);
+  const actualWorkDays = Math.max(0, scheduledWorkDaysInMonth - absDays);
+  const actualPaidHolidays = Math.max(0, holidaysInMonth - absDays);
+
+  let absenceDeduction = 0;
+  let dailyWage = 0;
+  if (absDays > 0) {
+    if (isLessThan6Days) {
+      // 주 6일 미만 근로자: 소정근로일과 주휴일을 포함한 총 소정일수 기준으로 일급을 산정하여 공제
+      const totalScheduled = scheduledWorkDaysInMonth + holidaysInMonth;
+      if (totalScheduled > 0) {
+        dailyWage = Math.round((result.basePay + result.weeklyHolidayPay) / totalScheduled);
+        // 결근일수 + 해당 결근으로 인한 주휴수당 상실 일수(결근일수와 주휴일수 중 작은 값만큼 상실)
+        const lostHolidays = Math.min(absDays, holidaysInMonth);
+        absenceDeduction = Math.round(dailyWage * (absDays + lostHolidays));
+      }
+    } else {
+      // 주 6일 이상 근로자: 일반적인 일할 공제 (30일 기준) 적용
+      absenceDeduction = Math.round(((result.basePay + result.weeklyHolidayPay) / 30) * absDays);
+    }
+  }
+
+  // 3. 결근 공제를 반영하여 세금/4대보험 및 실수령액 재계산
+  const adjustedGrossTotal = Math.max(0, result.grossTotal - absenceDeduction);
+  const defaultPensionBasis = entry.pensionBasis > 0 ? parseFloat(entry.pensionBasis) : Math.max(0, result.basePay + result.weeklyHolidayPay - absenceDeduction);
+  const adjustedDeductions = applyDeductions(
+    adjustedGrossTotal,
+    parseInt(entry.year, 10),
+    defaultPensionBasis,
+    result.totalNonTaxable,
+    entry.deductionType || '4대보험',
+    actualWorkDays || 20
+  );
 
   return (
     <section className="glass-panel" style={{ marginBottom: '1.5rem' }}>
@@ -560,7 +632,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             {entry.scheduleType === '요일별' ? (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <DayOfWeekEditor entry={entry} update={update} updateTime={updateTime} updateBreak={updateBreak} activeDay={activeDay} setActiveDay={setActiveDay} />
+                  <DayOfWeekEditor entry={entry} update={update} updateTime={updateTime} updateBreak={updateBreak} />
                 </div>
                 
                 <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.15)' }}>
@@ -727,7 +799,58 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               {entry.salaryType === '월급' && `${result.monthlyNetPay.toLocaleString()}원`}
             </div>
             <div className="result-highlight-sub" style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-              연 환산 실수령액 약 {result.netAnnual.toLocaleString()}원 (주 {weeklyHours}시간 근무 기준)
+              연 환산 실수령액 약 {result.netAnnual.toLocaleString()}원 (월 총근로 {((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)).toFixed(1)}시간: 기준 {(((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) <= 174 ? ((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) : 173.8).toFixed(1)}시간 / 연장 {(((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) <= 174 ? 0 : (result.overtimeHoursMonthly || 0)).toFixed(1)}시간 / 야간 {(result.nightHoursMonthly || 0).toFixed(1)}시간 기준)
+            </div>
+
+            {/* 근무시간 대시보드 */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(4, 1fr)', 
+              gap: '0.4rem', 
+              margin: '0.75rem 0', 
+              background: 'rgba(0, 0, 0, 0.2)', 
+              padding: '0.6rem 0.5rem', 
+              borderRadius: '8px', 
+              border: `1px solid ${result.isMinWageCompliant ? 'rgba(56, 189, 248, 0.15)' : 'rgba(239, 68, 68, 0.25)'}`,
+              boxShadow: result.isMinWageCompliant ? 'none' : 'inset 0 0 10px rgba(239, 68, 68, 0.05)'
+            }}>
+              <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>총 근로시간</span>
+                <strong style={{ fontSize: '0.85rem', color: '#fff' }}>
+                  {((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)).toFixed(1)}h
+                </strong>
+              </div>
+              <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.6rem', color: '#38bdf8', display: 'block', marginBottom: '0.15rem' }}>기준근로시간</span>
+                <strong style={{ fontSize: '0.85rem', color: '#38bdf8' }}>
+                  {(((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) <= 174 
+                    ? ((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) 
+                    : 173.8).toFixed(1)}h
+                </strong>
+              </div>
+              <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.6rem', color: '#a5b4fc', display: 'block', marginBottom: '0.15rem' }}>연장근로시간</span>
+                <strong style={{ fontSize: '0.85rem', color: '#a5b4fc' }}>
+                  {(((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) <= 174 
+                    ? 0 
+                    : (result.overtimeHoursMonthly || 0)).toFixed(1)}h
+                </strong>
+              </div>
+              <div style={{ 
+                textAlign: 'center', 
+                background: 'rgba(255,255,255,0.01)', 
+                padding: '0.35rem 0.2rem', 
+                borderRadius: '6px',
+                border: !result.isMinWageCompliant ? '1px dashed rgba(239, 68, 68, 0.3)' : 'none'
+              }}>
+                <span style={{ fontSize: '0.6rem', color: '#f472b6', display: 'block', marginBottom: '0.15rem' }}>
+                  {!result.isMinWageCompliant && <span style={{ display: 'inline-block', width: '6px', height: '6px', background: '#ef4444', borderRadius: '50%', marginRight: '3px', boxShadow: '0 0 6px #ef4444', animation: 'pulse 1s infinite' }} />}
+                  야간근로시간
+                </span>
+                <strong style={{ fontSize: '0.85rem', color: '#f472b6' }}>
+                  {(result.nightHoursMonthly || 0).toFixed(1)}h
+                </strong>
+              </div>
             </div>
 
             {/* 일급/주급/월급 환산 대조표 */}
@@ -743,6 +866,38 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               <div style={{ textAlign: 'center' }}>
                 <span style={{ fontSize: '0.62rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>한 달 실수령 (월급)</span>
                 <strong style={{ fontSize: '0.78rem', color: '#818cf8' }}>{result.monthlyNetPay.toLocaleString()}원</strong>
+              </div>
+            </div>
+
+            {/* 근무시간 요약 표 */}
+            <div style={{ background: 'rgba(56, 189, 248, 0.03)', padding: '0.75rem', borderRadius: '10px', border: '1px dashed rgba(56, 189, 248, 0.2)', marginBottom: '1rem', marginTop: '0.75rem' }}>
+              <span style={{ fontSize: '0.75rem', color: '#cbd5e1', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '0.5rem' }}>
+                <Clock size={14} color="#38bdf8" /> 근무시간 요약 (주 / 월 기준)
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.25rem', marginBottom: '0.25rem', fontWeight: 'bold', textAlign: 'center' }}>
+                <div>구분</div>
+                <div>주 기준</div>
+                <div>월 기준</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
+                <div style={{ color: '#38bdf8', fontWeight: '500' }}>기준(소정)근로시간</div>
+                <div><strong>{(result.weeklyRegularHours || 0).toFixed(1)}시간</strong></div>
+                <div>{(result.regularWorkHoursMonthly || 0).toFixed(1)}시간</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
+                <div style={{ color: '#a5b4fc', fontWeight: '500' }}>연장근로시간</div>
+                <div><strong>{(result.weeklyOvertimeHours || 0).toFixed(1)}시간</strong></div>
+                <div>{(result.overtimeHoursMonthly || 0).toFixed(1)}시간</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
+                <div style={{ color: '#f472b6', fontWeight: '500' }}>야간근로시간</div>
+                <div><strong>{(result.weeklyNightHours || 0).toFixed(1)}시간</strong></div>
+                <div>{(result.nightHoursMonthly || 0).toFixed(1)}시간</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.72rem', color: '#fff', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.25rem', marginTop: '0.25rem', textAlign: 'center' }}>
+                <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>총 실근로시간</div>
+                <div><strong>{(result.weeklyTotalHours || 0).toFixed(1)}시간</strong></div>
+                <div>{((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)).toFixed(1)}시간</div>
               </div>
             </div>
           </div>
@@ -877,8 +1032,463 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               산출된 시급({result.baseHourlyWage.toLocaleString()}원)이 {result.year}년 법정 최저시급({result.minWage.toLocaleString()}원)에 미달합니다.
             </div>
           )}
+
+          {/* 법정 급여명세서 교부 및 발급 버튼 */}
+          <button
+            type="button"
+            onClick={() => setPayStubOpen(true)}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '0.5rem', 
+              width: '100%', 
+              padding: '0.85rem', 
+              marginTop: '1.25rem', 
+              background: 'linear-gradient(135deg, #10b981, #059669)', 
+              border: 'none', 
+              borderRadius: '10px', 
+              color: '#fff', 
+              fontWeight: 700, 
+              fontSize: '0.85rem', 
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Clock size={16} /> 법정 급여명세서 교부·발급
+          </button>
         </div>
       </div>
+
+      {payStubOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem', overflowY: 'auto' }}>
+          <style>{`
+            @media print {
+              body * {
+                visibility: hidden;
+              }
+              .paystub-print-area, .paystub-print-area * {
+                visibility: visible;
+              }
+              .paystub-print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                color: #000 !important;
+                background: #fff !important;
+                padding: 30px !important;
+                font-family: sans-serif;
+                box-shadow: none !important;
+              }
+              .paystub-print-area table {
+                border-collapse: collapse;
+                width: 100%;
+              }
+              .paystub-print-area th, .paystub-print-area td {
+                border: 1px solid #000 !important;
+                color: #000 !important;
+                padding: 8px !important;
+                font-size: 11px !important;
+              }
+              .paystub-print-area th {
+                background: #f3f4f6 !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+            }
+          `}</style>
+          
+          <div className="glass-panel no-print" style={{ width: '100%', maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', padding: '1.5rem', borderRadius: '16px', color: '#f8fafc' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#38bdf8' }}>
+              <Building2 size={22} /> 교부용 법정 급여명세서 작성 및 발급
+            </h2>
+            
+            {/* 정보 입력 폼 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', marginBottom: '1.25rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>회사(사업장)명</label>
+                <input type="text" className="text-input" value={companyName} onChange={(e) => setCompanyName(e.target.value)} style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>근로자 성명</label>
+                <input type="text" className="text-input" value={employeeName} onChange={(e) => setEmployeeName(e.target.value)} style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>생년월일</label>
+                <input type="date" className="text-input" value={employeeBirth} onChange={(e) => setEmployeeBirth(e.target.value)} style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', colorScheme: 'dark' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>급여 귀속월</label>
+                <input type="month" className="text-input" value={paymentMonth} onChange={(e) => setPaymentMonth(e.target.value)} style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', colorScheme: 'dark' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>임금 지급일</label>
+                <input type="text" className="text-input" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>공제 구분</label>
+                <input type="text" className="text-input" value={entry.deductionType || '4대보험'} disabled style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', opacity: 0.6 }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주휴일</label>
+                <select className="text-input" value={weeklyHoliday} onChange={(e) => setWeeklyHoliday(e.target.value)} style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem', colorScheme: 'dark' }}>
+                  <option value="0">일요일</option>
+                  <option value="1">월요일</option>
+                  <option value="2">화요일</option>
+                  <option value="3">수요일</option>
+                  <option value="4">목요일</option>
+                  <option value="5">금요일</option>
+                  <option value="6">토요일</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>결근 일수</label>
+                <input type="number" className="text-input" value={absenceDays} onChange={(e) => setAbsenceDays(e.target.value)} min="0" max="31" style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }} />
+              </div>
+              <div style={{ gridColumn: 'span 3', padding: '0.6rem 0.8rem', background: 'rgba(99, 102, 241, 0.08)', borderRadius: '8px', fontSize: '0.75rem', border: '1px solid rgba(99, 102, 241, 0.2)', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+                <div>
+                  📅 <strong>{pYear}년 {pMonth}월 소정일수 자동계산:</strong> 소정근로일수 <strong>{scheduledWorkDaysInMonth}일</strong> | 주휴일수 <strong>{holidaysInMonth}일</strong> (총 {scheduledWorkDaysInMonth + holidaysInMonth}일)
+                </div>
+                {absDays > 0 && (
+                  <div style={{ color: '#38bdf8', fontWeight: 600 }}>
+                    실제 근무: {actualWorkDays}일 | 지급 주휴: {actualPaidHolidays}일
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* 명세서 미리보기 (인쇄 영역) */}
+            <div className="paystub-print-area" style={{ background: '#0f172a', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '1.25rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: '800', textDecoration: 'underline', color: '#fff', margin: '0 0 0.5rem 0' }}>급 여 명 세 서</h1>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>귀하의 노고에 감사드립니다.</p>
+              </div>
+              
+              {/* 근로자 및 사업장 정보 */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.02)', color: '#94a3b8', width: '15%' }}>사업장명</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', color: '#fff', width: '35%' }}>{companyName}</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.02)', color: '#94a3b8', width: '15%' }}>귀속년월</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', color: '#fff', width: '35%' }}>{paymentMonth.split('-')[0]}년 {paymentMonth.split('-')[1]}월분</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.02)', color: '#94a3b8' }}>성 명</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', color: '#fff' }}>{employeeName}</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.02)', color: '#94a3b8' }}>지급일자</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', color: '#fff' }}>{paymentDate}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.02)', color: '#94a3b8' }}>생년월일</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', color: '#fff' }}>{employeeBirth}</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.02)', color: '#94a3b8' }}>기초시급</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', color: '#fff' }}>{result.baseHourlyWage.toLocaleString()}원</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.02)', color: '#94a3b8' }}>소정근로/주휴</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', color: '#fff' }}>근로 {scheduledWorkDaysInMonth}일 / 주휴 {holidaysInMonth}일</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.02)', color: '#94a3b8' }}>실제근무/지급주휴</td>
+                    <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 10px', fontSize: '0.75rem', color: '#fff' }}>근무 {actualWorkDays}일 / 주휴 {actualPaidHolidays}일</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              {/* 내역 테이블 (지급 vs 공제) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+                {/* 지급 내역 */}
+                <div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+                        <th style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px', fontSize: '0.75rem', color: '#38bdf8', textAlign: 'center' }} colSpan={2}>지급 항목</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>기본급</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{result.basePay.toLocaleString()}원</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>주휴수당</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{result.weeklyHolidayPay.toLocaleString()}원</td>
+                      </tr>
+                      {result.overtimePay > 0 && (
+                        <tr>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>연장근로수당</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{result.overtimePay.toLocaleString()}원</td>
+                        </tr>
+                      )}
+                      {result.nightPay > 0 && (
+                        <tr>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>야간근로수당</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{result.nightPay.toLocaleString()}원</td>
+                        </tr>
+                      )}
+                      {result.holidayWorkPay > 0 && (
+                        <tr>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>휴일근로수당</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{result.holidayWorkPay.toLocaleString()}원</td>
+                        </tr>
+                      )}
+                      {result.leavePayMonthly > 0 && (
+                        <tr>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>연차수당</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{result.leavePayMonthly.toLocaleString()}원</td>
+                        </tr>
+                      )}
+                      {result.totalNonTaxable + result.totalTaxableExcess > 0 && (
+                        <tr>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#34d399' }}>비과세 수당</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#34d399', textAlign: 'right' }}>{(result.totalNonTaxable + result.totalTaxableExcess).toLocaleString()}원</td>
+                        </tr>
+                      )}
+                      {result.taxableAllowance > 0 && (
+                        <tr>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#f87171' }}>과세 수당</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#f87171', textAlign: 'right' }}>{result.taxableAllowance.toLocaleString()}원</td>
+                        </tr>
+                      )}
+                      <tr style={{ background: 'rgba(56, 189, 248, 0.05)' }}>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#38bdf8', fontWeight: 'bold' }}>지급액 합계</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#38bdf8', textAlign: 'right', fontWeight: 'bold' }}>{result.grossTotal.toLocaleString()}원</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* 공제 내역 */}
+                <div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+                        <th style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px', fontSize: '0.75rem', color: '#f87171', textAlign: 'center' }} colSpan={2}>공제 항목</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(entry.deductionType === '4대보험' || !entry.deductionType) ? (
+                        <>
+                          <tr>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>국민연금</td>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{adjustedDeductions.nationalPension.toLocaleString()}원</td>
+                          </tr>
+                          <tr>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>건강보험</td>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{adjustedDeductions.healthInsurance.toLocaleString()}원</td>
+                          </tr>
+                          <tr>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>장기요양보험</td>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{adjustedDeductions.longTermCare.toLocaleString()}원</td>
+                          </tr>
+                          <tr>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>고용보험</td>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{adjustedDeductions.employmentInsurance.toLocaleString()}원</td>
+                          </tr>
+                        </>
+                      ) : entry.deductionType === '3.3%' ? (
+                        <>
+                          <tr>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>사업소득세 (3.0%)</td>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{adjustedDeductions.incomeTax.toLocaleString()}원</td>
+                          </tr>
+                        </>
+                      ) : (
+                        <>
+                          <tr>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>고용보험 (일용직)</td>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{adjustedDeductions.employmentInsurance.toLocaleString()}원</td>
+                          </tr>
+                          {adjustedDeductions.incomeTax > 0 && (
+                            <tr>
+                              <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>일용근로소득세</td>
+                              <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{adjustedDeductions.incomeTax.toLocaleString()}원</td>
+                            </tr>
+                          )}
+                        </>
+                      )}
+                      {adjustedDeductions.incomeTax > 0 && entry.deductionType !== '3.3%' && (
+                        <tr>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>근로소득세</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{adjustedDeductions.incomeTax.toLocaleString()}원</td>
+                        </tr>
+                      )}
+                      {adjustedDeductions.localIncomeTax > 0 && (
+                        <tr>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#cbd5e1' }}>지방소득세</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#fff', textAlign: 'right' }}>{adjustedDeductions.localIncomeTax.toLocaleString()}원</td>
+                        </tr>
+                      )}
+                      {absenceDeduction > 0 && (
+                        <tr style={{ background: 'rgba(239, 68, 68, 0.05)' }}>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#f87171', fontWeight: 'bold' }}>결근 공제 ({absenceDays}일)</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#f87171', textAlign: 'right', fontWeight: 'bold' }}>{absenceDeduction.toLocaleString()}원</td>
+                        </tr>
+                      )}
+                      <tr style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#f87171', fontWeight: 'bold' }}>공제액 합계</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#f87171', textAlign: 'right', fontWeight: 'bold' }}>{(adjustedDeductions.totalDeductions + absenceDeduction).toLocaleString()}원</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              {/* 차인 지급액 (실수령액) */}
+              <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '10px 15px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                <span style={{ fontSize: '0.85rem', color: '#34d399', fontWeight: 'bold' }}>차인 지급액 (실수령액)</span>
+                <strong style={{ fontSize: '1.15rem', color: '#10b981' }}>{adjustedDeductions.netPay.toLocaleString()}원</strong>
+              </div>
+              
+              {/* 법정 필수 기재: 임금 계산방법 명세 */}
+              <div>
+                <h4 style={{ fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 'bold', marginBottom: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.3rem' }}>임금 계산방법 명세 (근로기준법 제48조 2항에 따른 계산식)</h4>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.7rem' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                      <th style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px', color: '#94a3b8', width: '25%', textAlign: 'center' }}>항목</th>
+                      <th style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px', color: '#94a3b8', width: '20%', textAlign: 'center' }}>시간(일)수</th>
+                      <th style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px', color: '#94a3b8', width: '55%', textAlign: 'center' }}>상세 계산방법 (계산식)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>기본급</td>
+                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{result.regularWorkHoursMonthly}시간</td>
+                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>{result.regularWorkHoursMonthly}시간 × {result.baseHourlyWage.toLocaleString()}원</td>
+                    </tr>
+                    <tr>
+                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>주휴수당</td>
+                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{result.weeklyHolidayHoursMonthly}시간</td>
+                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
+                        {result.weeklyHolidayHoursMonthly > 0 
+                          ? `${result.weeklyHolidayHoursMonthly}시간 × ${result.baseHourlyWage.toLocaleString()}원` 
+                          : '미발생 (주 소정근로 15시간 미만)'}
+                      </td>
+                    </tr>
+                    {result.overtimePay > 0 && (
+                      <tr>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>연장근로수당</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{result.overtimeHoursMonthly}시간</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
+                          {result.overtimeHoursMonthly}시간 × {result.baseHourlyWage.toLocaleString()}원 × {entry.companySize === '5인 이상' ? '1.5배' : '1.0배'} (가산)
+                        </td>
+                      </tr>
+                    )}
+                    {result.nightPay > 0 && (
+                      <tr>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>야간근로수당</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{result.nightHoursMonthly}시간</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
+                          {result.nightHoursMonthly}시간 × {result.baseHourlyWage.toLocaleString()}원 × {entry.companySize === '5인 이상' ? '0.5배' : '0.0배'} (가산)
+                        </td>
+                      </tr>
+                    )}
+                    {result.holidayWorkPay > 0 && (
+                      <tr>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>휴일근로수당</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{result.holidayWorkHoursMonthly}시간</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
+                          {result.holidayWorkHoursMonthly}시간 × {result.baseHourlyWage.toLocaleString()}원 × {entry.companySize === '5인 이상' ? '1.5배' : '1.0배'} (가산)
+                        </td>
+                      </tr>
+                    )}
+                    {result.leavePayMonthly > 0 && (
+                      <tr>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>연차수당</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{result.leavePayHoursMonthly}시간</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
+                          {result.leavePayHoursMonthly}시간 × {result.baseHourlyWage.toLocaleString()}원 (선지급 분할)
+                        </td>
+                      </tr>
+                    )}
+                    {absenceDeduction > 0 && (
+                      <tr style={{ background: 'rgba(239, 68, 68, 0.05)' }}>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#f87171', fontWeight: 600 }}>결근 공제</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{absenceDays}일 결근</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
+                          {isLessThan6Days 
+                            ? `일급(${dailyWage.toLocaleString()}원) × (결근 ${absenceDays}일 + 주휴 ${Math.min(absDays, holidaysInMonth)}일 상실) = ${absenceDeduction.toLocaleString()}원 공제`
+                            : `일 기준 공제: (기본급+주휴수당 / 30) × 결근 ${absenceDays}일 = ${absenceDeduction.toLocaleString()}원 공제`}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            {/* 하단 액션 버튼 */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const paymentYear = paymentMonth.split('-')[0];
+                  const paymentMon = paymentMonth.split('-')[1];
+                  const copyText = `[${companyName} 급여명세서]
+귀하의 노고에 감사드립니다.
+
+* 근로자: ${employeeName}님 (${employeeBirth})
+* 귀속월: ${paymentYear}년 ${paymentMon}월분
+* 지급일자: ${paymentDate}
+* 근로일수: 소정 ${scheduledWorkDaysInMonth}일 / 주휴 ${holidaysInMonth}일 (실제근무 ${actualWorkDays}일 / 지급주휴 ${actualPaidHolidays}일)
+
+■ 지급 내역
+- 기본급: ${result.basePay.toLocaleString()}원 (${result.regularWorkHoursMonthly}시간)
+- 주휴수당: ${result.weeklyHolidayPay.toLocaleString()}원 (${result.weeklyHolidayHoursMonthly}시간)
+${result.overtimePay > 0 ? `- 연장근로수당: ${result.overtimePay.toLocaleString()}원 (${result.overtimeHoursMonthly}시간)\n` : ''}${result.nightPay > 0 ? `- 야간근로수당: ${result.nightPay.toLocaleString()}원 (${result.nightHoursMonthly}시간)\n` : ''}${result.holidayWorkPay > 0 ? `- 휴일근로수당: ${result.holidayWorkPay.toLocaleString()}원 (${result.holidayWorkHoursMonthly}시간)\n` : ''}${result.leavePayMonthly > 0 ? `- 연차수당: ${result.leavePayMonthly.toLocaleString()}원 (${result.leavePayHoursMonthly}시간)\n` : ''}- 지급액 합계: ${result.grossTotal.toLocaleString()}원
+
+■ 공제 내역
+${entry.deductionType === '4대보험' || !entry.deductionType ? `- 국민연금: ${adjustedDeductions.nationalPension.toLocaleString()}원
+- 건강보험: ${adjustedDeductions.healthInsurance.toLocaleString()}원
+- 장기요양보험: ${adjustedDeductions.longTermCare.toLocaleString()}원
+- 고용보험: ${adjustedDeductions.employmentInsurance.toLocaleString()}원` : entry.deductionType === '3.3%' ? `- 사업소득세(3.3%): ${(adjustedDeductions.incomeTax + adjustedDeductions.localIncomeTax).toLocaleString()}원` : `- 고용보험: ${adjustedDeductions.employmentInsurance.toLocaleString()}원
+- 일용소득세: ${adjustedDeductions.incomeTax.toLocaleString()}원`}${adjustedDeductions.incomeTax > 0 && entry.deductionType !== '3.3%' ? `\n- 소득세: ${adjustedDeductions.incomeTax.toLocaleString()}원\n- 지방소득세: ${adjustedDeductions.localIncomeTax.toLocaleString()}원` : ''}
+${absenceDeduction > 0 ? `- 결근 공제 (${absenceDays}일): ${absenceDeduction.toLocaleString()}원\n` : ''}- 공제액 합계: ${(adjustedDeductions.totalDeductions + absenceDeduction).toLocaleString()}원
+
+■ 실수령액 (차인 지급액)
+★ 실수령액: ${adjustedDeductions.netPay.toLocaleString()}원
+
+■ 임금 계산 상세 명세 (시급: ${result.baseHourlyWage.toLocaleString()}원)
+- 기본급: ${result.regularWorkHoursMonthly}시간 × 시급
+- 주휴수당: ${result.weeklyHolidayHoursMonthly}시간 × 시급
+${result.overtimePay > 0 ? `- 연장수당: ${result.overtimeHoursMonthly}시간 × 시급 × ${entry.companySize === '5인 이상' ? '1.5' : '1.0'}\n` : ''}${result.nightPay > 0 ? `- 야간수당: ${result.nightHoursMonthly}시간 × 시급 × ${entry.companySize === '5인 이상' ? '0.5' : '0.0'}\n` : ''}${absenceDeduction > 0 ? `- 결근공제: ${isLessThan6Days ? `일급(${dailyWage.toLocaleString()}원) × (결근 ${absenceDays}일 + 주휴 ${Math.min(absDays, holidaysInMonth)}일)` : `(기본급 / 30) × 결근 ${absenceDays}일`}\n` : ''}
+* 노무체크 AI를 통해 생성된 모바일 법정 급여명세서입니다.`;
+                  
+                  navigator.clipboard.writeText(copyText).then(() => {
+                    alert('급여명세서 텍스트가 클립보드에 복사되었습니다! 카카오톡 창에 붙여넣기(Ctrl+V) 하여 즉시 전송할 수 있습니다.');
+                  }).catch(() => {
+                    alert('복사에 실패했습니다. 명세서를 직접 드래그하여 복사해 주세요.');
+                  });
+                }}
+                style={{ flex: 1, padding: '0.75rem', background: '#eab308', border: 'none', borderRadius: '8px', color: '#000', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+              >
+                카카오톡 전송 (텍스트 복사)
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  window.print();
+                }}
+                style={{ flex: 1, padding: '0.75rem', background: '#3b82f6', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+              >
+                명세서 인쇄 / PDF 저장
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setPayStubOpen(false)}
+                style={{ padding: '0.75rem 1.25rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', color: '#cbd5e1', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

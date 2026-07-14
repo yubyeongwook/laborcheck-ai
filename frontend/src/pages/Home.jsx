@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 
 const COMMON_TOOLS = [
-  { to: '/tools/salary', icon: <Coins size={22} color="#f59e0b" />, title: '월급 계산기', desc: '기본급·주휴수당·연장/야간수당과 실수령액을 한 번에 계산합니다.', tag: '공용' },
+  { to: '/tools/salary', icon: <Coins size={22} color="#f59e0b" />, title: '월급 계산기 & 급여명세서', desc: '실수령액 계산과 동시에 법정 급여명세서를 발급받고 카카오톡으로 전송합니다.', tag: '공용' },
   { to: '/tools/reverse-salary', icon: <Coins size={22} color="#38bdf8" />, title: '역산 월급 계산기', desc: '받는 총 월급(세전)에서 근무 형태별 실제 시급과 수당 구성을 역산합니다.', tag: '공용' },
   { to: '/tools/weekly-holiday', icon: <Calendar size={22} color="#38bdf8" />, title: '주휴수당 계산기', desc: '주 15시간 이상 근무 시 발생하는 주휴수당을 빠르게 확인합니다.', tag: '공용' },
   { to: '/tools/annual-leave', icon: <Clock size={22} color="#a78bfa" />, title: '연차 계산기', desc: '입사일 기준 발생한 연차 개수와 미사용 연차수당을 계산합니다.', tag: '공용' },
