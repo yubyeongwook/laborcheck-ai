@@ -20,6 +20,9 @@ import InjuryGuideEmployer from './pages/InjuryGuideEmployer.jsx';
 import RemedyHub from './pages/RemedyHub.jsx';
 import InjuryHub from './pages/InjuryHub.jsx';
 import ReverseSalaryCalculator from './pages/ReverseSalaryCalculator.jsx';
+import EmployeeManager from './pages/EmployeeManager.jsx';
+import AiConsultant from './pages/AiConsultant.jsx';
+
 
 function App() {
   React.useEffect(() => {
@@ -91,6 +94,9 @@ function App() {
         <Route path="/worker/report" element={<ReportGenerator userType="근로자" />} />
         <Route path="/employer/report" element={<ReportGenerator userType="사업주" />} />
         <Route path="/employer/insurance" element={<InsuranceCalculator />} />
+        <Route path="/employer/employees" element={<EmployeeManager />} />
+        <Route path="/employer/ai-consultant" element={<AiConsultant />} />
+
 
         <Route path="/worker/injury" element={<InjuryGuideWorker />} />
         <Route path="/employer/injury" element={<InjuryGuideEmployer />} />

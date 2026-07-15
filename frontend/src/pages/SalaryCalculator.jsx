@@ -799,7 +799,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               {entry.salaryType === '월급' && `${result.monthlyNetPay.toLocaleString()}원`}
             </div>
             <div className="result-highlight-sub" style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-              연 환산 실수령액 약 {result.netAnnual.toLocaleString()}원 (월 총근로 {((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)).toFixed(1)}시간: 기준 {(((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) <= 174 ? ((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) : 173.8).toFixed(1)}시간 / 연장 {(((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) <= 174 ? 0 : (result.overtimeHoursMonthly || 0)).toFixed(1)}시간 / 야간 {(result.nightHoursMonthly || 0).toFixed(1)}시간 기준)
+              연 환산 실수령액 약 {result.netAnnual.toLocaleString()}원 (월 총근로 {((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)).toFixed(1)}시간: 기준 {(((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) <= 174 ? ((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) : 174).toFixed(1)}시간 / 연장 {(((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) <= 174 ? 0 : (result.overtimeHoursMonthly || 0)).toFixed(1)}시간 / 야간 {(result.nightHoursMonthly || 0).toFixed(1)}시간 기준)
             </div>
 
             {/* 근무시간 대시보드 */}
@@ -825,7 +825,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                 <strong style={{ fontSize: '0.85rem', color: '#38bdf8' }}>
                   {(((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) <= 174 
                     ? ((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)) 
-                    : 173.8).toFixed(1)}h
+                    : 174).toFixed(1)}h
                 </strong>
               </div>
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>

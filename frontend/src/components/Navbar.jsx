@@ -8,6 +8,8 @@ const NAV_LINKS = [
   { to: '/injury', label: '산재가이드' },
   { to: '/tools/salary', label: '월급·명세서' },
   { to: '/tools/reverse-salary', label: '역산계산기' },
+  { to: '/employer/employees', label: '직원관리' },
+  { to: '/employer/ai-consultant', label: 'AI컨설턴트' },
   { to: '/worker', label: '근로자' },
   { to: '/employer', label: '사업주' },
 ];

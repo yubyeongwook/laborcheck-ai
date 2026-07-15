@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Briefcase, Coins, Calendar, Clock, PiggyBank, ShieldAlert, Wallet, HeartPulse } from 'lucide-react';
+import { Briefcase, Coins, Calendar, Clock, PiggyBank, ShieldAlert, Wallet, HeartPulse, Users, Sparkles } from 'lucide-react';
 
 const TOOLS = [
+  { to: '/employer/employees', icon: <Users size={22} color="#818cf8" />, title: '직원 관리 대시보드', desc: '사업장의 직원을 등록하고 근로 조건별 예상 월 급여액 및 사업주 부담 4대보험을 실시간으로 확인합니다.' },
+  { to: '/employer/ai-consultant', icon: <Sparkles size={22} color="#a78bfa" />, title: 'AI 노무 컨설턴트 (계약서/내규)', desc: '근로계약서 및 취업규칙 텍스트를 AI 노무사가 정밀 분석하여 위법 독소 조항과 안전한 대안 조항을 제시합니다.' },
   { to: '/employer/report', icon: <ShieldAlert size={22} color="#fbbf24" />, title: 'AI 리스크 진단 리포트', desc: '사업장의 급여·근로시간 조건을 입력하면 법 위반 리스크 등급과 대응 체크리스트를 정리해 드립니다.' },
   { to: '/employer/insurance', icon: <Wallet size={22} color="#fbbf24" />, title: '4대보험 사업주 부담금', desc: '월 급여 기준으로 국민연금·건강보험·고용보험·산재보험의 사업주 부담액을 계산합니다.' },
   { to: '/employer/injury', icon: <HeartPulse size={22} color="#fbbf24" />, title: '산재 예방·대응 체크리스트', desc: '산재를 예방하기 위한 사전 준비와, 발생 시 사업주의 법적 의무를 초기 단계부터 안내합니다.' },
@@ -12,6 +14,7 @@ const TOOLS = [
   { to: '/tools/annual-leave', icon: <Clock size={22} color="#a78bfa" />, title: '연차 계산기', desc: '직원별 연차 발생 개수를 계산해 연차 관리에 활용합니다.' },
   { to: '/tools/severance', icon: <PiggyBank size={22} color="#34d399" />, title: '퇴직금 계산기', desc: '퇴직 예정 직원의 예상 퇴직금을 미리 계산합니다.' },
 ];
+
 
 function EmployerHub() {
   return (

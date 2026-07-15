@@ -70,6 +70,23 @@ function checkKakaoRateLimit(key) {
   return true;
 }
 
+// Gemini AI 호출 API(계약서 분석 등) 남용 방지를 위한 IP 기준 요청 빈도 제한
+const aiRateLimitStore = new Map();
+const AI_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1시간
+const AI_RATE_LIMIT_MAX = 10; // 시간당 최대 10회
+
+function checkAiRateLimit(key) {
+  const now = Date.now();
+  const timestamps = (aiRateLimitStore.get(key) || []).filter(t => now - t < AI_RATE_LIMIT_WINDOW_MS);
+  if (timestamps.length >= AI_RATE_LIMIT_MAX) {
+    aiRateLimitStore.set(key, timestamps);
+    return false;
+  }
+  timestamps.push(now);
+  aiRateLimitStore.set(key, timestamps);
+  return true;
+}
+
 // 리포트 생성 API 엔드포인트
 app.post('/api/generate-report', async (req, res) => {
   try {
@@ -460,6 +477,975 @@ app.post('/api/send-kakao', async (req, res) => {
   } catch (error) {
     console.error('Kakao notification API error:', error);
     res.status(500).json({ error: '카카오톡 메시지 발송 도중 오류가 발생했습니다.', details: error.message });
+  }
+});
+
+
+// In-memory mock storage for demo mode
+let mockCompanies = [
+  { id: 'demo-company-id-1', owner_id: 'demo-user', company_name: '(데모) 노무체크 상사', business_number: '123-45-67890', size_type: '5인 이상', created_at: new Date() }
+];
+let mockEmployees = [
+  { id: 'demo-emp-id-1', company_id: 'demo-company-id-1', name: '홍길동', birthdate: '1990-01-01', phone: '010-1234-5678', join_date: '2023-01-01', contract_type: '정규직', salary_type: '월급', base_salary: 3000000, weekly_work_days: 5, daily_work_hours: 8, break_time_minutes: 60, created_at: new Date() },
+  { id: 'demo-emp-id-2', company_id: 'demo-company-id-1', name: '김철수', birthdate: '1995-05-15', phone: '010-9876-5432', join_date: '2024-03-01', contract_type: '알바', salary_type: '시급', base_salary: 10030, weekly_work_days: 3, daily_work_hours: 6, break_time_minutes: 30, created_at: new Date() }
+];
+
+// Helper to check if Supabase is configured
+const isSupabaseEnabled = () => {
+  return supabaseUrl && supabaseAnonKey && supabaseUrl !== 'your_supabase_url_here';
+};
+
+// Helper to create client with request authorization header
+function getSupabaseClient(req) {
+  if (!isSupabaseEnabled()) return null;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    });
+  }
+  return null;
+}
+
+// -------------------------------------------------------------
+// [사업장 CRUD API]
+// -------------------------------------------------------------
+
+// 사업장 목록 조회
+app.get('/api/companies', async (req, res) => {
+  try {
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { data, error } = await dbClient
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return res.json(data);
+    } else {
+      return res.json(mockCompanies);
+    }
+  } catch (error) {
+    console.error('GET /api/companies error:', error);
+    res.status(500).json({ error: '사업장 목록을 가져오는 데 실패했습니다.', details: error.message });
+  }
+});
+
+// 사업장 등록
+app.post('/api/companies', async (req, res) => {
+  try {
+    const { company_name, business_number, size_type } = req.body;
+    if (!company_name) {
+      return res.status(400).json({ error: '사업장 이름은 필수입니다.' });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { data, error } = await dbClient
+        .from('companies')
+        .insert([{ 
+          owner_id: user.id, 
+          company_name, 
+          business_number, 
+          size_type: size_type || '5인 미만' 
+        }])
+        .select();
+      
+      if (error) throw error;
+      return res.status(201).json(data[0]);
+    } else {
+      const newCompany = {
+        id: `demo-company-id-${Date.now()}`,
+        owner_id: 'demo-user',
+        company_name: `(데모) ${company_name}`,
+        business_number,
+        size_type: size_type || '5인 미만',
+        created_at: new Date()
+      };
+      mockCompanies.push(newCompany);
+      return res.status(201).json(newCompany);
+    }
+  } catch (error) {
+    console.error('POST /api/companies error:', error);
+    res.status(500).json({ error: '사업장 등록에 실패했습니다.', details: error.message });
+  }
+});
+
+// 사업장 수정
+app.put('/api/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { company_name, business_number, size_type } = req.body;
+    
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { data, error } = await dbClient
+        .from('companies')
+        .update({ company_name, business_number, size_type })
+        .eq('id', id)
+        .select();
+      
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        return res.status(404).json({ error: '수정할 사업장을 찾을 수 없거나 권한이 없습니다.' });
+      }
+      return res.json(data[0]);
+    } else {
+      const idx = mockCompanies.findIndex(c => c.id === id);
+      if (idx === -1) {
+        return res.status(404).json({ error: '수정할 사업장을 찾을 수 없습니다.' });
+      }
+      mockCompanies[idx] = { ...mockCompanies[idx], company_name, business_number, size_type };
+      return res.json(mockCompanies[idx]);
+    }
+  } catch (error) {
+    console.error('PUT /api/companies/:id error:', error);
+    res.status(500).json({ error: '사업장 수정에 실패했습니다.', details: error.message });
+  }
+});
+
+// 사업장 삭제
+app.delete('/api/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { error } = await dbClient
+        .from('companies')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return res.json({ success: true, message: '사업장이 성공적으로 삭제되었습니다.' });
+    } else {
+      mockCompanies = mockCompanies.filter(c => c.id !== id);
+      mockEmployees = mockEmployees.filter(e => e.company_id !== id);
+      return res.json({ success: true, message: '데모 사업장이 성공적으로 삭제되었습니다.' });
+    }
+  } catch (error) {
+    console.error('DELETE /api/companies/:id error:', error);
+    res.status(500).json({ error: '사업장 삭제에 실패했습니다.', details: error.message });
+  }
+});
+
+
+// -------------------------------------------------------------
+// [직원 CRUD API]
+// -------------------------------------------------------------
+
+// 특정 사업장의 직원 목록 조회
+app.get('/api/employees', async (req, res) => {
+  try {
+    const { company_id } = req.query;
+    if (!company_id) {
+      return res.status(400).json({ error: 'company_id 쿼리 파라미터가 필요합니다.' });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { data, error } = await dbClient
+        .from('employees')
+        .select('*')
+        .eq('company_id', company_id)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return res.json(data);
+    } else {
+      const emps = mockEmployees.filter(e => e.company_id === company_id);
+      return res.json(emps);
+    }
+  } catch (error) {
+    console.error('GET /api/employees error:', error);
+    res.status(500).json({ error: '직원 목록을 가져오는 데 실패했습니다.', details: error.message });
+  }
+});
+
+// 직원 등록
+app.post('/api/employees', async (req, res) => {
+  try {
+    const { 
+      company_id, name, birthdate, phone, join_date, 
+      contract_type, salary_type, base_salary, 
+      weekly_work_days, daily_work_hours, break_time_minutes 
+    } = req.body;
+
+    if (!company_id || !name) {
+      return res.status(400).json({ error: 'company_id와 name은 필수 입력 항목입니다.' });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { data, error } = await dbClient
+        .from('employees')
+        .insert([{
+          company_id, name, birthdate: birthdate || null, phone, join_date: join_date || null, 
+          contract_type: contract_type || '정규직', salary_type: salary_type || '월급', 
+          base_salary: Number(base_salary) || 0, 
+          weekly_work_days: Number(weekly_work_days) || 5, 
+          daily_work_hours: Number(daily_work_hours) || 8, 
+          break_time_minutes: Number(break_time_minutes) || 60
+        }])
+        .select();
+      
+      if (error) throw error;
+      return res.status(201).json(data[0]);
+    } else {
+      const newEmp = {
+        id: `demo-emp-id-${Date.now()}`,
+        company_id,
+        name,
+        birthdate,
+        phone,
+        join_date,
+        contract_type: contract_type || '정규직',
+        salary_type: salary_type || '월급',
+        base_salary: Number(base_salary) || 0,
+        weekly_work_days: Number(weekly_work_days) || 5,
+        daily_work_hours: Number(daily_work_hours) || 8,
+        break_time_minutes: Number(break_time_minutes) || 60,
+        created_at: new Date()
+      };
+      mockEmployees.push(newEmp);
+      return res.status(201).json(newEmp);
+    }
+  } catch (error) {
+    console.error('POST /api/employees error:', error);
+    res.status(500).json({ error: '직원 등록에 실패했습니다.', details: error.message });
+  }
+});
+
+// 직원 정보 수정
+app.put('/api/employees/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      name, birthdate, phone, join_date, 
+      contract_type, salary_type, base_salary, 
+      weekly_work_days, daily_work_hours, break_time_minutes 
+    } = req.body;
+
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { data, error } = await dbClient
+        .from('employees')
+        .update({
+          name, birthdate: birthdate || null, phone, join_date: join_date || null, 
+          contract_type, salary_type, base_salary: Number(base_salary), 
+          weekly_work_days: Number(weekly_work_days), 
+          daily_work_hours: Number(daily_work_hours), 
+          break_time_minutes: Number(break_time_minutes)
+        })
+        .eq('id', id)
+        .select();
+      
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        return res.status(404).json({ error: '수정할 직원 정보를 찾을 수 없거나 권한이 없습니다.' });
+      }
+      return res.json(data[0]);
+    } else {
+      const idx = mockEmployees.findIndex(e => e.id === id);
+      if (idx === -1) {
+        return res.status(404).json({ error: '수정할 직원 정보를 찾을 수 없습니다.' });
+      }
+      mockEmployees[idx] = { 
+        ...mockEmployees[idx], 
+        name, birthdate, phone, join_date, 
+        contract_type, salary_type, base_salary: Number(base_salary), 
+        weekly_work_days: Number(weekly_work_days), 
+        daily_work_hours: Number(daily_work_hours), 
+        break_time_minutes: Number(break_time_minutes) 
+      };
+      return res.json(mockEmployees[idx]);
+    }
+  } catch (error) {
+    console.error('PUT /api/employees/:id error:', error);
+    res.status(500).json({ error: '직원 정보 수정에 실패했습니다.', details: error.message });
+  }
+});
+
+// 직원 삭제
+app.delete('/api/employees/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { error } = await dbClient
+        .from('employees')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return res.json({ success: true, message: '직원이 성공적으로 삭제되었습니다.' });
+    } else {
+      mockEmployees = mockEmployees.filter(e => e.id !== id);
+      return res.json({ success: true, message: '데모 직원이 성공적으로 삭제되었습니다.' });
+    }
+  } catch (error) {
+    console.error('DELETE /api/employees/:id error:', error);
+    res.status(500).json({ error: '직원 삭제에 실패했습니다.', details: error.message });
+  }
+});
+
+
+let mockPayStubs = [
+  {
+    id: 'demo-stub-id-1',
+    company_id: 'demo-company-id-1',
+    employee_id: 'demo-emp-id-1',
+    target_month: '2026-06',
+    base_pay: 2750000,
+    weekly_holiday_pay: 250000,
+    overtime_pay: 0,
+    night_pay: 0,
+    allowances_total: 0,
+    total_pay: 3000000,
+    national_pension: 135000,
+    health_insurance: 106350,
+    long_term_care: 13770,
+    employment_insurance: 27000,
+    income_tax: 45000,
+    local_income_tax: 4500,
+    total_deductions: 331620,
+    net_pay: 2668380,
+    sent_status: '발송성공',
+    created_at: new Date()
+  }
+];
+
+// -------------------------------------------------------------
+// [급여명세서 CRUD 및 발송 API]
+// -------------------------------------------------------------
+
+// 특정 직원의 급여명세서 목록 조회
+app.get('/api/pay-stubs', async (req, res) => {
+  try {
+    const { employee_id } = req.query;
+    if (!employee_id) {
+      return res.status(400).json({ error: 'employee_id 쿼리 파라미터가 필요합니다.' });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { data, error } = await dbClient
+        .from('pay_stubs')
+        .select('*')
+        .eq('employee_id', employee_id)
+        .order('target_month', { ascending: false });
+      
+      if (error) throw error;
+      return res.json(data);
+    } else {
+      const stubs = mockPayStubs.filter(s => s.employee_id === employee_id);
+      return res.json(stubs);
+    }
+  } catch (error) {
+    console.error('GET /api/pay-stubs error:', error);
+    res.status(500).json({ error: '급여명세서 목록을 가져오는 데 실패했습니다.', details: error.message });
+  }
+});
+
+// 급여명세서 발행 및 저장
+app.post('/api/pay-stubs', async (req, res) => {
+  try {
+    const { 
+      company_id, employee_id, target_month, 
+      base_pay, weekly_holiday_pay, overtime_pay, night_pay, allowances_total, total_pay,
+      national_pension, health_insurance, long_term_care, employment_insurance, income_tax, local_income_tax,
+      total_deductions, net_pay,
+      hourly_wage, base_hours, weekly_holiday_hours, overtime_hours, night_hours,
+      holiday_work_hours, annual_leave_hours, extra_overtime_hours
+    } = req.body;
+
+    if (!company_id || !employee_id || !target_month) {
+      return res.status(400).json({ error: '필수 변수(company_id, employee_id, target_month)가 누락되었습니다.' });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { data: existing } = await dbClient
+        .from('pay_stubs')
+        .select('id')
+        .eq('employee_id', employee_id)
+        .eq('target_month', target_month);
+
+      const updateData = {
+        base_pay: Number(base_pay),
+        weekly_holiday_pay: Number(weekly_holiday_pay),
+        overtime_pay: Number(overtime_pay),
+        night_pay: Number(night_pay),
+        allowances_total: Number(allowances_total),
+        total_pay: Number(total_pay),
+        national_pension: Number(national_pension),
+        health_insurance: Number(health_insurance),
+        long_term_care: Number(long_term_care),
+        employment_insurance: Number(employment_insurance),
+        income_tax: Number(income_tax),
+        local_income_tax: Number(local_income_tax),
+        total_deductions: Number(total_deductions),
+        net_pay: Number(net_pay),
+        hourly_wage: Number(hourly_wage || 0),
+        base_hours: Number(base_hours || 0),
+        weekly_holiday_hours: Number(weekly_holiday_hours || 0),
+        overtime_hours: Number(overtime_hours || 0),
+        night_hours: Number(night_hours || 0),
+        holiday_work_hours: Number(holiday_work_hours || 0),
+        annual_leave_hours: Number(annual_leave_hours || 0),
+        extra_overtime_hours: Number(extra_overtime_hours || 0)
+      };
+
+      if (existing && existing.length > 0) {
+        const { data, error } = await dbClient
+          .from('pay_stubs')
+          .update(updateData)
+          .eq('id', existing[0].id)
+          .select();
+        
+        if (error) throw error;
+        return res.json(data[0]);
+      } else {
+        const { data, error } = await dbClient
+          .from('pay_stubs')
+          .insert([{
+            company_id, employee_id, target_month,
+            ...updateData,
+            sent_status: '미발송'
+          }])
+          .select();
+        
+        if (error) throw error;
+        return res.status(201).json(data[0]);
+      }
+    } else {
+      const existingIdx = mockPayStubs.findIndex(s => s.employee_id === employee_id && s.target_month === target_month);
+      const stubData = {
+        id: existingIdx !== -1 ? mockPayStubs[existingIdx].id : `demo-stub-id-${Date.now()}`,
+        company_id, employee_id, target_month,
+        base_pay: Number(base_pay),
+        weekly_holiday_pay: Number(weekly_holiday_pay),
+        overtime_pay: Number(overtime_pay),
+        night_pay: Number(night_pay),
+        allowances_total: Number(allowances_total),
+        total_pay: Number(total_pay),
+        national_pension: Number(national_pension),
+        health_insurance: Number(health_insurance),
+        long_term_care: Number(long_term_care),
+        employment_insurance: Number(employment_insurance),
+        income_tax: Number(income_tax),
+        local_income_tax: Number(local_income_tax),
+        total_deductions: Number(total_deductions),
+        net_pay: Number(net_pay),
+        hourly_wage: Number(hourly_wage || 0),
+        base_hours: Number(base_hours || 0),
+        weekly_holiday_hours: Number(weekly_holiday_hours || 0),
+        overtime_hours: Number(overtime_hours || 0),
+        night_hours: Number(night_hours || 0),
+        holiday_work_hours: Number(holiday_work_hours || 0),
+        annual_leave_hours: Number(annual_leave_hours || 0),
+        extra_overtime_hours: Number(extra_overtime_hours || 0),
+        sent_status: existingIdx !== -1 ? mockPayStubs[existingIdx].sent_status : '미발송',
+        created_at: new Date()
+      };
+
+      if (existingIdx !== -1) {
+        mockPayStubs[existingIdx] = stubData;
+      } else {
+        mockPayStubs.push(stubData);
+      }
+      return res.status(existingIdx !== -1 ? 200 : 201).json(stubData);
+    }
+  } catch (error) {
+    console.error('POST /api/pay-stubs error:', error);
+    res.status(500).json({ error: '급여명세서 발행에 실패했습니다.', details: error.message });
+  }
+});
+
+// 급여명세서 삭제
+app.delete('/api/pay-stubs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { error } = await dbClient
+        .from('pay_stubs')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return res.json({ success: true, message: '급여명세서가 삭제되었습니다.' });
+    } else {
+      mockPayStubs = mockPayStubs.filter(s => s.id !== id);
+      return res.json({ success: true, message: '데모 급여명세서가 삭제되었습니다.' });
+    }
+  } catch (error) {
+    console.error('DELETE /api/pay-stubs/:id error:', error);
+    res.status(500).json({ error: '급여명세서 삭제에 실패했습니다.', details: error.message });
+  }
+});
+
+// 급여명세서 알림톡/SMS 발송
+app.post('/api/pay-stubs/:id/send', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    let payStub = null;
+    let employeeName = '';
+    let employeePhone = '';
+    let companyName = '노무체크 AI';
+
+    if (user && dbClient) {
+      const { data: stub, error } = await dbClient
+        .from('pay_stubs')
+        .select('*, employees(*), companies(*)')
+        .eq('id', id)
+        .single();
+      
+      if (error || !stub) {
+        return res.status(404).json({ error: '급여명세서를 찾을 수 없습니다.' });
+      }
+      payStub = stub;
+      employeeName = stub.employees?.name || '근로자';
+      employeePhone = stub.employees?.phone || '';
+      companyName = stub.companies?.company_name || '노무체크 AI';
+    } else {
+      const stub = mockPayStubs.find(s => s.id === id);
+      if (!stub) {
+        return res.status(404).json({ error: '급여명세서를 찾을 수 없습니다.' });
+      }
+      payStub = stub;
+      employeeName = '홍길동(데모)';
+      employeePhone = '01012345678';
+      companyName = '(데모) 노무체크 상사';
+    }
+
+    if (!employeePhone) {
+      return res.status(400).json({ error: '직원의 휴대폰 번호가 등록되지 않았습니다.' });
+    }
+
+    const cleanPhone = employeePhone.replace(/[^0-9]/g, '').trim();
+    if (!/^01[016789]\d{7,8}$/.test(cleanPhone)) {
+      return res.status(400).json({ error: '직원의 휴대폰 번호 형식이 올바르지 않습니다.' });
+    }
+
+    const totalTax = (payStub.income_tax || 0) + (payStub.local_income_tax || 0);
+    const text = `[${companyName} 급여명세서]
+${employeeName}님의 ${payStub.target_month} 급여 상세 내역이 발행되었습니다.
+
+■ 지급 항목 합계: ${Number(payStub.total_pay).toLocaleString()}원
+ - 기본급: ${Number(payStub.base_pay).toLocaleString()}원
+ - 주휴수당: ${Number(payStub.weekly_holiday_pay).toLocaleString()}원
+ - 연장근로수당: ${Number(payStub.overtime_pay).toLocaleString()}원
+ - 야간근로수당: ${Number(payStub.night_pay).toLocaleString()}원
+ - 기타수당: ${Number(payStub.allowances_total).toLocaleString()}원
+
+■ 공제 항목 합계: ${Number(payStub.total_deductions).toLocaleString()}원
+ - 국민연금: ${Number(payStub.national_pension).toLocaleString()}원
+ - 건강보험: ${Number(payStub.health_insurance).toLocaleString()}원
+ - 장기요양보험: ${Number(payStub.long_term_care).toLocaleString()}원
+ - 고용보험: ${Number(payStub.employment_insurance).toLocaleString()}원
+ - 소득세/지방세: ${totalTax.toLocaleString()}원
+
+■ 실 수령액 (세후): ${Number(payStub.net_pay).toLocaleString()}원
+
+* 본 명세서의 조회 및 인쇄는 아래 링크에서 확인하실 수 있습니다.
+- 바로가기: ${process.env.SITE_URL || 'https://www.xn--ai-h74ir53a94vh9e.com'}`;
+
+    const solapiApiKey = process.env.SOLAPI_API_KEY || '';
+    const solapiApiSecret = process.env.SOLAPI_API_SECRET || '';
+    const senderNumber = process.env.SOLAPI_SENDER_NUMBER || '';
+    const kakaoChannelId = process.env.SOLAPI_CHANNEL_ID || '';
+    const templateId = process.env.SOLAPI_TEMPLATE_DOWNLOAD || 'TPL_DOWNLOAD_REPORT';
+
+    if (!solapiApiKey || solapiApiKey === 'your_solapi_key_here' || solapiApiKey === '') {
+      console.log('\n=========================================');
+      console.log('ℹ️ [데모 모드] 급여명세서 카카오톡 발송 내역');
+      console.log(`- 수신자: ${employeeName} (${cleanPhone})`);
+      console.log(`- 발송 메시지 본문:\n${text}`);
+      console.log('=========================================\n');
+
+      if (user && dbClient) {
+        await dbClient.from('pay_stubs').update({ sent_status: '발송성공' }).eq('id', id);
+      } else {
+        const idx = mockPayStubs.findIndex(s => s.id === id);
+        if (idx !== -1) mockPayStubs[idx].sent_status = '발송성공';
+      }
+
+      return res.json({ 
+        success: true, 
+        message: '데모 모드로 알림톡이 가상 발송되었습니다. (콘솔 확인 가능)', 
+        mock: true,
+        sent_status: '발송성공'
+      });
+    }
+
+    const crypto = require('crypto');
+    const date = new Date().toISOString();
+    const salt = crypto.randomBytes(16).toString('hex');
+    const signature = crypto
+      .createHmac('sha256', solapiApiSecret)
+      .update(date + salt)
+      .digest('hex');
+
+    const authHeader = `HMAC-SHA256 apiKey=${solapiApiKey}, date=${date}, salt=${salt}, signature=${signature}`;
+
+    const payload = {
+      message: {
+        to: cleanPhone,
+        from: senderNumber,
+        text: text,
+        kakaoOptions: {
+          pfId: kakaoChannelId,
+          templateId: templateId
+        }
+      }
+    };
+
+    const response = await fetch('https://api.solapi.com/messages/v4/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      if (user && dbClient) {
+        await dbClient.from('pay_stubs').update({ sent_status: '발송실패' }).eq('id', id);
+      } else {
+        const idx = mockPayStubs.findIndex(s => s.id === id);
+        if (idx !== -1) mockPayStubs[idx].sent_status = '발송실패';
+      }
+      throw new Error(result.errorMessage || '알림톡 발송 중 API 오류가 발생했습니다.');
+    }
+
+    if (user && dbClient) {
+      await dbClient.from('pay_stubs').update({ sent_status: '발송성공' }).eq('id', id);
+    } else {
+      const idx = mockPayStubs.findIndex(s => s.id === id);
+      if (idx !== -1) mockPayStubs[idx].sent_status = '발송성공';
+    }
+
+    return res.json({ success: true, message: '급여명세서가 카카오톡으로 성공적으로 발송되었습니다.', sent_status: '발송성공' });
+  } catch (error) {
+    console.error('POST /api/pay-stubs/:id/send error:', error);
+    res.status(500).json({ error: '급여명세서 발송 도중 오류가 발생했습니다.', details: error.message });
+  }
+});
+
+
+let mockAttendance = [
+  { id: 'demo-att-1', company_id: 'demo-company-id-1', employee_id: 'demo-emp-id-1', work_date: '2026-07-01', clock_in: '2026-07-01T09:00:00Z', clock_out: '2026-07-01T18:00:00Z', work_hours: 8, break_minutes: 60, status: '정상', created_at: new Date() },
+  { id: 'demo-att-2', company_id: 'demo-company-id-1', employee_id: 'demo-emp-id-1', work_date: '2026-07-02', clock_in: '2026-07-02T09:00:00Z', clock_out: '2026-07-02T19:00:00Z', work_hours: 9, break_minutes: 60, status: '정상', created_at: new Date() },
+  { id: 'demo-att-3', company_id: 'demo-company-id-1', employee_id: 'demo-emp-id-1', work_date: '2026-07-03', clock_in: '2026-07-03T09:00:00Z', clock_out: '2026-07-03T18:00:00Z', work_hours: 8, break_minutes: 60, status: '정상', created_at: new Date() }
+];
+
+// -------------------------------------------------------------
+// [근태(출퇴근) CRUD API]
+// -------------------------------------------------------------
+
+// 특정 직원의 근태 목록 조회
+app.get('/api/attendance', async (req, res) => {
+  try {
+    const { employee_id, year_month } = req.query;
+    if (!employee_id) {
+      return res.status(400).json({ error: 'employee_id 쿼리 파라미터가 필요합니다.' });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      let query = dbClient
+        .from('attendance')
+        .select('*')
+        .eq('employee_id', employee_id);
+      
+      if (year_month) {
+        // YYYY-MM 포맷으로 필터링
+        query = query.like('work_date', `${year_month}%`);
+      }
+      
+      const { data, error } = await query.order('work_date', { ascending: false });
+      if (error) throw error;
+      return res.json(data);
+    } else {
+      let emps = mockAttendance.filter(a => a.employee_id === employee_id);
+      if (year_month) {
+        emps = emps.filter(a => a.work_date.startsWith(year_month));
+      }
+      return res.json(emps);
+    }
+  } catch (error) {
+    console.error('GET /api/attendance error:', error);
+    res.status(500).json({ error: '출퇴근 기록 목록을 가져오는 데 실패했습니다.', details: error.message });
+  }
+});
+
+// 근태 일별 기록 등록 및 수정
+app.post('/api/attendance', async (req, res) => {
+  try {
+    const { company_id, employee_id, work_date, clock_in, clock_out, work_hours, break_minutes, status } = req.body;
+    if (!company_id || !employee_id || !work_date) {
+      return res.status(400).json({ error: '필수 변수(company_id, employee_id, work_date)가 누락되었습니다.' });
+    }
+
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { data: existing } = await dbClient
+        .from('attendance')
+        .select('id')
+        .eq('employee_id', employee_id)
+        .eq('work_date', work_date);
+
+      if (existing && existing.length > 0) {
+        const { data, error } = await dbClient
+          .from('attendance')
+          .update({
+            clock_in,
+            clock_out,
+            work_hours: Number(work_hours),
+            break_minutes: Number(break_minutes),
+            status: status || '정상'
+          })
+          .eq('id', existing[0].id)
+          .select();
+        
+        if (error) throw error;
+        return res.json(data[0]);
+      } else {
+        const { data, error } = await dbClient
+          .from('attendance')
+          .insert([{
+            company_id,
+            employee_id,
+            work_date,
+            clock_in,
+            clock_out,
+            work_hours: Number(work_hours),
+            break_minutes: Number(break_minutes),
+            status: status || '정상'
+          }])
+          .select();
+        
+        if (error) throw error;
+        return res.status(201).json(data[0]);
+      }
+    } else {
+      const existingIdx = mockAttendance.findIndex(a => a.employee_id === employee_id && a.work_date === work_date);
+      const attData = {
+        id: existingIdx !== -1 ? mockAttendance[existingIdx].id : `demo-att-id-${Date.now()}`,
+        company_id,
+        employee_id,
+        work_date,
+        clock_in,
+        clock_out,
+        work_hours: Number(work_hours),
+        break_minutes: Number(break_minutes),
+        status: status || '정상',
+        created_at: new Date()
+      };
+
+      if (existingIdx !== -1) {
+        mockAttendance[existingIdx] = attData;
+      } else {
+        mockAttendance.push(attData);
+      }
+      return res.status(existingIdx !== -1 ? 200 : 201).json(attData);
+    }
+  } catch (error) {
+    console.error('POST /api/attendance error:', error);
+    res.status(500).json({ error: '출퇴근 기록 등록에 실패했습니다.', details: error.message });
+  }
+});
+
+// 근태 기록 삭제
+app.delete('/api/attendance/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await getAuthenticatedUser(req);
+    const dbClient = getSupabaseClient(req);
+    if (isSupabaseEnabled() && !(user && dbClient)) {
+      return res.status(401).json({ error: '로그인 후 이용 가능한 기능입니다.' });
+    }
+
+    if (user && dbClient) {
+      const { error } = await dbClient
+        .from('attendance')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return res.json({ success: true, message: '출퇴근 기록이 삭제되었습니다.' });
+    } else {
+      mockAttendance = mockAttendance.filter(a => a.id !== id);
+      return res.json({ success: true, message: '데모 출퇴근 기록이 삭제되었습니다.' });
+    }
+  } catch (error) {
+    console.error('DELETE /api/attendance/:id error:', error);
+    res.status(500).json({ error: '출퇴근 기록 삭제에 실패했습니다.', details: error.message });
+  }
+});
+
+
+// [AI 노무 컨설턴트: 근로계약서 / 취업규칙 분석]
+app.post('/api/analyze-contract', async (req, res) => {
+  try {
+    const { contractText, analysisType } = req.body;
+    if (!contractText || typeof contractText !== 'string' || !contractText.trim()) {
+      return res.status(400).json({ error: '분석할 계약서 텍스트가 누락되었습니다.' });
+    }
+    if (contractText.length > 20000) {
+      return res.status(400).json({ error: '분석할 텍스트가 너무 깁니다. 20,000자 이내로 입력해 주세요.' });
+    }
+
+    const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+    if (!checkAiRateLimit(`ip:${clientIp}`)) {
+      return res.status(429).json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
+    }
+
+    const typeLabel = analysisType === 'rules' ? '취업규칙' : '근로계약서';
+    const systemPrompt = `당신은 대한민국 근로기준법 및 노동법 분야의 공인노무사입니다.
+다음 제공된 ${typeLabel} 텍스트를 정밀 분석하여, 아래의 기준에 따라 상세히 법적 위험성(리스크)을 진단하고 대안 문구를 제시해 주세요.
+
+[요구사항]
+1. 법적 준수 여부 및 리스크 등급 (위험 / 주의 / 양호) 판정
+2. 근로기준법 위반 소지가 있거나 독소 조항이 있는 부분 식별
+3. 위반 조항별 구체적인 법적 근거 (예: 근로기준법 제OO조) 제시
+4. 위반되거나 불리한 조항에 대해 '사업주가 노동법을 준수하면서도 사업을 안정적으로 운영할 수 있는 권장 대안 조항 문구' 제시
+5. 전체 총평 및 대응 체크리스트
+
+[출력 형식]
+가독성이 높도록 마크다운(Markdown) 형식을 적극 사용하고, 제목, 구분선, 위험 지표를 이모티콘과 함께 구조화하여 한글로 작성해 주세요.
+
+제공된 ${typeLabel} 텍스트:
+"""
+${contractText}
+"""`;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'your_gemini_api_key_here' || apiKey === '') {
+      console.log('ℹ️ GEMINI_API_KEY 미설정으로 데모 모드 계약서 분석 리포트를 제공합니다.');
+      const mockAnalysis = `### 🩺 AI 노무 진단 결과 보고서 (${typeLabel})
+
+#### 🚨 종합 위험도 등급: **주의 (Yellow)**
+일부 조항에서 근로기준법 위반 소지가 발견되었거나, 모호한 규정으로 인해 향후 법적 분쟁 리스크가 존재합니다.
+
+---
+
+### 🔍 주요 위험 요인 및 개선 대안
+
+#### 1. 주휴수당 지급 규정 미비 (근로기준법 제55조)
+- **현행 조항**: *“기본 시급 10,030원만 지급하며 주휴수당은 별도 언급 없음.”*
+- **문제점**: 주 15시간 이상 근무하는 근로자에게는 반드시 주휴일과 주휴수당을 부여해야 합니다. 근로계약서 상에 주휴수당에 대한 명시적 구분이 없으면 전액 미지급으로 간주되어 3년 이하의 징역 또는 2천만 원 이하의 벌금에 처해질 수 있습니다.
+- **🛡️ 권장 대안 문구**:
+  > “을의 임금은 시급 10,030원으로 한다. 해당 시급에는 주 소정근로일을 개근할 경우 지급하는 주휴수당이 포함되지 않으며, 매주 개근 시 주휴수당을 별도 산정하여 합산 지급한다.” (또는 주휴수당 분할 명시)
+
+#### 2. 근로시간 및 휴게시간 규정 불일치 (근로기준법 제54조)
+- **현행 조항**: *“09:00부터 18:00까지 근무하며, 휴게시간은 별도로 보장하지 않고 업무 중 틈틈이 쉰다.”*
+- **문제점**: 4시간 근무 시 30분, 8시간 근무 시 1시간 이상의 휴게시간을 근로시간 도중에 반드시 보장해야 하며 이를 위반하면 형사 처벌 대상입니다. “틈틈이 쉰다”는 규정은 법적으로 무효입니다.
+- **🛡️ 권장 대안 문구**:
+  > “근로시간은 09:00 ~ 18:00으로 하되, 휴게시간은 12:00 ~ 13:00(60분)으로 근로시간 도중에 부여한다.”
+
+---
+
+### 📝 사업주 권장 체크리스트
+- [ ] 시급제 알바 근로자의 주간 근무 시간이 15시간을 초과하는지 체크하여 주휴수당 계산서 자동 연동할 것.
+- [ ] 서면 근로계약서 1부를 반드시 근로자에게 교부하고 교부 확인 서명을 받을 것.
+
+*본 진단 결과는 참고용이며 상세 분쟁 대응은 공인노무사와 직접 상담하십시오.*`;
+      return res.json({ report: mockAnalysis });
+    }
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await model.generateContent(systemPrompt);
+    const response = await result.response;
+    const text = response.text();
+
+    res.json({ report: text });
+  } catch (error) {
+    console.error('AI Contract Analysis Error:', error);
+    res.status(500).json({ error: '계약서 분석 도중 오류가 발생했습니다.', details: error.message });
   }
 });
 

@@ -1016,7 +1016,7 @@ function ReverseSalaryCalculator() {
                 <strong style={{ fontSize: '0.85rem', color: '#38bdf8' }}>
                   {(((regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH) + (weeklyOvertimeHours * AVG_WEEKS_PER_MONTH)) <= 174 
                     ? ((regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH) + (weeklyOvertimeHours * AVG_WEEKS_PER_MONTH)) 
-                    : 173.8).toFixed(1)}h
+                    : 174).toFixed(1)}h
                 </strong>
               </div>
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>

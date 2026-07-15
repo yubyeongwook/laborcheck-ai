@@ -1,7 +1,7 @@
 // 근로기준법 기반 공용 계산 유틸리티
 
 export const MIN_WAGE = 10030; // 시간당 최저임금 (원, 기본값 = 2025년 기준)
-export const AVG_WEEKS_PER_MONTH = 4.345;
+export const AVG_WEEKS_PER_MONTH = 4.35;
 
 // 금액(원) 계산 결과의 10원 미만을 절사 (엑셀 ROUNDDOWN(x, -1)와 동일)
 export const roundDownToTen = (amount) => Math.floor(amount / 10) * 10;
@@ -312,6 +312,10 @@ export const calculateSalaryBreakdown = ({
   const hasWeeklyHoliday = weeklyHours >= 15;
   const weeklyHolidayHours = hasWeeklyHoliday ? (regularWorkHoursForBasePay / 40) * 8 : 0;
 
+  // 174시간 및 209시간(174 + 35) 기준 적용을 위해 월별 시간 계산법 보완
+  const monthlyRegularHours = Math.round(regularWorkHoursForBasePay * 4.35); // 40시간 -> 174시간
+  const monthlyWeeklyHolidayHours = hasWeeklyHoliday ? Math.round((regularWorkHoursForBasePay / 40) * 35) : 0; // 40시간 -> 35시간
+
   // 5인 이상 여부
   const is5Over = companySize === '5인 이상';
   const overtimeMultiplier = is5Over ? 1.5 : 1.0;
@@ -326,44 +330,43 @@ export const calculateSalaryBreakdown = ({
 
   if (salaryType === '시급') {
     hourlyWage = amt;
-    basePay = roundDownToTen(hourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
-    weeklyHolidayPay = roundDownToTen(hourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
+    basePay = roundDownToTen(hourlyWage * monthlyRegularHours);
+    weeklyHolidayPay = roundDownToTen(hourlyWage * monthlyWeeklyHolidayHours);
     overtimePay = roundDownToTen(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
     nightPay = roundDownToTen(hourlyWage * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
     totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
   } else if (salaryType === '일급') {
     const averageDailyHours = scheduleType === '직접입력' ? avgDailyHours : (totalWeeklyDays > 0 ? weeklyHours / totalWeeklyDays : 8);
     hourlyWage = averageDailyHours > 0 ? amt / averageDailyHours : 0;
-    basePay = roundDownToTen(hourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
-    weeklyHolidayPay = roundDownToTen(hourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
+    basePay = roundDownToTen(hourlyWage * monthlyRegularHours);
+    weeklyHolidayPay = roundDownToTen(hourlyWage * monthlyWeeklyHolidayHours);
     overtimePay = roundDownToTen(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
     nightPay = roundDownToTen(hourlyWage * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
     totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
   } else if (salaryType === '주급') {
     const divisor = regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (weeklyNightHoursVal * nightMultiplier);
     hourlyWage = divisor > 0 ? amt / divisor : 0;
-    basePay = roundDownToTen(hourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
-    weeklyHolidayPay = roundDownToTen(hourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
+    basePay = roundDownToTen(hourlyWage * monthlyRegularHours);
+    weeklyHolidayPay = roundDownToTen(hourlyWage * monthlyWeeklyHolidayHours);
     overtimePay = roundDownToTen(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
     nightPay = roundDownToTen(hourlyWage * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
     totalPay = basePay + weeklyHolidayPay + overtimePay + nightPay;
   } else { // 월급
-    const weeklyBaseAndHoliday = regularWorkHoursForBasePay + weeklyHolidayHours;
-    const monthlyStandardDivisor = weeklyBaseAndHoliday * AVG_WEEKS_PER_MONTH;
+    const monthlyStandardDivisor = monthlyRegularHours + monthlyWeeklyHolidayHours;
     hourlyWage = monthlyStandardDivisor > 0 ? amt / monthlyStandardDivisor : 0;
 
-    basePay = roundDownToTen(hourlyWage * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
-    weeklyHolidayPay = roundDownToTen(hourlyWage * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
+    basePay = roundDownToTen(hourlyWage * monthlyRegularHours);
+    weeklyHolidayPay = roundDownToTen(hourlyWage * monthlyWeeklyHolidayHours);
     overtimePay = roundDownToTen(hourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
     nightPay = roundDownToTen(hourlyWage * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
 
     if (is5Over && allowanceIncluded === '기본급 외 수당 모두 포함 (포괄임금)') {
-      const totalMultiplierDivisor = (regularWorkHoursForBasePay + weeklyHolidayHours + (weeklyOvertimeHours * overtimeMultiplier) + (weeklyNightHoursVal * nightMultiplier)) * AVG_WEEKS_PER_MONTH;
+      const totalMultiplierDivisor = monthlyStandardDivisor + (weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH) + (weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
       if (totalMultiplierDivisor > 0) {
         const actualHourly = amt / totalMultiplierDivisor;
         hourlyWage = actualHourly;
-        basePay = roundDownToTen(actualHourly * regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH);
-        weeklyHolidayPay = roundDownToTen(actualHourly * weeklyHolidayHours * AVG_WEEKS_PER_MONTH);
+        basePay = roundDownToTen(actualHourly * monthlyRegularHours);
+        weeklyHolidayPay = roundDownToTen(actualHourly * monthlyWeeklyHolidayHours);
         overtimePay = roundDownToTen(actualHourly * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
         nightPay = roundDownToTen(actualHourly * weeklyNightHoursVal * nightMultiplier * AVG_WEEKS_PER_MONTH);
       }
@@ -428,8 +431,8 @@ export const calculateSalaryBreakdown = ({
     weeklyOvertimeHours: Math.round(weeklyOvertimeHours * 10) / 10,
     weeklyNightHours: Math.round(weeklyNightHoursVal * 10) / 10,
     weeklyTotalHours: Math.round((regularWorkHoursForBasePay + weeklyOvertimeHours) * 10) / 10,
-    regularWorkHoursMonthly: Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10,
-    weeklyHolidayHoursMonthly: Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 10) / 10,
+    regularWorkHoursMonthly: monthlyRegularHours,
+    weeklyHolidayHoursMonthly: monthlyWeeklyHolidayHours,
     overtimeHoursMonthly: Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 10) / 10,
     nightHoursMonthly: Math.round(wNightHours * AVG_WEEKS_PER_MONTH * 10) / 10
   };
