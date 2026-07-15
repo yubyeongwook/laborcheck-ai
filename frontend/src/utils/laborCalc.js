@@ -698,6 +698,7 @@ export const calculateYearlyEntryPay = ({
     leavePayHoursMonthly: Math.round(leavePayHoursMonthly * 100) / 100,
     holidayWorkHoursMonthly: Math.round(holidayWorkHoursMonthly * 100) / 100,
     weeklyHours: breakdown.weeklyHours,
+    weeklyOvertimeHours: breakdown.weeklyOvertimeHours,
     isEligibleForWeeklyBenefits: breakdown.isEligibleForWeeklyBenefits,
     monthlyTotalPay,
     monthlyNetPay,

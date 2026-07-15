@@ -6,7 +6,7 @@ import {
   Clock3, Trash, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { calculateSalaryBreakdown, calculateEmployerInsurance, applyDeductions } from '../utils/laborCalc.js';
+import { calculateYearlyEntryPay, calculateEmployerInsurance, applyDeductions } from '../utils/laborCalc.js';
 
 function EmployeeManager() {
   const { session, user, openLoginModal } = useAuth();
@@ -38,7 +38,9 @@ function EmployeeManager() {
     base_salary: '3000000',
     weekly_work_days: '5',
     daily_work_hours: '8',
-    break_time_minutes: '60'
+    break_time_minutes: '60',
+    annual_leave_days: '0',
+    holiday_work_days: '0'
   });
 
   // 급여명세서 발행 모달 상태
@@ -289,10 +291,14 @@ function EmployeeManager() {
   // 직원 세부 노무 계산 함수 (기본값 설정용)
   const getEmployeeCalculations = (emp) => {
     if (!selectedCompany) return null;
-    
+
     const totalWeeklyHours = Number(emp.weekly_work_days) * Number(emp.daily_work_hours);
-    
-    const salaryResult = calculateSalaryBreakdown({
+    const calcYear = new Date().getFullYear();
+
+    // 5인 이상 사업장 + 주 15시간 이상 근로자는 기본급/주휴수당뿐 아니라 연차수당·휴일근로수당까지
+    // 시급 기준으로 자동 산정되도록 calculateYearlyEntryPay 사용 (시급/일급/주급/월급 계약 모두 동일하게 적용)
+    const salaryResult = calculateYearlyEntryPay({
+      year: calcYear,
       salaryType: emp.salary_type,
       salaryAmount: emp.base_salary,
       companySize: selectedCompany.size_type,
@@ -303,6 +309,8 @@ function EmployeeManager() {
       directWeeklyOvertimeHours: Math.max(totalWeeklyHours - 40, 0),
       directWeeklyNightHours: 0,
       directAvgDailyHours: emp.daily_work_hours,
+      annualLeaveDays: Number(emp.annual_leave_days) || 0,
+      holidayWorkDays: Number(emp.holiday_work_days) || 0,
       deductionType: '4대보험',
       workingDaysCount: Number(emp.weekly_work_days) * 4.345
     });
@@ -311,7 +319,7 @@ function EmployeeManager() {
     const insuranceResult = calculateEmployerInsurance({
       monthlyWage: monthlyTotal,
       industrialAccidentRate: 0.7,
-      year: 2026
+      year: calcYear
     });
 
     return {
@@ -408,20 +416,26 @@ function EmployeeManager() {
     const employeeLogs = attendanceLogs[emp.id] || [];
     const logsInMonth = employeeLogs.filter(log => log.work_date.startsWith(targetMonth) && log.status === '정상');
     
-    let hourly_wage = calcs.salaryResult.hourlyWage || Number(emp.base_salary);
+    let hourly_wage = calcs.salaryResult.baseHourlyWage || Number(emp.base_salary);
     let base_hours = calcs.salaryResult.regularWorkHoursMonthly || 174;
     let weekly_holiday_hours = calcs.salaryResult.weeklyHolidayHoursMonthly || 35;
-    
+
     // 5인 이상 여부
     const is5Over = selectedCompany.size_type === '5인 이상';
     const overtimeMultiplier = is5Over ? 1.5 : 1.0;
     const nightMultiplier = is5Over ? 0.5 : 0.0;
-    
+
     let overtime_hours = (calcs.salaryResult.overtimeHoursMonthly || 0) * overtimeMultiplier;
     let night_hours = (calcs.salaryResult.nightHoursMonthly || 0) * nightMultiplier;
 
-    let holiday_work_hours = 0;
-    let annual_leave_hours = 0;
+    // 연차수당/휴일근로수당은 실제 출퇴근 기록과 무관하게 연간 등록일수를 1/12씩 매월 선지급하는 방식
+    // (5인 이상 사업장 + 주 15시간 이상 근로자만 연차수당 대상, calculateYearlyEntryPay가 이미 판정)
+    // 휴일근로는 하루 8시간 이내 1.5배 / 8시간 초과분 2.0배로 가산율이 시간대별로 갈리므로,
+    // 이 화면의 "시간 × 시급 = 금액" 표시 규칙을 지키기 위해 정확한 금액(holidayWorkPay)을
+    // 시급으로 나눠 역산한 가산 반영 시간으로 표시한다
+    const holidayWorkPayFromCalc = calcs.salaryResult.holidayWorkPay || 0;
+    const holiday_work_hours = hourly_wage > 0 ? Math.round((holidayWorkPayFromCalc / hourly_wage) * 100) / 100 : 0;
+    const annual_leave_hours = calcs.salaryResult.leavePayHoursMonthly || 0;
     let extra_overtime_hours = 0;
 
     let base_pay = hourly_wage * base_hours;
@@ -959,7 +973,9 @@ function EmployeeManager() {
                   base_salary: '3000000',
                   weekly_work_days: '5',
                   daily_work_hours: '8',
-                  break_time_minutes: '60'
+                  break_time_minutes: '60',
+                  annual_leave_days: '0',
+                  holiday_work_days: '0'
                 });
                 setShowEmployeeModal(true);
               }}
@@ -1040,7 +1056,9 @@ function EmployeeManager() {
                                 base_salary: String(emp.base_salary),
                                 weekly_work_days: String(emp.weekly_work_days),
                                 daily_work_hours: String(emp.daily_work_hours),
-                                break_time_minutes: String(emp.break_time_minutes)
+                                break_time_minutes: String(emp.break_time_minutes),
+                                annual_leave_days: String(emp.annual_leave_days || 0),
+                                holiday_work_days: String(emp.holiday_work_days || 0)
                               });
                               setShowEmployeeModal(true);
                             }}
@@ -1084,6 +1102,14 @@ function EmployeeManager() {
                               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dotted rgba(255,255,255,0.06)', paddingBottom: '0.25rem' }}>
                                 <span style={{ color: '#94a3b8' }}>연장근로수당 ({calcs.salaryResult.weeklyOvertimeHours}시간)</span>
                                 <span style={{ color: '#cbd5e1' }}>{calcs.salaryResult.overtimePay.toLocaleString()}원</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dotted rgba(255,255,255,0.06)', paddingBottom: '0.25rem' }}>
+                                <span style={{ color: '#94a3b8' }}>연차수당 (선지급, {calcs.salaryResult.isEligibleForWeeklyBenefits ? `연 ${emp.annual_leave_days || 0}일` : '주 15h 미만 제외'})</span>
+                                <span style={{ color: '#cbd5e1' }}>{calcs.salaryResult.leavePayMonthly.toLocaleString()}원</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dotted rgba(255,255,255,0.06)', paddingBottom: '0.25rem' }}>
+                                <span style={{ color: '#94a3b8' }}>휴일근로수당 (선지급, 연 {emp.holiday_work_days || 0}일 · {selectedCompany.size_type === '5인 이상' ? '1.5배' : '1.0배'})</span>
+                                <span style={{ color: '#cbd5e1' }}>{calcs.salaryResult.holidayWorkPay.toLocaleString()}원</span>
                               </div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.25rem', fontWeight: 'bold' }}>
                                 <span style={{ color: '#f8fafc' }}>총 지급액 합계</span>
@@ -1547,13 +1573,39 @@ function EmployeeManager() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">하루 휴게시간 (분) *</label>
-                  <input 
-                    type="number" 
-                    className="text-input" 
-                    value={employeeForm.break_time_minutes} 
+                  <input
+                    type="number"
+                    className="text-input"
+                    value={employeeForm.break_time_minutes}
                     onChange={(e) => setEmployeeForm({ ...employeeForm, break_time_minutes: e.target.value })}
-                    min="0" required 
+                    min="0" required
                   />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">연간 연차일수 (일)</label>
+                  <input
+                    type="number"
+                    className="text-input"
+                    value={employeeForm.annual_leave_days}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, annual_leave_days: e.target.value })}
+                    min="0"
+                  />
+                  <p style={{ fontSize: '0.7rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
+                    입력 시 매월 1/12씩 연차수당으로 선지급됩니다. (주 15시간 미만 근로자는 자동 제외)
+                  </p>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">연간 휴일근로일수 (일)</label>
+                  <input
+                    type="number"
+                    className="text-input"
+                    value={employeeForm.holiday_work_days}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, holiday_work_days: e.target.value })}
+                    min="0"
+                  />
+                  <p style={{ fontSize: '0.7rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
+                    입력 시 매월 1/12씩 휴일근로수당으로 선지급됩니다. (5인 이상 사업장은 1.5배 가산)
+                  </p>
                 </div>
               </div>
 
