@@ -180,7 +180,8 @@ export const calculateHoursAndNightHours = (startStr, endStr, breakMinutes, nigh
   }
 
   const totalElapsed = endDecimal - startDecimal;
-  const breakHours = (parseFloat(breakMinutes) || 0) / 60;
+  const totalBreakMinutes = (parseFloat(breakMinutes) || 0) + (parseFloat(nightBreakMinutes) || 0);
+  const breakHours = totalBreakMinutes / 60;
   const workHours = Math.max(0, totalElapsed - breakHours);
 
   // 22:00 ~ 익일 06:00 (dec: 22 ~ 30)

@@ -242,13 +242,13 @@ function ReportGenerator({ userType }) {
 
   // 요일별 스케줄 정보 집계용 매핑 객체 (각 요일의 실제 휴게시간 입력값을 사용)
   const daysState = {
-    mon: { active: monActive, start: monStart, end: monEnd, breakMinutes: (parseFloat(monBreakH) || 0) * 60 + (parseFloat(monBreakM) || 0) },
-    tue: { active: tueActive, start: tueStart, end: tueEnd, breakMinutes: (parseFloat(tueBreakH) || 0) * 60 + (parseFloat(tueBreakM) || 0) },
-    wed: { active: wedActive, start: wedStart, end: wedEnd, breakMinutes: (parseFloat(wedBreakH) || 0) * 60 + (parseFloat(wedBreakM) || 0) },
-    thu: { active: thuActive, start: thuStart, end: thuEnd, breakMinutes: (parseFloat(thuBreakH) || 0) * 60 + (parseFloat(thuBreakM) || 0) },
-    fri: { active: friActive, start: friStart, end: friEnd, breakMinutes: (parseFloat(friBreakH) || 0) * 60 + (parseFloat(friBreakM) || 0) },
-    sat: { active: satActive, start: satStart, end: satEnd, breakMinutes: (parseFloat(satBreakH) || 0) * 60 + (parseFloat(satBreakM) || 0) },
-    sun: { active: sunActive, start: sunStart, end: sunEnd, breakMinutes: (parseFloat(sunBreakH) || 0) * 60 + (parseFloat(sunBreakM) || 0) }
+    mon: { active: monActive, start: monStart, end: monEnd, breakMinutes: (parseFloat(monBreakH) || 0) * 60 + (parseFloat(monBreakM) || 0), nightBreakMinutes: (parseFloat(monNightBreakH) || 0) * 60 + (parseFloat(monNightBreakM) || 0) },
+    tue: { active: tueActive, start: tueStart, end: tueEnd, breakMinutes: (parseFloat(tueBreakH) || 0) * 60 + (parseFloat(tueBreakM) || 0), nightBreakMinutes: (parseFloat(tueNightBreakH) || 0) * 60 + (parseFloat(tueNightBreakM) || 0) },
+    wed: { active: wedActive, start: wedStart, end: wedEnd, breakMinutes: (parseFloat(wedBreakH) || 0) * 60 + (parseFloat(wedBreakM) || 0), nightBreakMinutes: (parseFloat(wedNightBreakH) || 0) * 60 + (parseFloat(wedNightBreakM) || 0) },
+    thu: { active: thuActive, start: thuStart, end: thuEnd, breakMinutes: (parseFloat(thuBreakH) || 0) * 60 + (parseFloat(thuBreakM) || 0), nightBreakMinutes: (parseFloat(thuNightBreakH) || 0) * 60 + (parseFloat(thuNightBreakM) || 0) },
+    fri: { active: friActive, start: friStart, end: friEnd, breakMinutes: (parseFloat(friBreakH) || 0) * 60 + (parseFloat(friBreakM) || 0), nightBreakMinutes: (parseFloat(friNightBreakH) || 0) * 60 + (parseFloat(friNightBreakM) || 0) },
+    sat: { active: satActive, start: satStart, end: satEnd, breakMinutes: (parseFloat(satBreakH) || 0) * 60 + (parseFloat(satBreakM) || 0), nightBreakMinutes: (parseFloat(satNightBreakH) || 0) * 60 + (parseFloat(satNightBreakM) || 0) },
+    sun: { active: sunActive, start: sunStart, end: sunEnd, breakMinutes: (parseFloat(sunBreakH) || 0) * 60 + (parseFloat(sunBreakM) || 0), nightBreakMinutes: (parseFloat(sunNightBreakH) || 0) * 60 + (parseFloat(sunNightBreakM) || 0) }
   };
 
   let weeklyHoursFromDays = 0;
@@ -259,7 +259,7 @@ function ReportGenerator({ userType }) {
     Object.keys(daysState).forEach(day => {
       const d = daysState[day];
       if (d.active === true || d.active === 'true') {
-        const calc = calculateHoursAndNightHours(d.start, d.end, d.breakMinutes);
+        const calc = calculateHoursAndNightHours(d.start, d.end, d.breakMinutes, d.nightBreakMinutes);
         weeklyHoursFromDays += calc.workHours;
         weeklyNightHoursFromDays += calc.nightHours;
         totalWeeklyDaysFromDays += 1;
@@ -281,7 +281,7 @@ function ReportGenerator({ userType }) {
       Object.keys(daysState).forEach(d => {
         const active = daysState[d].active === true || daysState[d].active === 'true';
         if (active) {
-          const calc = calculateHoursAndNightHours(daysState[d].start, daysState[d].end, daysState[d].breakMinutes);
+          const calc = calculateHoursAndNightHours(daysState[d].start, daysState[d].end, daysState[d].breakMinutes, daysState[d].nightBreakMinutes);
           totalWeeklyNight += calc.nightHours;
         }
       });
@@ -710,8 +710,10 @@ function ReportGenerator({ userType }) {
             breakAuto: item.breakAuto, setBreakAuto: item.setBreakAuto
           });
           const isBreakMinutes = (parseFloat(item.breakH) || 0) * 60 + (parseFloat(item.breakM) || 0);
+          const isNightBreakMinutes = (parseFloat(item.nightBreakH) || 0) * 60 + (parseFloat(item.nightBreakM) || 0);
+          const totalBreakMinutes = isBreakMinutes + isNightBreakMinutes;
           const elapsed = calculateElapsedHours(item.start, item.end);
-          const workHours = Math.max(0, elapsed - isBreakMinutes / 60);
+          const workHours = Math.max(0, elapsed - totalBreakMinutes / 60);
 
           return (
             <div key={d} style={{ background: 'rgba(255, 255, 255, 0.01)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
@@ -732,7 +734,7 @@ function ReportGenerator({ userType }) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <div>
-                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 근무일의 총 휴게시간</span>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주간(일반) 휴게시간</span>
                   <HourMinuteInput
                     hourValue={item.breakH}
                     onHourChange={breakHandlers.onBreakHChange}
@@ -752,7 +754,7 @@ function ReportGenerator({ userType }) {
               </div>
 
               <div style={{ fontSize: '0.7rem', color: '#38bdf8', textAlign: 'right', fontWeight: '500' }}>
-                실근로시간: <strong>{formatMinutesAsHM(workHours * 60)}</strong> (휴게 {formatMinutesAsHM(isBreakMinutes)} 제외)
+                실근로시간: <strong>{formatMinutesAsHM(workHours * 60)}</strong> (휴게 {formatMinutesAsHM(totalBreakMinutes)} 제외)
               </div>
             </div>
           );

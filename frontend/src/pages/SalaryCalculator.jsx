@@ -145,7 +145,7 @@ function computeDerived(entry) {
         weeklyHours += calc.workHours;
         weeklyNightHours += calc.nightHours;
         totalWeeklyDays += 1;
-        totalBreakMinutesWeekly += bMinutes;
+        totalBreakMinutesWeekly += bMinutes + nbMinutes;
 
         const regularDaily = Math.min(calc.workHours, 8);
         weeklyRegularHours += regularDaily;
@@ -189,7 +189,7 @@ function computeDerived(entry) {
   } else {
     weeklyHours = (p1.workHours * p1Days) + (p2.workHours * p2Days) + (p3.workHours * p3Days);
     totalWeeklyDays = p1Days + p2Days + p3Days;
-    totalBreakMinutesWeekly = (p1BreakMinutes * p1Days) + (p2BreakMinutes * p2Days) + (p3BreakMinutes * p3Days);
+    totalBreakMinutesWeekly = ((p1BreakMinutes + p1NightBreakMinutes) * p1Days) + ((p2BreakMinutes + p2NightBreakMinutes) * p2Days) + ((p3BreakMinutes + p3NightBreakMinutes) * p3Days);
     weeklyNightHours = (p1.nightHours * p1Days) + (p2.nightHours * p2Days) + (p3.nightHours * p3Days);
   }
  
@@ -277,14 +277,14 @@ function PatternInput({
         </div>
       </div>
       <div style={{ marginTop: '0.5rem' }}>
-        <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 패턴의 총 휴게시간</span>
+        <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주간(일반) 휴게시간</span>
         <HourMinuteInput hourValue={breakH} onHourChange={onBreakHChange} minuteValue={breakM} onMinuteChange={onBreakMChange} />
       </div>
 
       {nightOverlapRaw > 0 && (
         <div style={{ marginTop: '0.5rem', background: 'rgba(165, 180, 252, 0.06)', padding: '0.6rem', borderRadius: '6px', border: '1px dashed rgba(165, 180, 252, 0.25)' }}>
           <span style={{ fontSize: '0.7rem', color: '#a5b4fc', display: 'block', marginBottom: '0.25rem' }}>
-            이 중 야간시간대(22:00~06:00)에 사용한 휴게시간
+            야간시간대(22:00~06:00)에 사용한 휴게시간
           </span>
           <HourMinuteInput hourValue={nightBreakH} onHourChange={onNightBreakHChange} minuteValue={nightBreakM} onMinuteChange={onNightBreakMChange} />
           <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
@@ -393,7 +393,7 @@ function DayOfWeekEditor({ entry, update, updateTime, updateBreak }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <div>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 근무일의 총 휴게시간</span>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주간(일반) 휴게시간</span>
                 <HourMinuteInput
                   hourValue={entry[`${d}BreakH`]}
                   onHourChange={updateBreak(d, 'BreakH')}
@@ -703,9 +703,9 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             ) : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <PatternInput label="근무 패턴 1" days={entry.pattern1Days} onDaysChange={update('pattern1Days')} start={entry.pattern1Start} onStartChange={updateTime('pattern1', 'Start')} end={entry.pattern1End} onEndChange={updateTime('pattern1', 'End')} hours={p1.workHours} breakH={entry.pattern1BreakH} onBreakHChange={updateBreak('pattern1', 'BreakH')} breakM={entry.pattern1BreakM} onBreakMChange={updateBreak('pattern1', 'BreakM')} breakMinutes={p1BreakMinutes} nightOverlapRaw={p1.nightOverlapRaw} nightHours={p1.nightHours} nightBreakH={entry.pattern1NightBreakH} onNightBreakHChange={update('pattern1NightBreakH')} nightBreakM={entry.pattern1NightBreakM} onNightBreakMChange={update('pattern1NightBreakM')} />
-                  <PatternInput label="근무 패턴 2 (선택)" days={entry.pattern2Days} onDaysChange={update('pattern2Days')} start={entry.pattern2Start} onStartChange={updateTime('pattern2', 'Start')} end={entry.pattern2End} onEndChange={updateTime('pattern2', 'End')} hours={p2.workHours} breakH={entry.pattern2BreakH} onBreakHChange={updateBreak('pattern2', 'BreakH')} breakM={entry.pattern2BreakM} onBreakMChange={updateBreak('pattern2', 'BreakM')} breakMinutes={p2BreakMinutes} nightOverlapRaw={p2.nightOverlapRaw} nightHours={p2.nightHours} nightBreakH={entry.pattern2NightBreakH} onNightBreakHChange={update('pattern2NightBreakH')} nightBreakM={entry.pattern2NightBreakM} onNightBreakMChange={update('pattern2NightBreakM')} />
-                  <PatternInput label="근무 패턴 3 (선택)" days={entry.pattern3Days} onDaysChange={update('pattern3Days')} start={entry.pattern3Start} onStartChange={updateTime('pattern3', 'Start')} end={entry.pattern3End} onEndChange={updateTime('pattern3', 'End')} hours={p3.workHours} breakH={entry.pattern3BreakH} onBreakHChange={updateBreak('pattern3', 'BreakH')} breakM={entry.pattern3BreakM} onBreakMChange={updateBreak('pattern3', 'BreakM')} breakMinutes={p3BreakMinutes} nightOverlapRaw={p3.nightOverlapRaw} nightHours={p3.nightHours} nightBreakH={entry.pattern3NightBreakH} onNightBreakHChange={update('pattern3NightBreakH')} nightBreakM={entry.pattern3NightBreakM} onNightBreakMChange={update('pattern3NightBreakM')} />
+                  <PatternInput label="근무 패턴 1" days={entry.pattern1Days} onDaysChange={update('pattern1Days')} start={entry.pattern1Start} onStartChange={updateTime('pattern1', 'Start')} end={entry.pattern1End} onEndChange={updateTime('pattern1', 'End')} hours={p1.workHours} breakH={entry.pattern1BreakH} onBreakHChange={updateBreak('pattern1', 'BreakH')} breakM={entry.pattern1BreakM} onBreakMChange={updateBreak('pattern1', 'BreakM')} breakMinutes={p1BreakMinutes + p1NightBreakMinutes} nightOverlapRaw={p1.nightOverlapRaw} nightHours={p1.nightHours} nightBreakH={entry.pattern1NightBreakH} onNightBreakHChange={update('pattern1NightBreakH')} nightBreakM={entry.pattern1NightBreakM} onNightBreakMChange={update('pattern1NightBreakM')} />
+                  <PatternInput label="근무 패턴 2 (선택)" days={entry.pattern2Days} onDaysChange={update('pattern2Days')} start={entry.pattern2Start} onStartChange={updateTime('pattern2', 'Start')} end={entry.pattern2End} onEndChange={updateTime('pattern2', 'End')} hours={p2.workHours} breakH={entry.pattern2BreakH} onBreakHChange={updateBreak('pattern2', 'BreakH')} breakM={entry.pattern2BreakM} onBreakMChange={updateBreak('pattern2', 'BreakM')} breakMinutes={p2BreakMinutes + p2NightBreakMinutes} nightOverlapRaw={p2.nightOverlapRaw} nightHours={p2.nightHours} nightBreakH={entry.pattern2NightBreakH} onNightBreakHChange={update('pattern2NightBreakH')} nightBreakM={entry.pattern2NightBreakM} onNightBreakMChange={update('pattern2NightBreakM')} />
+                  <PatternInput label="근무 패턴 3 (선택)" days={entry.pattern3Days} onDaysChange={update('pattern3Days')} start={entry.pattern3Start} onStartChange={updateTime('pattern3', 'Start')} end={entry.pattern3End} onEndChange={updateTime('pattern3', 'End')} hours={p3.workHours} breakH={entry.pattern3BreakH} onBreakHChange={updateBreak('pattern3', 'BreakH')} breakM={entry.pattern3BreakM} onBreakMChange={updateBreak('pattern3', 'BreakM')} breakMinutes={p3BreakMinutes + p3NightBreakMinutes} nightOverlapRaw={p3.nightOverlapRaw} nightHours={p3.nightHours} nightBreakH={entry.pattern3NightBreakH} onNightBreakHChange={update('pattern3NightBreakH')} nightBreakM={entry.pattern3NightBreakM} onNightBreakMChange={update('pattern3NightBreakM')} />
                 </div>
                 
                 <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(56, 189, 248, 0.05)', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.15)' }}>

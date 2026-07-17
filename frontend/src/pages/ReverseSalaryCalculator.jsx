@@ -66,14 +66,14 @@ function PatternInput({
         </div>
       </div>
       <div style={{ marginTop: '0.5rem' }}>
-        <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 패턴의 총 휴게시간</span>
+        <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주간(일반) 휴게시간</span>
         <HourMinuteInput hourValue={breakH} onHourChange={onBreakHChange} minuteValue={breakM} onMinuteChange={onBreakMChange} />
       </div>
 
       {nightOverlapRaw > 0 && (
         <div style={{ marginTop: '0.5rem', background: 'rgba(165, 180, 252, 0.06)', padding: '0.6rem', borderRadius: '6px', border: '1px dashed rgba(165, 180, 252, 0.25)' }}>
           <span style={{ fontSize: '0.7rem', color: '#a5b4fc', display: 'block', marginBottom: '0.25rem' }}>
-            이 중 야간시간대(22:00~06:00)에 사용한 휴게시간
+            야간시간대(22:00~06:00)에 사용한 휴게시간
           </span>
           <HourMinuteInput hourValue={nightBreakH} onHourChange={onNightBreakHChange} minuteValue={nightBreakM} onMinuteChange={onNightBreakMChange} />
           <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
@@ -233,7 +233,7 @@ function DayOfWeekEditor({
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <div>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이 근무일의 총 휴게시간</span>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>주간(일반) 휴게시간</span>
                 <HourMinuteInput
                   hourValue={item.breakH}
                   onHourChange={breakHandlers.onBreakHChange}
@@ -845,7 +845,7 @@ function ReverseSalaryCalculator() {
                     hours={p1.workHours}
                     breakH={pattern1BreakH} onBreakHChange={p1BreakHandlers.onBreakHChange}
                     breakM={pattern1BreakM} onBreakMChange={p1BreakHandlers.onBreakMChange}
-                    breakMinutes={p1BreakMinutes} 
+                    breakMinutes={p1BreakMinutes + p1NightBreakMinutes} 
                     nightOverlapRaw={p1.nightOverlapRaw} nightHours={p1.nightHours} 
                     nightBreakH={pattern1NightBreakH} onNightBreakHChange={setPattern1NightBreakH} 
                     nightBreakM={pattern1NightBreakM} onNightBreakMChange={setPattern1NightBreakM} 
@@ -858,7 +858,7 @@ function ReverseSalaryCalculator() {
                     hours={p2.workHours}
                     breakH={pattern2BreakH} onBreakHChange={p2BreakHandlers.onBreakHChange}
                     breakM={pattern2BreakM} onBreakMChange={p2BreakHandlers.onBreakMChange}
-                    breakMinutes={p2BreakMinutes} 
+                    breakMinutes={p2BreakMinutes + p2NightBreakMinutes} 
                     nightOverlapRaw={p2.nightOverlapRaw} nightHours={p2.nightHours} 
                     nightBreakH={pattern2NightBreakH} onNightBreakHChange={setPattern2NightBreakH} 
                     nightBreakM={pattern2NightBreakM} onNightBreakMChange={setPattern2NightBreakM} 
@@ -871,8 +871,8 @@ function ReverseSalaryCalculator() {
                     hours={p3.workHours}
                     breakH={pattern3BreakH} onBreakHChange={p3BreakHandlers.onBreakHChange}
                     breakM={pattern3BreakM} onBreakMChange={p3BreakHandlers.onBreakMChange}
-                    breakMinutes={p3BreakMinutes} 
-                    nightOverlapRaw={p3.nightOverlapRaw} nightHours={p3.nightHours} 
+                    breakMinutes={p3BreakMinutes + p3NightBreakMinutes} 
+                    nightOverlapRaw={p3.nightOverlapRaw} nightHours={p3.nightHours}  
                     nightBreakH={pattern3NightBreakH} onNightBreakHChange={setPattern3NightBreakH} 
                     nightBreakM={pattern3NightBreakM} onNightBreakMChange={setPattern3NightBreakM} 
                   />
