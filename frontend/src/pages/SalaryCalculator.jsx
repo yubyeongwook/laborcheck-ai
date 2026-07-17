@@ -963,6 +963,57 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             );
           })()}
 
+          {(() => {
+            const wage = result.baseHourlyWage;
+            if (!wage) return null;
+            const rows = [
+              { label: '기본급', amount: result.basePay },
+              { label: '주휴수당', amount: result.weeklyHolidayPay },
+              { label: '연장수당', amount: result.overtimePay },
+              { label: '야간수당', amount: result.nightPay },
+              { label: '휴일근로수당', amount: result.holidayWorkPay },
+              { label: '연차수당', amount: result.leavePayMonthly }
+            ].map(r => ({ ...r, hours: Math.round((r.amount / wage) * 100) / 100 }));
+            const totalAmount = rows.reduce((sum, r) => sum + r.amount, 0);
+            const totalHours = rows.reduce((sum, r) => sum + r.hours, 0);
+            return (
+              <div style={{ margin: '0.75rem 0' }}>
+                <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>
+                  🧾 {entry.year}년 임금명세서 (기준임금 {wage.toLocaleString()}원 × 가중 근무시간)
+                </span>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+                      <th style={{ textAlign: 'left', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>구성</th>
+                      <th style={{ textAlign: 'right', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>월 근무시간(가중)</th>
+                      <th style={{ textAlign: 'right', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>구성비율</th>
+                      <th style={{ textAlign: 'right', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>금액</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map(r => (
+                      <tr key={r.label} style={{ borderBottom: '1px dotted rgba(255,255,255,0.06)' }}>
+                        <td style={{ padding: '0.3rem', color: '#cbd5e1' }}>{r.label}</td>
+                        <td style={{ padding: '0.3rem', textAlign: 'right', color: '#cbd5e1' }}>{r.hours.toFixed(2)}</td>
+                        <td style={{ padding: '0.3rem', textAlign: 'right', color: '#cbd5e1' }}>{totalAmount > 0 ? ((r.amount / totalAmount) * 100).toFixed(1) : '0.0'}%</td>
+                        <td style={{ padding: '0.3rem', textAlign: 'right', color: '#cbd5e1' }}>{r.amount.toLocaleString()}원</td>
+                      </tr>
+                    ))}
+                    <tr style={{ borderTop: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 'bold' }}>
+                      <td style={{ padding: '0.3rem', color: '#38bdf8' }}>월급여 합계</td>
+                      <td style={{ padding: '0.3rem', textAlign: 'right', color: '#38bdf8' }}>{totalHours.toFixed(2)}</td>
+                      <td style={{ padding: '0.3rem', textAlign: 'right', color: '#38bdf8' }}>100.0%</td>
+                      <td style={{ padding: '0.3rem', textAlign: 'right', color: '#38bdf8' }}>{totalAmount.toLocaleString()}원</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
+                  모든 항목이 기준임금(기초시급) {wage.toLocaleString()}원 하나로 계산됩니다 — 가중 근무시간(= 금액 ÷ 기준임금)만 항목별로 달라집니다.
+                </p>
+              </div>
+            );
+          })()}
+
           {result.totalNonTaxable + result.totalTaxableExcess > 0 && (
             <div className="result-row">
               <span className="result-row-label" style={{ color: '#34d399' }}>비과세 수당 (식대·차량·육아·기타)</span>
