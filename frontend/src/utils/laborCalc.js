@@ -715,3 +715,14 @@ export const calculateYearlyEntryPay = ({
     workingDaysCount: daysVal
   };
 };
+
+// "1시간 30분" 형태로 표시
+export const formatMinutesAsHM = (totalMinutes) => {
+  const m = Math.max(Math.round(totalMinutes), 0);
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  if (h === 0) return `${rest}분`;
+  if (rest === 0) return `${h}시간`;
+  return `${h}시간 ${rest}분`;
+};
+

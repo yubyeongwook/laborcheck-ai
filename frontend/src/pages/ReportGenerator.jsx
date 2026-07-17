@@ -5,7 +5,7 @@ import {
   AlertCircle, Coins, Calendar, FileSignature, Upload, X, FileImage, FileVideo, Utensils
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { calculateHoursAndNightHours, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, makeAutoBreakHandlers } from '../utils/laborCalc.js';
+import { calculateHoursAndNightHours, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, makeAutoBreakHandlers, formatMinutesAsHM } from '../utils/laborCalc.js';
 import LaborInfoSync from '../components/LaborInfoSync.jsx';
 
 const LOADING_TIPS = [
@@ -624,7 +624,7 @@ function ReportGenerator({ userType }) {
         </div>
       </div>
       <div style={{ fontSize: '0.7rem', color: '#38bdf8', marginTop: '0.5rem', textAlign: 'right', fontWeight: '500' }}>
-        하루 근로시간: <strong>{hours}시간</strong> (휴게 {breakTime}분 제외)
+        하루 근로시간: <strong>{formatMinutesAsHM(hours * 60)}</strong> (휴게 {formatMinutesAsHM(breakTime)} 제외)
       </div>
     </div>
   );
@@ -752,7 +752,7 @@ function ReportGenerator({ userType }) {
               </div>
 
               <div style={{ fontSize: '0.7rem', color: '#38bdf8', textAlign: 'right', fontWeight: '500' }}>
-                실근로시간: <strong>{(Math.round(workHours * 100) / 100).toFixed(1)}시간</strong> (휴게 {isBreakMinutes}분 제외)
+                실근로시간: <strong>{formatMinutesAsHM(workHours * 60)}</strong> (휴게 {formatMinutesAsHM(isBreakMinutes)} 제외)
               </div>
             </div>
           );

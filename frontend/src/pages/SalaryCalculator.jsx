@@ -294,7 +294,7 @@ function PatternInput({
       )}
 
       <div style={{ fontSize: '0.7rem', color: '#38bdf8', marginTop: '0.5rem', textAlign: 'right', fontWeight: '500' }}>
-        하루 근로시간: <strong>{hours}시간</strong> (휴게 {formatMinutesAsHM(breakMinutes)} 제외)
+        하루 근로시간: <strong>{formatMinutesAsHM(hours * 60)}</strong> (휴게 {formatMinutesAsHM(breakMinutes)} 제외)
       </div>
     </div>
   );
@@ -413,7 +413,7 @@ function DayOfWeekEditor({ entry, update, updateTime, updateBreak }) {
             </div>
 
             <div style={{ fontSize: '0.7rem', color: '#38bdf8', textAlign: 'right', fontWeight: '500' }}>
-              실근로시간: <strong>{(Math.round(workHours * 100) / 100).toFixed(1)}시간</strong> (휴게 {isBreakMinutes}분 제외)
+              실근로시간: <strong>{formatMinutesAsHM(workHours * 60)}</strong> (휴게 {formatMinutesAsHM(isBreakMinutes)} 제외)
             </div>
           </div>
         );
