@@ -963,64 +963,6 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             );
           })()}
 
-          {(() => {
-            const PAID_EQUIV_CONFIG = {
-              시급: { label: '지급시급', unit: '실근로시간', basePay: result.paidHourlyBasePay, weeklyHolidayPay: result.paidHourlyWeeklyHolidayPay, overtimePay: result.paidHourlyOvertimePay, nightPay: result.paidHourlyNightPay, leavePay: result.paidHourlyLeavePay, holidayWorkPay: result.paidHourlyHolidayWorkPay, total: result.paidHourlyWage },
-              일급: { label: '지급일급', unit: '근무일수', basePay: result.paidDailyBasePay, weeklyHolidayPay: result.paidDailyWeeklyHolidayPay, overtimePay: result.paidDailyOvertimePay, nightPay: result.paidDailyNightPay, leavePay: result.paidDailyLeavePay, holidayWorkPay: result.paidDailyHolidayWorkPay, total: result.paidDailyWage },
-              주급: { label: '지급주급', unit: '주수(월평균)', basePay: result.paidWeeklyBasePay, weeklyHolidayPay: result.paidWeeklyWeeklyHolidayPay, overtimePay: result.paidWeeklyOvertimePay, nightPay: result.paidWeeklyNightPay, leavePay: result.paidWeeklyLeavePay, holidayWorkPay: result.paidWeeklyHolidayWorkPay, total: result.paidWeeklyWage }
-            };
-            const cfg = PAID_EQUIV_CONFIG[entry.salaryType];
-            if (!cfg) return null;
-            return (
-              <div style={{ background: 'rgba(165, 180, 252, 0.05)', padding: '0.85rem', borderRadius: '10px', border: '1px dashed rgba(165, 180, 252, 0.25)', margin: '0.75rem 0' }}>
-                <span style={{ fontSize: '0.75rem', color: '#a5b4fc', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>
-                  📋 {cfg.label} (근로계약서 기재용 — 기본급+주휴+연장+야간+연차+휴일근로수당을 {cfg.unit}에 녹여 합산)
-                </span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.72rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>기본급 환산</span>
-                    <span style={{ color: '#cbd5e1' }}>{cfg.basePay.toLocaleString()}원</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>주휴수당 환산</span>
-                    <span style={{ color: '#cbd5e1' }}>{cfg.weeklyHolidayPay.toLocaleString()}원</span>
-                  </div>
-                  {result.overtimePay > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>연장수당 환산</span>
-                      <span style={{ color: '#cbd5e1' }}>{cfg.overtimePay.toLocaleString()}원</span>
-                    </div>
-                  )}
-                  {result.nightPay > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>야간수당 환산</span>
-                      <span style={{ color: '#cbd5e1' }}>{cfg.nightPay.toLocaleString()}원</span>
-                    </div>
-                  )}
-                  {result.leavePayMonthly > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>연차수당 환산</span>
-                      <span style={{ color: '#cbd5e1' }}>{cfg.leavePay.toLocaleString()}원</span>
-                    </div>
-                  )}
-                  {result.holidayWorkPay > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#94a3b8' }}>휴일근로수당 환산</span>
-                      <span style={{ color: '#cbd5e1' }}>{cfg.holidayWorkPay.toLocaleString()}원</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(165, 180, 252, 0.2)', paddingTop: '0.35rem', marginTop: '0.15rem', fontWeight: 'bold' }}>
-                    <span style={{ color: '#f8fafc' }}>{cfg.label} 합계</span>
-                    <span style={{ color: '#a5b4fc' }}>{cfg.total.toLocaleString()}원</span>
-                  </div>
-                </div>
-                <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.5rem 0 0 0' }}>
-                  기초시급 {result.baseHourlyWage.toLocaleString()}원과는 다른 값입니다 — 실제 지급되는 각종 수당을 {cfg.unit}에 나눠 녹인 참고용 환산액이며, 연장·야간근로 발생 여부에 따라 매달 달라질 수 있습니다.
-                </p>
-              </div>
-            );
-          })()}
-
           {result.totalNonTaxable + result.totalTaxableExcess > 0 && (
             <div className="result-row">
               <span className="result-row-label" style={{ color: '#34d399' }}>비과세 수당 (식대·차량·육아·기타)</span>
