@@ -666,6 +666,29 @@ export const calculateYearlyEntryPay = ({
   const dailyTotalPay = roundDownToTen(monthlyTotalPay / daysVal);
   const dailyNetPay = roundDownToTen(monthlyNetPay / daysVal);
 
+  // 시급/일급 계약서에 "지급시급(포함시급)"/"지급일급"으로 명시할 수 있도록,
+  // 기본급+주휴수당+연장/야간수당+연차수당+휴일근로수당을 실제 근로시간(소정+연장)·근무일수로 나눠
+  // 각 항목의 시간당/일당 환산액과 그 합계(지급시급/지급일급)를 계산
+  const totalWorkedHoursMonthly = breakdown.regularWorkHoursMonthly + breakdown.overtimeHoursMonthly;
+  const hourlyEquiv = (amount) => totalWorkedHoursMonthly > 0 ? roundDownToTen(amount / totalWorkedHoursMonthly) : 0;
+  const dailyEquiv = (amount) => daysVal > 0 ? roundDownToTen(amount / daysVal) : 0;
+
+  const paidHourlyBasePay = hourlyEquiv(breakdown.basePay);
+  const paidHourlyWeeklyHolidayPay = hourlyEquiv(breakdown.weeklyHolidayPay);
+  const paidHourlyOvertimePay = hourlyEquiv(breakdown.overtimePay);
+  const paidHourlyNightPay = hourlyEquiv(breakdown.nightPay);
+  const paidHourlyLeavePay = hourlyEquiv(leavePayMonthly);
+  const paidHourlyHolidayWorkPay = hourlyEquiv(holidayWorkPay);
+  const paidHourlyWage = paidHourlyBasePay + paidHourlyWeeklyHolidayPay + paidHourlyOvertimePay + paidHourlyNightPay + paidHourlyLeavePay + paidHourlyHolidayWorkPay;
+
+  const paidDailyBasePay = dailyEquiv(breakdown.basePay);
+  const paidDailyWeeklyHolidayPay = dailyEquiv(breakdown.weeklyHolidayPay);
+  const paidDailyOvertimePay = dailyEquiv(breakdown.overtimePay);
+  const paidDailyNightPay = dailyEquiv(breakdown.nightPay);
+  const paidDailyLeavePay = dailyEquiv(leavePayMonthly);
+  const paidDailyHolidayWorkPay = dailyEquiv(holidayWorkPay);
+  const paidDailyWage = paidDailyBasePay + paidDailyWeeklyHolidayPay + paidDailyOvertimePay + paidDailyNightPay + paidDailyLeavePay + paidDailyHolidayWorkPay;
+
   return {
     year,
     companySize,
@@ -707,6 +730,21 @@ export const calculateYearlyEntryPay = ({
     dailyTotalPay,
     dailyNetPay,
     deductionType,
-    workingDaysCount: daysVal
+    workingDaysCount: daysVal,
+    totalWorkedHoursMonthly,
+    paidHourlyWage,
+    paidHourlyBasePay,
+    paidHourlyWeeklyHolidayPay,
+    paidHourlyOvertimePay,
+    paidHourlyNightPay,
+    paidHourlyLeavePay,
+    paidHourlyHolidayWorkPay,
+    paidDailyWage,
+    paidDailyBasePay,
+    paidDailyWeeklyHolidayPay,
+    paidDailyOvertimePay,
+    paidDailyNightPay,
+    paidDailyLeavePay,
+    paidDailyHolidayWorkPay
   };
 };
