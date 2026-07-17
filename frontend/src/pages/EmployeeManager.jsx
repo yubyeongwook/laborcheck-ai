@@ -40,7 +40,9 @@ function EmployeeManager() {
     daily_work_hours: '8',
     break_time_minutes: '60',
     annual_leave_days: '0',
-    holiday_work_days: '0'
+    holiday_work_days: '0',
+    night_work_hours: '0',
+    night_break_minutes: '0'
   });
 
   // 급여명세서 발행 모달 상태
@@ -297,6 +299,9 @@ function EmployeeManager() {
 
     // 5인 이상 사업장 + 주 15시간 이상 근로자는 기본급/주휴수당뿐 아니라 연차수당·휴일근로수당까지
     // 시급 기준으로 자동 산정되도록 calculateYearlyEntryPay 사용 (시급/일급/주급/월급 계약 모두 동일하게 적용)
+    const netDailyNight = Math.max(Number(emp.night_work_hours || 0) - (Number(emp.night_break_minutes || 0) / 60), 0);
+    const weeklyNightHours = netDailyNight * Number(emp.weekly_work_days || 5);
+
     const salaryResult = calculateYearlyEntryPay({
       year: calcYear,
       salaryType: emp.salary_type,
@@ -307,7 +312,7 @@ function EmployeeManager() {
       directWeeklyWorkDays: emp.weekly_work_days,
       directWeeklyRegularHours: Math.min(totalWeeklyHours, 40),
       directWeeklyOvertimeHours: Math.max(totalWeeklyHours - 40, 0),
-      directWeeklyNightHours: 0,
+      directWeeklyNightHours: weeklyNightHours,
       directAvgDailyHours: emp.daily_work_hours,
       annualLeaveDays: Number(emp.annual_leave_days) || 0,
       holidayWorkDays: Number(emp.holiday_work_days) || 0,
@@ -975,7 +980,9 @@ function EmployeeManager() {
                   daily_work_hours: '8',
                   break_time_minutes: '60',
                   annual_leave_days: '0',
-                  holiday_work_days: '0'
+                  holiday_work_days: '0',
+                  night_work_hours: '0',
+                  night_break_minutes: '0'
                 });
                 setShowEmployeeModal(true);
               }}
@@ -1026,7 +1033,11 @@ function EmployeeManager() {
                         </div>
                         <div style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                           <span>{emp.salary_type} {Number(emp.base_salary).toLocaleString()}원</span>
-                          <span>주 {emp.weekly_work_days}일 (일 {emp.daily_work_hours}시간)</span>
+                          <span>
+                            주 {emp.weekly_work_days}일 (일 {emp.daily_work_hours}시간
+                            {Number(emp.night_work_hours) > 0 && ` / 야간 ${emp.night_work_hours}h`}
+                            {Number(emp.night_break_minutes) > 0 && ` [야간휴게 ${emp.night_break_minutes}분]`})
+                          </span>
                         </div>
                       </div>
 
@@ -1058,7 +1069,9 @@ function EmployeeManager() {
                                 daily_work_hours: String(emp.daily_work_hours),
                                 break_time_minutes: String(emp.break_time_minutes),
                                 annual_leave_days: String(emp.annual_leave_days || 0),
-                                holiday_work_days: String(emp.holiday_work_days || 0)
+                                holiday_work_days: String(emp.holiday_work_days || 0),
+                                night_work_hours: String(emp.night_work_hours || 0),
+                                night_break_minutes: String(emp.night_break_minutes || 0)
                               });
                               setShowEmployeeModal(true);
                             }}
@@ -1103,6 +1116,12 @@ function EmployeeManager() {
                                 <span style={{ color: '#94a3b8' }}>연장근로수당 ({calcs.salaryResult.weeklyOvertimeHours}시간)</span>
                                 <span style={{ color: '#cbd5e1' }}>{calcs.salaryResult.overtimePay.toLocaleString()}원</span>
                               </div>
+                              {calcs.salaryResult.nightPay > 0 && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dotted rgba(255,255,255,0.06)', paddingBottom: '0.25rem' }}>
+                                  <span style={{ color: '#94a3b8' }}>야간근로수당 ({calcs.salaryResult.weeklyNightHours}시간)</span>
+                                  <span style={{ color: '#cbd5e1' }}>{calcs.salaryResult.nightPay.toLocaleString()}원</span>
+                                </div>
+                              )}
                               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dotted rgba(255,255,255,0.06)', paddingBottom: '0.25rem' }}>
                                 <span style={{ color: '#94a3b8' }}>연차수당 (선지급, {calcs.salaryResult.isEligibleForWeeklyBenefits ? `연 ${emp.annual_leave_days || 0}일` : '주 15h 미만 제외'})</span>
                                 <span style={{ color: '#cbd5e1' }}>{calcs.salaryResult.leavePayMonthly.toLocaleString()}원</span>
@@ -1605,6 +1624,32 @@ function EmployeeManager() {
                   />
                   <p style={{ fontSize: '0.7rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
                     입력 시 매월 1/12씩 휴일근로수당으로 선지급됩니다. (5인 이상 사업장은 1.5배 가산)
+                  </p>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">하루 평균 야간근무시간 (시간)</label>
+                  <input
+                    type="number"
+                    className="text-input"
+                    value={employeeForm.night_work_hours}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, night_work_hours: e.target.value })}
+                    min="0" max="24" step="0.1"
+                  />
+                  <p style={{ fontSize: '0.7rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
+                    22:00 ~ 익일 06:00 사이에 정기적으로 근무하는 시간입니다.
+                  </p>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">하루 평균 야간휴게시간 (분)</label>
+                  <input
+                    type="number"
+                    className="text-input"
+                    value={employeeForm.night_break_minutes}
+                    onChange={(e) => setEmployeeForm({ ...employeeForm, night_break_minutes: e.target.value })}
+                    min="0" max="480"
+                  />
+                  <p style={{ fontSize: '0.7rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
+                    야간근무시간대 중 주어지는 휴게시간입니다. 야간근로수당 산정 시 차감됩니다.
                   </p>
                 </div>
               </div>

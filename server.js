@@ -486,8 +486,8 @@ let mockCompanies = [
   { id: 'demo-company-id-1', owner_id: 'demo-user', company_name: '(데모) 노무체크 상사', business_number: '123-45-67890', size_type: '5인 이상', created_at: new Date() }
 ];
 let mockEmployees = [
-  { id: 'demo-emp-id-1', company_id: 'demo-company-id-1', name: '홍길동', birthdate: '1990-01-01', phone: '010-1234-5678', join_date: '2023-01-01', contract_type: '정규직', salary_type: '월급', base_salary: 3000000, weekly_work_days: 5, daily_work_hours: 8, break_time_minutes: 60, annual_leave_days: 15, holiday_work_days: 0, created_at: new Date() },
-  { id: 'demo-emp-id-2', company_id: 'demo-company-id-1', name: '김철수', birthdate: '1995-05-15', phone: '010-9876-5432', join_date: '2024-03-01', contract_type: '알바', salary_type: '시급', base_salary: 10030, weekly_work_days: 3, daily_work_hours: 6, break_time_minutes: 30, annual_leave_days: 6, holiday_work_days: 1, created_at: new Date() }
+  { id: 'demo-emp-id-1', company_id: 'demo-company-id-1', name: '홍길동', birthdate: '1990-01-01', phone: '010-1234-5678', join_date: '2023-01-01', contract_type: '정규직', salary_type: '월급', base_salary: 3000000, weekly_work_days: 5, daily_work_hours: 8, break_time_minutes: 60, annual_leave_days: 15, holiday_work_days: 0, night_work_hours: 0, night_break_minutes: 0, created_at: new Date() },
+  { id: 'demo-emp-id-2', company_id: 'demo-company-id-1', name: '김철수', birthdate: '1995-05-15', phone: '010-9876-5432', join_date: '2024-03-01', contract_type: '알바', salary_type: '시급', base_salary: 10030, weekly_work_days: 3, daily_work_hours: 6, break_time_minutes: 30, annual_leave_days: 6, holiday_work_days: 1, night_work_hours: 0, night_break_minutes: 0, created_at: new Date() }
 ];
 
 // Helper to check if Supabase is configured
@@ -703,7 +703,8 @@ app.post('/api/employees', async (req, res) => {
       company_id, name, birthdate, phone, join_date,
       contract_type, salary_type, base_salary,
       weekly_work_days, daily_work_hours, break_time_minutes,
-      annual_leave_days, holiday_work_days
+      annual_leave_days, holiday_work_days,
+      night_work_hours, night_break_minutes
     } = req.body;
 
     if (!company_id || !name) {
@@ -727,7 +728,9 @@ app.post('/api/employees', async (req, res) => {
           daily_work_hours: Number(daily_work_hours) || 8,
           break_time_minutes: Number(break_time_minutes) || 60,
           annual_leave_days: Number(annual_leave_days) || 0,
-          holiday_work_days: Number(holiday_work_days) || 0
+          holiday_work_days: Number(holiday_work_days) || 0,
+          night_work_hours: Number(night_work_hours) || 0,
+          night_break_minutes: Number(night_break_minutes) || 0
         }])
         .select();
       
@@ -749,6 +752,8 @@ app.post('/api/employees', async (req, res) => {
         break_time_minutes: Number(break_time_minutes) || 60,
         annual_leave_days: Number(annual_leave_days) || 0,
         holiday_work_days: Number(holiday_work_days) || 0,
+        night_work_hours: Number(night_work_hours) || 0,
+        night_break_minutes: Number(night_break_minutes) || 0,
         created_at: new Date()
       };
       mockEmployees.push(newEmp);
@@ -768,7 +773,8 @@ app.put('/api/employees/:id', async (req, res) => {
       name, birthdate, phone, join_date,
       contract_type, salary_type, base_salary,
       weekly_work_days, daily_work_hours, break_time_minutes,
-      annual_leave_days, holiday_work_days
+      annual_leave_days, holiday_work_days,
+      night_work_hours, night_break_minutes
     } = req.body;
 
     const user = await getAuthenticatedUser(req);
@@ -787,7 +793,9 @@ app.put('/api/employees/:id', async (req, res) => {
           daily_work_hours: Number(daily_work_hours),
           break_time_minutes: Number(break_time_minutes),
           annual_leave_days: Number(annual_leave_days) || 0,
-          holiday_work_days: Number(holiday_work_days) || 0
+          holiday_work_days: Number(holiday_work_days) || 0,
+          night_work_hours: Number(night_work_hours) || 0,
+          night_break_minutes: Number(night_break_minutes) || 0
         })
         .eq('id', id)
         .select();
@@ -810,7 +818,9 @@ app.put('/api/employees/:id', async (req, res) => {
         daily_work_hours: Number(daily_work_hours),
         break_time_minutes: Number(break_time_minutes),
         annual_leave_days: Number(annual_leave_days) || 0,
-        holiday_work_days: Number(holiday_work_days) || 0
+        holiday_work_days: Number(holiday_work_days) || 0,
+        night_work_hours: Number(night_work_hours) || 0,
+        night_break_minutes: Number(night_break_minutes) || 0
       };
       return res.json(mockEmployees[idx]);
     }

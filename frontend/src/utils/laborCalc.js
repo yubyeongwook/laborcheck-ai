@@ -190,7 +190,10 @@ export const calculateHoursAndNightHours = (startStr, endStr, breakMinutes, nigh
 
   const nightOverlapRaw = overlapNight1 + overlapNight2;
   const nightBreakHours = (parseFloat(nightBreakMinutes) || 0) / 60;
-  const totalNight = Math.max(nightOverlapRaw - nightBreakHours, 0);
+  // "야간휴게시간"은 총 휴게시간 중 야간대에 해당하는 몫을 사용자가 별도로 입력해야 반영되는 값이라,
+  // 입력을 빠뜨리면 일반 휴게시간이 야간대와 겹쳐도 야간근로시간에서 빠지지 않아 실근로시간(workHours)보다
+  // 야간근로시간이 더 많아지는 (물리적으로 불가능한) 결과가 나올 수 있다. 실근로시간을 상한으로 둔다.
+  const totalNight = Math.min(Math.max(nightOverlapRaw - nightBreakHours, 0), workHours);
 
   return {
     workHours: Math.round(workHours * 100) / 100,
@@ -698,7 +701,9 @@ export const calculateYearlyEntryPay = ({
     leavePayHoursMonthly: Math.round(leavePayHoursMonthly * 100) / 100,
     holidayWorkHoursMonthly: Math.round(holidayWorkHoursMonthly * 100) / 100,
     weeklyHours: breakdown.weeklyHours,
+    weeklyRegularHours: breakdown.weeklyRegularHours,
     weeklyOvertimeHours: breakdown.weeklyOvertimeHours,
+    weeklyNightHours: breakdown.weeklyNightHours,
     isEligibleForWeeklyBenefits: breakdown.isEligibleForWeeklyBenefits,
     monthlyTotalPay,
     monthlyNetPay,
