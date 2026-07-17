@@ -689,6 +689,16 @@ export const calculateYearlyEntryPay = ({
   const paidDailyHolidayWorkPay = dailyEquiv(holidayWorkPay);
   const paidDailyWage = paidDailyBasePay + paidDailyWeeklyHolidayPay + paidDailyOvertimePay + paidDailyNightPay + paidDailyLeavePay + paidDailyHolidayWorkPay;
 
+  // 주급 계약서용: 월 금액을 월평균 주수(AVG_WEEKS_PER_MONTH)로 나눈 항목별 주급 환산액과 그 합계
+  const weeklyEquiv = (amount) => roundDownToTen(amount / AVG_WEEKS_PER_MONTH);
+  const paidWeeklyBasePay = weeklyEquiv(breakdown.basePay);
+  const paidWeeklyWeeklyHolidayPay = weeklyEquiv(breakdown.weeklyHolidayPay);
+  const paidWeeklyOvertimePay = weeklyEquiv(breakdown.overtimePay);
+  const paidWeeklyNightPay = weeklyEquiv(breakdown.nightPay);
+  const paidWeeklyLeavePay = weeklyEquiv(leavePayMonthly);
+  const paidWeeklyHolidayWorkPay = weeklyEquiv(holidayWorkPay);
+  const paidWeeklyWage = paidWeeklyBasePay + paidWeeklyWeeklyHolidayPay + paidWeeklyOvertimePay + paidWeeklyNightPay + paidWeeklyLeavePay + paidWeeklyHolidayWorkPay;
+
   return {
     year,
     companySize,
@@ -745,6 +755,13 @@ export const calculateYearlyEntryPay = ({
     paidDailyOvertimePay,
     paidDailyNightPay,
     paidDailyLeavePay,
-    paidDailyHolidayWorkPay
+    paidDailyHolidayWorkPay,
+    paidWeeklyWage,
+    paidWeeklyBasePay,
+    paidWeeklyWeeklyHolidayPay,
+    paidWeeklyOvertimePay,
+    paidWeeklyNightPay,
+    paidWeeklyLeavePay,
+    paidWeeklyHolidayWorkPay
   };
 };
