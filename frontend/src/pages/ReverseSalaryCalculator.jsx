@@ -1139,10 +1139,18 @@ function ReverseSalaryCalculator() {
               </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.72rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>기본급 / 주휴수당 / 연차수당 (통상시급)</span>
+                  <span style={{ color: '#94a3b8' }}>기본급 (시간당 단가)</span>
                   <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage).toLocaleString()}원/h</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>주휴수당 (시간당 20% 환산액, 주 15시간 이상)</span>
+                  <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage * 0.2).toLocaleString()}원/h</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dotted rgba(255,255,255,0.1)', paddingTop: '0.25rem', marginTop: '0.1rem' }}>
+                  <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>실제 1시간 근무 시 합계 (주휴포함)</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{roundDownToTen(displayedHourlyWage * 1.2).toLocaleString()}원/h</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
                   <span style={{ color: '#94a3b8' }}>연장근로수당 ({overtimeMultiplier.toFixed(1)}배)</span>
                   <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage * overtimeMultiplier).toLocaleString()}원/h</span>
                 </div>
@@ -1153,6 +1161,10 @@ function ReverseSalaryCalculator() {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#94a3b8' }}>휴일근로수당 (8시간 이내, {(is5Over ? 1.5 : 1.0).toFixed(1)}배{is5Over ? ' · 초과분 2.0배' : ''})</span>
                   <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage * (is5Over ? 1.5 : 1.0)).toLocaleString()}원/h</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>연차수당 (시간당 단가)</span>
+                  <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage).toLocaleString()}원/h</span>
                 </div>
               </div>
               <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.5rem 0 0 0' }}>
