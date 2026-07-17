@@ -222,7 +222,7 @@ function computeDerived(entry) {
     deductionType: entry.deductionType || '4대보험'
   });
  
-  return { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, holidayWorkDays: parseFloat(entry.holidayWorkDays) || 0, result };
+  return { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, p1NightBreakMinutes, p2NightBreakMinutes, p3NightBreakMinutes, totalBreakMinutesWeekly, holidayWorkDays: parseFloat(entry.holidayWorkDays) || 0, result };
 }
 
 function TimeSelectInput({ value, onChange }) {
@@ -437,7 +437,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
   const updateTime = (prefix, field) => (value) => onChange(applyAutoBreak({ ...entry, [`${prefix}${field}`]: value }, prefix));
   // 휴게시간 직접 수정 시 해당 패턴/요일의 자동계산을 비활성화
   const updateBreak = (prefix, field) => (value) => onChange({ ...entry, [`${prefix}${field}`]: value, [`${prefix}BreakAuto`]: false });
-  const { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, totalBreakMinutesWeekly, result } = computeDerived(entry);
+  const { p1, p2, p3, weeklyHours, totalWeeklyDays, p1BreakMinutes, p2BreakMinutes, p3BreakMinutes, p1NightBreakMinutes, p2NightBreakMinutes, p3NightBreakMinutes, totalBreakMinutesWeekly, result } = computeDerived(entry);
   const rates = getDeductionRatesForYear(entry.year);
 
   // 1. 귀속월 분석을 통한 근무일수/주휴일수 자동 계산
