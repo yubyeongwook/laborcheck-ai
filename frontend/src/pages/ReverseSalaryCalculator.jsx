@@ -265,6 +265,7 @@ function DayOfWeekEditor({
 function ReverseSalaryCalculator() {
   const [year, setYear] = useState(String(currentYear));
   const [companySize, setCompanySize] = useState('5인 이상');
+  const [salaryType, setSalaryType] = useState('월급');
   const [grossSalaryInput, setGrossSalaryInput] = useState('2500000');
   const [deductionType, setDeductionType] = useState('4대보험');
 
@@ -394,6 +395,7 @@ function ReverseSalaryCalculator() {
   const handleLoadInfo = (loaded) => {
     if (loaded.year) setYear(loaded.year);
     if (loaded.companySize) setCompanySize(loaded.companySize);
+    if (loaded.salaryType) setSalaryType(loaded.salaryType);
     if (loaded.salaryAmount) setGrossSalaryInput(loaded.salaryAmount);
     if (loaded.pattern1Days) setPattern1Days(loaded.pattern1Days);
     if (loaded.pattern1Start) setPattern1Start(loaded.pattern1Start);
@@ -463,7 +465,7 @@ function ReverseSalaryCalculator() {
   const currentInfo = {
     year,
     companySize,
-    salaryType: '월급',
+    salaryType,
     salaryAmount: grossSalaryInput,
     pattern1Days,
     pattern1Start,
@@ -652,7 +654,17 @@ function ReverseSalaryCalculator() {
 
   const totalPaidHoursDivisor = monthlyPaidHoursFromWeekly + monthlyPaidHoursFromHoliday + monthlyPaidHoursFromLeave;
 
-  const grossSalary = parseFloat(grossSalaryInput) || 0;
+  // 급여 구분(시급/일급/주급/월급)에 따라 입력값을 "월 총액" 기준으로 환산해서 역산 로직에 그대로 사용한다.
+  // 예: 시급 12,500원이면, 이 근무 패턴대로 실제 일한 모든 시간(연장·야간·휴일·연차 포함 가중시간)에
+  // 12,500원씩 지급한다고 가정했을 때의 월 총액으로 환산한다.
+  const daysVal = totalWeeklyDays * AVG_WEEKS_PER_MONTH || 20;
+  const rawSalaryInput = parseFloat(grossSalaryInput) || 0;
+  const grossSalary = Math.round(
+    salaryType === '시급' ? rawSalaryInput * totalPaidHoursDivisor :
+    salaryType === '일급' ? rawSalaryInput * daysVal :
+    salaryType === '주급' ? rawSalaryInput * AVG_WEEKS_PER_MONTH :
+    rawSalaryInput // 월급
+  );
 
   // 비과세 수당 (식대/자가운전보조금/육아수당/기타) - 총 세전 월급액 중 근로시간과 무관하게 별도 지급되는 금액이므로
   // 시급 역산 시에는 총액에서 제외하고, 최종 표시할 때 다시 더함
@@ -685,7 +697,6 @@ function ReverseSalaryCalculator() {
 
   // 공제 및 실수령액
   const defaultPensionBasis = pensionBasis > 0 ? pensionBasis : (basePay + weeklyHolidayPay);
-  const daysVal = totalWeeklyDays * AVG_WEEKS_PER_MONTH || 20;
   const deductions = applyDeductions(grossSalary, year, defaultPensionBasis, allowances.totalNonTaxable, deductionType, daysVal);
   const rates = getDeductionRatesForYear(year);
   
@@ -693,7 +704,7 @@ function ReverseSalaryCalculator() {
   const weeklyNetPay = roundDownToTen(deductions.netPay / AVG_WEEKS_PER_MONTH);
 
   const minWage = getMinWageForYear(year);
-  const displayedHourlyWage = roundDownToTen(calculatedHourlyWage);
+  const displayedHourlyWage = salaryType === '시급' ? Math.round(calculatedHourlyWage) : roundDownToTen(calculatedHourlyWage);
   const isMinWageCompliant = displayedHourlyWage >= minWage;
 
   return (
@@ -713,7 +724,7 @@ function ReverseSalaryCalculator() {
         <section className="glass-panel">
           <h3 style={{ fontSize: '1.1rem', color: '#f8fafc', margin: '0 0 1.25rem 0', fontWeight: 'bold' }}>1. 근무 기준 및 급여 입력</h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
             <div>
               <span style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>계산 기준 연도</span>
               <select className="text-input" value={year} onChange={(e) => setYear(e.target.value)} style={{ padding: '0.85rem 0.5rem' }}>
@@ -731,6 +742,15 @@ function ReverseSalaryCalculator() {
               </select>
             </div>
             <div>
+              <span style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>급여 구분</span>
+              <select className="text-input" value={salaryType} onChange={(e) => setSalaryType(e.target.value)} style={{ padding: '0.85rem 0.5rem' }}>
+                <option value="시급">시급</option>
+                <option value="일급">일급</option>
+                <option value="주급">주급</option>
+                <option value="월급">월급</option>
+              </select>
+            </div>
+            <div>
               <span style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>공제 구분</span>
               <select className="text-input" value={deductionType} onChange={(e) => setDeductionType(e.target.value)} style={{ padding: '0.85rem 0.5rem' }}>
                 <option value="4대보험">4대보험 적용</option>
@@ -741,22 +761,23 @@ function ReverseSalaryCalculator() {
           </div>
 
           <div className="form-group" style={{ background: 'rgba(99, 102, 241, 0.08)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.2)', marginBottom: '1.5rem' }}>
-            <label className="form-label" style={{ color: '#a5b4fc', fontWeight: 'bold' }}><Coins size={16} /> 총 세전 월급액 (원)</label>
-            <input 
-              type="text" 
-              className="text-input" 
-              placeholder="예: 2,500,000" 
-              value={grossSalaryInput === '0' || !grossSalaryInput ? '' : Number(grossSalaryInput).toLocaleString()} 
+            <label className="form-label" style={{ color: '#a5b4fc', fontWeight: 'bold' }}><Coins size={16} /> 총 세전 {salaryType}액 (원)</label>
+            <input
+              type="text"
+              className="text-input"
+              placeholder={salaryType === '시급' ? '예: 12,500' : salaryType === '일급' ? '예: 120,000' : salaryType === '주급' ? '예: 600,000' : '예: 2,500,000'}
+              value={grossSalaryInput === '0' || !grossSalaryInput ? '' : Number(grossSalaryInput).toLocaleString()}
               onChange={(e) => {
                 const raw = e.target.value.replace(/,/g, '');
                 if (/^\d*$/.test(raw)) {
                   setGrossSalaryInput(raw || '0');
                 }
-              }} 
+              }}
               style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ffffff' }}
             />
             <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0.5rem 0 0 0' }}>
-              각종 수당(연장, 주휴 등)이 사전에 포함되어 합의된 월 정액 세전 급여를 입력하세요.
+              각종 수당(연장, 주휴 등)이 사전에 포함되어 합의된 {salaryType} 정액 세전 급여를 입력하세요.
+              {salaryType !== '월급' && ` 아래 근무 형태에 입력한 스케줄 기준으로 월 총액(${Math.round((salaryType === '시급' ? (parseFloat(grossSalaryInput) || 0) * totalPaidHoursDivisor : salaryType === '일급' ? (parseFloat(grossSalaryInput) || 0) * daysVal : (parseFloat(grossSalaryInput) || 0) * AVG_WEEKS_PER_MONTH)).toLocaleString()}원)으로 환산해 역산합니다.`}
             </p>
           </div>
 
@@ -1133,45 +1154,6 @@ function ReverseSalaryCalculator() {
               </div>
             )}
 
-            <div style={{ background: 'rgba(56, 189, 248, 0.05)', padding: '0.85rem', borderRadius: '10px', border: '1px dashed rgba(56, 189, 248, 0.25)', margin: '0.75rem 0' }}>
-              <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>
-                💰 {year}년 기초시급 {displayedHourlyWage.toLocaleString()}원 기준 항목별 시간당 단가
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.72rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>기본급 (시간당 단가)</span>
-                  <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage).toLocaleString()}원/h</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>주휴수당 (시간당 20% 환산액, 주 15시간 이상)</span>
-                  <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage * 0.2).toLocaleString()}원/h</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dotted rgba(255,255,255,0.1)', paddingTop: '0.25rem', marginTop: '0.1rem' }}>
-                  <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>실제 1시간 근무 시 합계 (주휴포함)</span>
-                  <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{roundDownToTen(displayedHourlyWage * 1.2).toLocaleString()}원/h</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
-                  <span style={{ color: '#94a3b8' }}>연장근로수당 ({overtimeMultiplier.toFixed(1)}배)</span>
-                  <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage * overtimeMultiplier).toLocaleString()}원/h</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>야간근로 가산액 ({nightMultiplier.toFixed(1)}배 가산분)</span>
-                  <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage * nightMultiplier).toLocaleString()}원/h</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>휴일근로수당 (8시간 이내, {(is5Over ? 1.5 : 1.0).toFixed(1)}배{is5Over ? ' · 초과분 2.0배' : ''})</span>
-                  <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage * (is5Over ? 1.5 : 1.0)).toLocaleString()}원/h</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>연차수당 (시간당 단가)</span>
-                  <span style={{ color: '#cbd5e1' }}>{roundDownToTen(displayedHourlyWage).toLocaleString()}원/h</span>
-                </div>
-              </div>
-              <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.5rem 0 0 0' }}>
-                야간근로는 연장·휴일근로와 중복 적용 시 각 가산율이 합산됩니다. 5인 미만 사업장은 연장·야간·휴일 가산이 적용되지 않습니다.
-              </p>
-            </div>
-
             {displayedHourlyWage > 0 && (() => {
               const wage = displayedHourlyWage;
               const rows = [
@@ -1184,39 +1166,55 @@ function ReverseSalaryCalculator() {
               ].map(r => ({ ...r, hours: Math.round((r.amount / wage) * 100) / 100 }));
               const totalAmount = rows.reduce((sum, r) => sum + r.amount, 0);
               const totalHours = rows.reduce((sum, r) => sum + r.hours, 0);
+
+              // 급여 구분(시급/일급/주급/월급)에 맞춰 "단가" 열의 단위를 바꿔서 보여준다.
+              // 사용자 요청에 따라 이 열은 10원 단위로 내림하지 않고 원 단위 그대로 보여준다.
+              const unitLabel = { 시급: '시급', 일급: '일급', 주급: '주급', 월급: '월급' }[salaryType] || '월급';
+              const unitAmountOf = (amount, hours) => {
+                if (salaryType === '시급') return hours > 0 ? Math.round(amount / hours) : 0;
+                if (salaryType === '일급') return daysVal > 0 ? Math.round(amount / daysVal) : 0;
+                if (salaryType === '주급') return Math.round(amount / AVG_WEEKS_PER_MONTH);
+                return amount; // 월급
+              };
+
               return (
                 <div style={{ margin: '0.75rem 0' }}>
                   <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>
                     🧾 {year}년 임금명세서 (기준임금 {wage.toLocaleString()}원 × 가중 근무시간)
                   </span>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
-                        <th style={{ textAlign: 'left', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>구성</th>
-                        <th style={{ textAlign: 'right', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>월 근무시간(가중)</th>
-                        <th style={{ textAlign: 'right', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>구성비율</th>
-                        <th style={{ textAlign: 'right', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>금액</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map(r => (
-                        <tr key={r.label} style={{ borderBottom: '1px dotted rgba(255,255,255,0.06)' }}>
-                          <td style={{ padding: '0.3rem', color: '#cbd5e1' }}>{r.label}</td>
-                          <td style={{ padding: '0.3rem', textAlign: 'right', color: '#cbd5e1' }}>{r.hours.toFixed(2)}</td>
-                          <td style={{ padding: '0.3rem', textAlign: 'right', color: '#cbd5e1' }}>{totalAmount > 0 ? ((r.amount / totalAmount) * 100).toFixed(1) : '0.0'}%</td>
-                          <td style={{ padding: '0.3rem', textAlign: 'right', color: '#cbd5e1' }}>{r.amount.toLocaleString()}원</td>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.72rem', minWidth: '480px' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+                          <th style={{ textAlign: 'left', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>구성</th>
+                          <th style={{ textAlign: 'right', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>월 근무시간(가중)</th>
+                          <th style={{ textAlign: 'right', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>구성비율</th>
+                          <th style={{ textAlign: 'right', padding: '0.35rem', color: '#34d399', fontWeight: 600 }}>{unitLabel} 단가</th>
+                          <th style={{ textAlign: 'right', padding: '0.35rem', color: '#94a3b8', fontWeight: 600 }}>월 지급액</th>
                         </tr>
-                      ))}
-                      <tr style={{ borderTop: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 'bold' }}>
-                        <td style={{ padding: '0.3rem', color: '#38bdf8' }}>월급여 합계</td>
-                        <td style={{ padding: '0.3rem', textAlign: 'right', color: '#38bdf8' }}>{totalHours.toFixed(2)}</td>
-                        <td style={{ padding: '0.3rem', textAlign: 'right', color: '#38bdf8' }}>100.0%</td>
-                        <td style={{ padding: '0.3rem', textAlign: 'right', color: '#38bdf8' }}>{totalAmount.toLocaleString()}원</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {rows.map(r => (
+                          <tr key={r.label} style={{ borderBottom: '1px dotted rgba(255,255,255,0.06)' }}>
+                            <td style={{ padding: '0.3rem', color: '#cbd5e1' }}>{r.label}</td>
+                            <td style={{ padding: '0.3rem', textAlign: 'right', color: '#cbd5e1' }}>{r.hours.toFixed(2)}</td>
+                            <td style={{ padding: '0.3rem', textAlign: 'right', color: '#cbd5e1' }}>{totalAmount > 0 ? ((r.amount / totalAmount) * 100).toFixed(1) : '0.0'}%</td>
+                            <td style={{ padding: '0.3rem', textAlign: 'right', color: '#34d399', fontWeight: 600 }}>{unitAmountOf(r.amount, r.hours).toLocaleString()}원</td>
+                            <td style={{ padding: '0.3rem', textAlign: 'right', color: '#cbd5e1' }}>{r.amount.toLocaleString()}원</td>
+                          </tr>
+                        ))}
+                        <tr style={{ borderTop: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 'bold' }}>
+                          <td style={{ padding: '0.3rem', color: '#38bdf8' }}>월급여 합계</td>
+                          <td style={{ padding: '0.3rem', textAlign: 'right', color: '#38bdf8' }}>{totalHours.toFixed(2)}</td>
+                          <td style={{ padding: '0.3rem', textAlign: 'right', color: '#38bdf8' }}>100.0%</td>
+                          <td style={{ padding: '0.3rem', textAlign: 'right', color: '#34d399' }}>{unitAmountOf(totalAmount, totalHours).toLocaleString()}원</td>
+                          <td style={{ padding: '0.3rem', textAlign: 'right', color: '#38bdf8' }}>{totalAmount.toLocaleString()}원</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                   <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
-                    모든 항목이 기준임금(역산된 기초시급) {wage.toLocaleString()}원 하나로 계산됩니다 — 가중 근무시간(= 금액 ÷ 기준임금)만 항목별로 달라집니다.
+                    모든 항목이 기준임금(역산된 기초시급) {wage.toLocaleString()}원 하나로 계산됩니다 — 가중 근무시간(= 금액 ÷ 기준임금)만 항목별로 달라집니다. {unitLabel} 단가는 10원 단위 절사 없이 원 단위 그대로 표시됩니다.
                   </p>
                 </div>
               );

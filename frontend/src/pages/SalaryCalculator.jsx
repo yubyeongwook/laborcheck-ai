@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Coins, Building2, Clock, Plus, Trash2, Sun, CalendarClock, Utensils } from 'lucide-react';
-import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, applyDeductions, roundDownToTen } from '../utils/laborCalc.js';
+import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, applyDeductions, roundDownToTen, AVG_WEEKS_PER_MONTH } from '../utils/laborCalc.js';
 
 const currentYear = new Date().getFullYear();
 
@@ -942,54 +942,6 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             <span className="result-row-value">{result.holidayWorkPay.toLocaleString()}원</span>
           </div>
 
-          {(entry.salaryType === '시급' || entry.salaryType === '일급' || entry.salaryType === '주급') && (() => {
-            const is5Over = entry.companySize === '5인 이상';
-            const base = result.baseHourlyWage;
-            const overtimeMultiplier = is5Over ? 1.5 : 1.0;
-            const nightMultiplier = is5Over ? 0.5 : 0.0;
-            const holidayMultiplier = is5Over ? 1.5 : 1.0;
-            return (
-              <div style={{ background: 'rgba(56, 189, 248, 0.05)', padding: '0.85rem', borderRadius: '10px', border: '1px dashed rgba(56, 189, 248, 0.25)', margin: '0.75rem 0' }}>
-                <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>
-                  💰 {entry.year}년 기초시급 {base.toLocaleString()}원 기준 항목별 시간당 단가
-                </span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.72rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>기본급 (시간당 단가)</span>
-                    <span style={{ color: '#cbd5e1' }}>{roundDownToTen(base).toLocaleString()}원/h</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>주휴수당 (시간당 20% 환산액, 주 15시간 이상)</span>
-                    <span style={{ color: '#cbd5e1' }}>{roundDownToTen(base * 0.2).toLocaleString()}원/h</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dotted rgba(255,255,255,0.1)', paddingTop: '0.25rem', marginTop: '0.1rem' }}>
-                    <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>실제 1시간 근무 시 합계 (주휴포함)</span>
-                    <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{roundDownToTen(base * 1.2).toLocaleString()}원/h</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
-                    <span style={{ color: '#94a3b8' }}>연장근로수당 ({overtimeMultiplier.toFixed(1)}배)</span>
-                    <span style={{ color: '#cbd5e1' }}>{roundDownToTen(base * overtimeMultiplier).toLocaleString()}원/h</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>야간근로 가산액 ({nightMultiplier.toFixed(1)}배 가산분)</span>
-                    <span style={{ color: '#cbd5e1' }}>{roundDownToTen(base * nightMultiplier).toLocaleString()}원/h</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>휴일근로수당 (8시간 이내, {holidayMultiplier.toFixed(1)}배{is5Over ? ' · 초과분 2.0배' : ''})</span>
-                    <span style={{ color: '#cbd5e1' }}>{roundDownToTen(base * holidayMultiplier).toLocaleString()}원/h</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>연차수당 (시간당 단가)</span>
-                    <span style={{ color: '#cbd5e1' }}>{roundDownToTen(base).toLocaleString()}원/h</span>
-                  </div>
-                </div>
-                <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0.5rem 0 0 0' }}>
-                  야간근로는 연장·휴일근로와 중복 적용 시 각 가산율이 합산됩니다. 5인 미만 사업장은 연장·야간·휴일 가산이 적용되지 않습니다.
-                </p>
-              </div>
-            );
-          })()}
-
           {(() => {
             const wage = result.baseHourlyWage;
             if (!wage) return null;
@@ -1005,9 +957,15 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             const dailyOvertimeH = weeklyDays > 0 ? (result.weeklyOvertimeHours / weeklyDays) : 0;
             const dailyNightH = weeklyDays > 0 ? (result.weeklyNightHours / weeklyDays) : 0;
 
-            // 반영 분산시급 = 그 항목의 월 지급액 ÷ 그 항목의 월 인정시간 (항목마다 분모가 다름)
-            const spreadWageOf = (amount, hours) =>
-              hours > 0 ? roundDownToTen(amount / hours) : 0;
+            // 급여 구분(시급/일급/주급/월급)에 맞춰 "단가" 열의 단위를 바꿔서 보여준다
+            const daysVal = result.workingDaysCount || 0;
+            const unitLabel = { 시급: '시급', 일급: '일급', 주급: '주급', 월급: '월급' }[entry.salaryType] || '월급';
+            const unitAmountOf = (amount, hours) => {
+              if (entry.salaryType === '시급') return hours > 0 ? roundDownToTen(amount / hours) : 0;
+              if (entry.salaryType === '일급') return daysVal > 0 ? roundDownToTen(amount / daysVal) : 0;
+              if (entry.salaryType === '주급') return roundDownToTen(amount / AVG_WEEKS_PER_MONTH);
+              return amount; // 월급
+            };
 
             const annualLeaveDaysVal = parseFloat(entry.annualLeaveDays) || 0;
             const holidayWorkDaysVal = parseFloat(entry.holidayWorkDays) || 0;
@@ -1083,7 +1041,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                         <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '22%' }}>수당 항목</th>
                         <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '11%' }}>인정 시간(월)</th>
                         <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '10%' }}>반영 비율</th>
-                        <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '12%' }}>반영 분산시급</th>
+                        <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '12%' }}>{unitLabel} 단가</th>
                         <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '11%' }}>월 지급액</th>
                         <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'left', width: '34%' }}>산정식 및 법적 근거</th>
                       </tr>
@@ -1099,7 +1057,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                             {totalAmount > 0 ? ((r.amount / totalAmount) * 100).toFixed(1) : '0.0'}%
                           </td>
                           <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px', color: '#34d399', textAlign: 'center', fontWeight: 600 }}>
-                            {spreadWageOf(r.amount, r.hours).toLocaleString()}원
+                            {unitAmountOf(r.amount, r.hours).toLocaleString()}원
                           </td>
                           <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px', color: '#38bdf8', textAlign: 'right', fontWeight: 700 }}>
                             {r.amount.toLocaleString()}원
@@ -1120,7 +1078,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                           {result.grossTotal > 0 ? ((totalAmount / result.grossTotal) * 100).toFixed(1) : '100.0'}%
                         </td>
                         <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#38bdf8', textAlign: 'center', fontWeight: 'bold' }}>
-                          {totalHours > 0 ? roundDownToTen(totalAmount / totalHours).toLocaleString() : '0'}원
+                          {unitAmountOf(totalAmount, totalHours).toLocaleString()}원
                         </td>
                         <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#38bdf8', textAlign: 'right', fontWeight: 'bold' }}>
                           {totalAmount.toLocaleString()}원
@@ -1154,7 +1112,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                 })()}
 
                 <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0', padding: '0.5rem 1rem' }}>
-                  ※ 반영 분산시급 = 그 항목의 월 지급액 ÷ 그 항목의 월 인정시간(항목마다 분모가 다름) — 각 수당이 실제로 시간당 얼마인지 보여주는 값.
+                  ※ {unitLabel} 단가 = 그 항목의 월 지급액 ÷ 그 항목의 {entry.salaryType === '시급' ? '월 인정시간' : entry.salaryType === '일급' ? '월 근무일수' : entry.salaryType === '주급' ? '월평균 주수(4.345)' : '1(월급 그대로)'} — 급여 구분을 시급/일급/주급/월급으로 바꾸면 이 열의 단위도 함께 바뀝니다.
                   {entry.salaryType === '일급' && ` · 일급 입력 시 역산된 시급(${wage.toLocaleString()}원)이 기준이 됩니다.`}
                 </p>
               </div>
