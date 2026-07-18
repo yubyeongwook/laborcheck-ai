@@ -316,7 +316,8 @@ export const calculateSalaryBreakdown = ({
   const hasWeeklyHoliday = weeklyHours >= 15;
   const weeklyHolidayHours = hasWeeklyHoliday ? (regularWorkHoursForBasePay / 40) * 8 : 0;
 
-  // 174시간 및 209시간(174 + 35) 기준 적용을 위해 월별 시간 계산법 보완
+  // 월급(고정 월지급액) 표기는 174시간/209시간처럼 딱 떨어지는 관례값을 그대로 쓴다.
+  // 일급/주급/시급 단가는 이 반올림값을 거치지 않고 각 항목의 정밀한 주간시간으로 별도 계산된다.
   const monthlyRegularHours = Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH); // 40시간 -> 174시간
   const monthlyWeeklyHolidayHours = hasWeeklyHoliday ? Math.round((regularWorkHoursForBasePay / 40) * 35) : 0; // 40시간 -> 35시간
 
