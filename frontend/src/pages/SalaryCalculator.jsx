@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Coins, Building2, Clock, Plus, Trash2, Sun, CalendarClock, Utensils } from 'lucide-react';
 import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, applyDeductions, roundDownToTen, AVG_WEEKS_PER_MONTH } from '../utils/laborCalc.js';
 
@@ -431,7 +431,10 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
   const [companyName, setCompanyName] = useState('대박 사업장');
   const [absenceDays, setAbsenceDays] = useState('0');
   const [weeklyHoliday, setWeeklyHoliday] = useState('0'); // 0: 일요일, 1: 월요일, ...
-  const [tableUnit, setTableUnit] = useState('시급'); // 수당 세팅표 "단가" 열 표시 단위 (입력한 급여구분과 별개로 선택 가능)
+  const [tableUnit, setTableUnit] = useState(entry.salaryType || '시급'); // 수당 세팅표 "단가" 열 표시 단위 (급여 구분과 연동, 표에서 직접 바꿀 수도 있음)
+  useEffect(() => {
+    setTableUnit(entry.salaryType || '시급');
+  }, [entry.salaryType]);
 
   const update = (key) => (value) => onChange({ ...entry, [key]: value });
   // 출퇴근 시간 변경 시 휴게시간 자동 재계산(사용자가 직접 수정하지 않은 경우에 한함)
@@ -960,7 +963,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             const dailyOvertimeH = weeklyDays > 0 ? (result.weeklyOvertimeHours / weeklyDays) : 0;
             const dailyNightH = weeklyDays > 0 ? (result.weeklyNightHours / weeklyDays) : 0;
 
-            // "단가" 열 표시 단위는 입력한 급여구분과 무관하게 tableUnit 토글로 직접 선택
+            // "단가" 열 표시 단위는 급여 구분과 연동되며, 버튼으로 직접 바꿀 수도 있음
             const daysVal = result.workingDaysCount || 0;
             const unitLabel = tableUnit;
             const unitAmountOf = (amount, hours, rateMultiplier) => {
