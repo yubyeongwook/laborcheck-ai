@@ -431,6 +431,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
   const [companyName, setCompanyName] = useState('대박 사업장');
   const [absenceDays, setAbsenceDays] = useState('0');
   const [weeklyHoliday, setWeeklyHoliday] = useState('0'); // 0: 일요일, 1: 월요일, ...
+  const [tableUnit, setTableUnit] = useState('시급'); // 수당 세팅표 "단가" 열 표시 단위 (입력한 급여구분과 별개로 선택 가능)
 
   const update = (key) => (value) => onChange({ ...entry, [key]: value });
   // 출퇴근 시간 변경 시 휴게시간 자동 재계산(사용자가 직접 수정하지 않은 경우에 한함)
@@ -957,13 +958,13 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             const dailyOvertimeH = weeklyDays > 0 ? (result.weeklyOvertimeHours / weeklyDays) : 0;
             const dailyNightH = weeklyDays > 0 ? (result.weeklyNightHours / weeklyDays) : 0;
 
-            // 급여 구분(시급/일급/주급/월급)에 맞춰 "단가" 열의 단위를 바꿔서 보여준다
+            // "단가" 열 표시 단위는 입력한 급여구분과 무관하게 tableUnit 토글로 직접 선택
             const daysVal = result.workingDaysCount || 0;
-            const unitLabel = { 시급: '시급', 일급: '일급', 주급: '주급', 월급: '월급' }[entry.salaryType] || '월급';
+            const unitLabel = tableUnit;
             const unitAmountOf = (amount, hours) => {
-              if (entry.salaryType === '시급') return hours > 0 ? roundDownToTen(amount / hours) : 0;
-              if (entry.salaryType === '일급') return daysVal > 0 ? roundDownToTen(amount / daysVal) : 0;
-              if (entry.salaryType === '주급') return roundDownToTen(amount / AVG_WEEKS_PER_MONTH);
+              if (tableUnit === '시급') return hours > 0 ? roundDownToTen(amount / hours) : 0;
+              if (tableUnit === '일급') return daysVal > 0 ? roundDownToTen(amount / daysVal) : 0;
+              if (tableUnit === '주급') return roundDownToTen(amount / AVG_WEEKS_PER_MONTH);
               return amount; // 월급
             };
 
@@ -1031,6 +1032,23 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                   <span style={{ fontSize: '0.65rem', color: '#64748b', display: 'block', marginTop: '0.15rem' }}>
                     {salaryLabel} | 월 소정근로 {monthlyRecognizedHours}시간 기준 자동 계산
                   </span>
+                  <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.5rem' }}>
+                    {['시급', '일급', '주급', '월급'].map(u => (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => setTableUnit(u)}
+                        style={{
+                          fontSize: '0.68rem', padding: '0.3rem 0.6rem', borderRadius: '6px', cursor: 'pointer',
+                          border: tableUnit === u ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.15)',
+                          background: tableUnit === u ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                          color: tableUnit === u ? '#38bdf8' : '#94a3b8', fontWeight: tableUnit === u ? 700 : 400
+                        }}
+                      >
+                        {u}으로 변환
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* 테이블 */}
@@ -1091,28 +1109,8 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                   </table>
                 </div>
 
-                {/* 시급/일급 환산 요약 */}
-                {(() => {
-                  const daysVal = result.workingDaysCount || 0;
-                  const hourlyConverted = totalHours > 0 ? roundDownToTen(totalAmount / totalHours) : 0;
-                  const dailyConverted = daysVal > 0 ? roundDownToTen(totalAmount / daysVal) : 0;
-                  const dailyAvgHours = daysVal > 0 ? totalHours / daysVal : 0;
-                  return (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', padding: '0.75rem 1rem 0.25rem' }}>
-                      <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem 0.75rem', borderRadius: '8px', textAlign: 'center' }}>
-                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', marginBottom: '0.2rem' }}>시급 환산 (총 지급액 ÷ 월 인정 {totalHours.toFixed(2)}시간)</span>
-                        <strong style={{ fontSize: '0.95rem', color: '#34d399' }}>{hourlyConverted.toLocaleString()}원</strong>
-                      </div>
-                      <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem 0.75rem', borderRadius: '8px', textAlign: 'center' }}>
-                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', marginBottom: '0.2rem' }}>일급 환산 (총 지급액 ÷ 월 {daysVal.toFixed(1)}일, 1일 평균 {dailyAvgHours.toFixed(2)}시간)</span>
-                        <strong style={{ fontSize: '0.95rem', color: '#a5b4fc' }}>{dailyConverted.toLocaleString()}원</strong>
-                      </div>
-                    </div>
-                  );
-                })()}
-
                 <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0', padding: '0.5rem 1rem' }}>
-                  ※ {unitLabel} 단가 = 그 항목의 월 지급액 ÷ 그 항목의 {entry.salaryType === '시급' ? '월 인정시간' : entry.salaryType === '일급' ? '월 근무일수' : entry.salaryType === '주급' ? '월평균 주수(4.345)' : '1(월급 그대로)'} — 급여 구분을 시급/일급/주급/월급으로 바꾸면 이 열의 단위도 함께 바뀝니다.
+                  ※ {unitLabel} 단가 = 그 항목의 월 지급액 ÷ 그 항목의 {tableUnit === '시급' ? '월 인정시간' : tableUnit === '일급' ? '월 근무일수' : tableUnit === '주급' ? '월평균 주수(4.345)' : '1(월급 그대로)'} — 위 버튼으로 시급/일급/주급/월급 단위를 바로 바꿔볼 수 있습니다.
                   {entry.salaryType === '일급' && ` · 일급 입력 시 역산된 시급(${wage.toLocaleString()}원)이 기준이 됩니다.`}
                 </p>
               </div>
