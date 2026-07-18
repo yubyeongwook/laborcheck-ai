@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const dotenv = require('dotenv');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -24,7 +25,25 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // 미들웨어 설정
-app.use(cors());
+// 클릭재킹, MIME 스니핑 등 기본적인 보안 헤더 적용 (순수 JSON API 서버라 CSP는 기본값 사용)
+app.use(helmet());
+// 허용된 출처(우리 사이트 + 로컬 개발 서버)에서만 브라우저 기반 요청을 받도록 제한.
+// Origin 헤더가 없는 요청(서버 간 통신, curl 등)은 그대로 통과시킴.
+const allowedOrigins = [
+  process.env.SITE_URL || 'https://www.xn--ai-h74ir53a94vh9e.com',
+  'https://xn--ai-h74ir53a94vh9e.com',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS 정책에 의해 차단된 요청입니다.'));
+    }
+  }
+}));
 app.use(express.json());
 
 // Gemini API 설정
