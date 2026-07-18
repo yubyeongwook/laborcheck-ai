@@ -979,9 +979,12 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             };
             // "인정 시간" 열도 선택한 단위(일/주)에 맞춰 환산 — 시급/월급은 월 인정시간 그대로 표시
             const unitHoursLabel = tableUnit === '일급' ? '일' : tableUnit === '주급' ? '주' : '월';
-            const unitHoursOf = (hours) => {
-              if (tableUnit === '일급') return daysVal > 0 ? hours / daysVal : 0;
-              if (tableUnit === '주급') return hours / AVG_WEEKS_PER_MONTH;
+            const unitHoursOf = (hours, preciseHours) => {
+              // 월 인정시간(174시간 등)은 반올림된 값이라, 일/주 단위로 나누면 8.01시간처럼 단수 오차가 생긴다.
+              // 정확한 값을 아는 항목(기본급/주휴)은 반올림 전 정밀시간을 우선 사용해 오차를 없앤다.
+              const base = preciseHours != null ? preciseHours : hours;
+              if (tableUnit === '일급') return daysVal > 0 ? base / daysVal : 0;
+              if (tableUnit === '주급') return base / AVG_WEEKS_PER_MONTH;
               return hours; // 시급, 월급 그대로 (월 인정시간 기준)
             };
 
@@ -992,6 +995,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               {
                 label: `기본급 (일 ${result.avgDailyHours}시간)`,
                 hours: monthlyRecognizedHours,
+                preciseHours: (result.weeklyRegularHours || 0) * AVG_WEEKS_PER_MONTH,
                 amount: result.basePay,
                 rateMultiplier: 1,
                 basis: `소정근로시간 × 기초시급\n(주 ${result.weeklyRegularHours || 0}시간 × 4.345)`
@@ -999,6 +1003,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               {
                 label: '주휴수당',
                 hours: result.weeklyHolidayHoursMonthly || 0,
+                preciseHours: ((result.weeklyRegularHours || 0) / 40) * 8 * AVG_WEEKS_PER_MONTH,
                 amount: result.weeklyHolidayPay,
                 rateMultiplier: 1,
                 basis: `주 소정근로시간 / 40 × 8 × 4.345\n(근로기준법 제55조, 주 15시간 이상)`
@@ -1035,6 +1040,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
 
             const totalAmount = rows.reduce((sum, r) => sum + r.amount, 0);
             const totalHours = rows.reduce((sum, r) => sum + r.hours, 0);
+            const totalPreciseHours = rows.reduce((sum, r) => sum + (r.preciseHours != null ? r.preciseHours : r.hours), 0);
 
             // 제목: 일 소정시간 + 야간시간 표시 (이미지 기준)
             const titleDetail = dailyNightH > 0
@@ -1094,7 +1100,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                             <div style={{ color: '#38bdf8', fontWeight: 700 }}>{r.amount.toLocaleString()}원</div>
                           </td>
                           <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>
-                            {unitHoursOf(r.hours || 0).toFixed(2)}시간
+                            {unitHoursOf(r.hours || 0, r.preciseHours).toFixed(2)}시간
                           </td>
                           <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px', color: '#a5b4fc', textAlign: 'center', fontWeight: 600 }}>
                             {totalAmount > 0 ? ((r.amount / totalAmount) * 100).toFixed(1) : '0.0'}%
@@ -1115,7 +1121,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                           <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>{totalAmount.toLocaleString()}원</div>
                         </td>
                         <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#38bdf8', textAlign: 'center', fontWeight: 'bold' }}>
-                          {unitHoursOf(totalHours).toFixed(2)}시간
+                          {unitHoursOf(totalHours, totalPreciseHours).toFixed(2)}시간
                         </td>
                         <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#38bdf8', textAlign: 'center', fontWeight: 'bold' }}>
                           {result.grossTotal > 0 ? ((totalAmount / result.grossTotal) * 100).toFixed(1) : '100.0'}%
