@@ -628,8 +628,6 @@ function ReverseSalaryCalculator() {
   const overtimeMultiplier = is5Over ? 1.5 : 1.0;
   const nightMultiplier = is5Over ? 0.5 : 0.0;
 
-  const AVG_WEEKS_PER_MONTH = 4.345;
-
   // 추가 수당 항목
   // 휴일근로수당: 하루 8시간 이내분은 50% 가산, 8시간 초과분은 100% 가산 (근로기준법 제56조 2항)
   const holDays = parseFloat(holidayWorkDays) || 0;

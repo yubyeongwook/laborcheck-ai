@@ -1056,18 +1056,20 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.7rem', minWidth: '520px' }}>
                     <thead>
                       <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
-                        <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '22%' }}>수당 항목</th>
+                        <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'left', width: '26%' }}>수당 항목 / 월 지급액</th>
                         <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '11%' }}>인정 시간(월)</th>
                         <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '10%' }}>반영 비율</th>
                         <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '12%' }}>{unitLabel} 단가</th>
-                        <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'center', width: '11%' }}>월 지급액</th>
-                        <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'left', width: '34%' }}>산정식 및 법적 근거</th>
+                        <th style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px 8px', color: '#94a3b8', textAlign: 'left', width: '41%' }}>산정식 및 법적 근거</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rows.map((r, i) => (
                         <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
-                          <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>{r.label}</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px' }}>
+                            <div style={{ color: '#cbd5e1', fontWeight: 600 }}>{r.label}</div>
+                            <div style={{ color: '#38bdf8', fontWeight: 700 }}>{r.amount.toLocaleString()}원</div>
+                          </td>
                           <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>
                             {(r.hours || 0).toFixed(2)}시간
                           </td>
@@ -1077,9 +1079,6 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                           <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px', color: '#34d399', textAlign: 'center', fontWeight: 600 }}>
                             {unitAmountOf(r.amount, r.hours).toLocaleString()}원
                           </td>
-                          <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px', color: '#38bdf8', textAlign: 'right', fontWeight: 700 }}>
-                            {r.amount.toLocaleString()}원
-                          </td>
                           <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px', color: '#94a3b8', fontSize: '0.65rem', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
                             {r.basis}
                           </td>
@@ -1088,7 +1087,10 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                     </tbody>
                     <tfoot>
                       <tr style={{ background: 'rgba(56, 189, 248, 0.1)', borderTop: '2px solid rgba(56, 189, 248, 0.3)' }}>
-                        <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#38bdf8', fontWeight: 'bold' }}>고정 급여 합계</td>
+                        <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px' }}>
+                          <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>고정 급여 합계</div>
+                          <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>{totalAmount.toLocaleString()}원</div>
+                        </td>
                         <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#38bdf8', textAlign: 'center', fontWeight: 'bold' }}>
                           {totalHours.toFixed(2)}시간
                         </td>
@@ -1097,9 +1099,6 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                         </td>
                         <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#38bdf8', textAlign: 'center', fontWeight: 'bold' }}>
                           {unitAmountOf(totalAmount, totalHours).toLocaleString()}원
-                        </td>
-                        <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#38bdf8', textAlign: 'right', fontWeight: 'bold' }}>
-                          {totalAmount.toLocaleString()}원
                         </td>
                         <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#64748b', fontSize: '0.65rem' }}>
                           기본, 주휴, 야간, 연장, 연차, 휴일근로가 모두 포함 분산된 고정급여 및 시급

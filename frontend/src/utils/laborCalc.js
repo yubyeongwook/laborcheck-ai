@@ -1,7 +1,7 @@
 // 근로기준법 기반 공용 계산 유틸리티
 
 export const MIN_WAGE = 10030; // 시간당 최저임금 (원, 기본값 = 2025년 기준)
-export const AVG_WEEKS_PER_MONTH = 4.35;
+export const AVG_WEEKS_PER_MONTH = 4.345;
 
 // 금액(원) 계산 결과의 10원 미만을 절사 (엑셀 ROUNDDOWN(x, -1)와 동일)
 export const roundDownToTen = (amount) => Math.floor(amount / 10) * 10;
