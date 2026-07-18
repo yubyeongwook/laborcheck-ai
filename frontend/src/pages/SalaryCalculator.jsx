@@ -1133,6 +1133,26 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                   </table>
                 </div>
 
+                {/* 시급/일급 환산 요약 */}
+                {(() => {
+                  const daysVal = result.workingDaysCount || 0;
+                  const hourlyConverted = totalHours > 0 ? roundDownToTen(totalAmount / totalHours) : 0;
+                  const dailyConverted = daysVal > 0 ? roundDownToTen(totalAmount / daysVal) : 0;
+                  const dailyAvgHours = daysVal > 0 ? totalHours / daysVal : 0;
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', padding: '0.75rem 1rem 0.25rem' }}>
+                      <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem 0.75rem', borderRadius: '8px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', marginBottom: '0.2rem' }}>시급 환산 (총 지급액 ÷ 월 인정 {totalHours.toFixed(2)}시간)</span>
+                        <strong style={{ fontSize: '0.95rem', color: '#34d399' }}>{hourlyConverted.toLocaleString()}원</strong>
+                      </div>
+                      <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem 0.75rem', borderRadius: '8px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', marginBottom: '0.2rem' }}>일급 환산 (총 지급액 ÷ 월 {daysVal.toFixed(1)}일, 1일 평균 {dailyAvgHours.toFixed(2)}시간)</span>
+                        <strong style={{ fontSize: '0.95rem', color: '#a5b4fc' }}>{dailyConverted.toLocaleString()}원</strong>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0', padding: '0.5rem 1rem' }}>
                   ※ 반영 분산시급 = 그 항목의 월 지급액 ÷ 그 항목의 월 인정시간(항목마다 분모가 다름) — 각 수당이 실제로 시간당 얼마인지 보여주는 값.
                   {entry.salaryType === '일급' && ` · 일급 입력 시 역산된 시급(${wage.toLocaleString()}원)이 기준이 됩니다.`}
