@@ -26,14 +26,14 @@ function TimeSelectInput({ value, onChange }) {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '0.2rem', width: '100%' }}>
-      <select className="text-input" value={hStr} onChange={handleHourChange} style={{ padding: '0.75rem 0.2rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.85rem' }}>
+    <div style={{ display: 'flex', gap: '0.15rem', width: '100%' }}>
+      <select className="text-input" value={hStr} onChange={handleHourChange} style={{ padding: '0.75rem 0.1rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.7rem' }}>
         {Array.from({ length: 24 }, (_, i) => {
           const val = String(i).padStart(2, '0');
           return <option key={val} value={val}>{val}시</option>;
         })}
       </select>
-      <select className="text-input" value={mStr} onChange={handleMinuteChange} style={{ padding: '0.75rem 0.2rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.85rem' }}>
+      <select className="text-input" value={mStr} onChange={handleMinuteChange} style={{ padding: '0.75rem 0.1rem', textAlign: 'center', flex: 1, minWidth: 0, fontSize: '0.7rem' }}>
         {Array.from({ length: 60 }, (_, i) => {
           const val = String(i).padStart(2, '0');
           return <option key={val} value={val}>{val}분</option>;

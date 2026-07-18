@@ -437,8 +437,8 @@ export const calculateSalaryBreakdown = ({
     weeklyTotalHours: Math.round((regularWorkHoursForBasePay + weeklyOvertimeHours) * 10) / 10,
     regularWorkHoursMonthly: monthlyRegularHours,
     weeklyHolidayHoursMonthly: monthlyWeeklyHolidayHours,
-    overtimeHoursMonthly: Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 10) / 10,
-    nightHoursMonthly: Math.round(wNightHours * AVG_WEEKS_PER_MONTH * 10) / 10
+    overtimeHoursMonthly: Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100,
+    nightHoursMonthly: Math.round(wNightHours * AVG_WEEKS_PER_MONTH * 100) / 100
   };
 };
 
