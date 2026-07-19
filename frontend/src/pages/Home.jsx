@@ -2,11 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   User, Briefcase, Coins, Calendar, Clock, Wallet, FileText, ShieldAlert,
-  HeartPulse, PiggyBank, ArrowRight, Search, Users, Sparkles, Mail, MessageCircleQuestion
+  HeartPulse, PiggyBank, ArrowRight, Search, Users, Sparkles, Mail
 } from 'lucide-react';
 
 const COMMON_TOOLS = [
-  { to: '/consultation', icon: <MessageCircleQuestion size={22} color="#38bdf8" />, title: '노무 상담받기', desc: '궁금한 노무 이슈를 남겨주시면 담당자가 확인 후 이메일·연락처로 답변드립니다.', tag: '공용', keywords: '노무상담 상담 상담받기 문의 질문' },
   { to: '/tools/salary', icon: <Coins size={22} color="#f59e0b" />, title: '월급 계산기 & 급여명세서', desc: '실수령액 계산과 동시에 법정 급여명세서를 발급받고 카카오톡으로 전송합니다.', tag: '공용', keywords: '월급 급여 실수령액 명세서 시급 일급 연장 야간 수당' },
   { to: '/tools/reverse-salary', icon: <Coins size={22} color="#38bdf8" />, title: '역산 월급 계산기', desc: '받는 총 월급(세전)에서 근무 형태별 실제 시급과 수당 구성을 역산합니다.', tag: '공용', keywords: '역산 포괄임금 기초시급' },
   { to: '/tools/weekly-holiday', icon: <Calendar size={22} color="#38bdf8" />, title: '주휴수당 계산기', desc: '주 15시간 이상 근무 시 발생하는 주휴수당을 빠르게 확인합니다.', tag: '공용', keywords: '주휴수당 주휴' },
@@ -25,7 +24,7 @@ const EMPLOYER_TOOLS = [
   { to: '/employer/injury', icon: <HeartPulse size={22} color="#fbbf24" />, title: '산재 예방·대응 체크리스트', desc: '산재 발생을 막기 위한 사전 준비와 사고 발생 시 법적 의무를 안내합니다.', keywords: '산재 예방 체크리스트' },
   { to: '/employer/employees', icon: <Users size={22} color="#fbbf24" />, title: '직원관리', desc: '사업장별 직원을 등록하고 급여명세서 발행, 근태 기록까지 관리합니다.', keywords: '직원관리 직원 등록 근태 급여명세서 발행' },
   { to: '/employer/ai-consultant', icon: <Sparkles size={22} color="#fbbf24" />, title: 'AI 컨설턴트', desc: '근로계약서·취업규칙을 AI가 검토해 법 위반 리스크와 안전한 대안 문구를 제안합니다.', keywords: 'ai 컨설턴트 근로계약서 취업규칙 검토' },
-  { to: '/contact', icon: <Mail size={22} color="#38bdf8" />, title: '문의하기', desc: '서비스 이용 중 궁금한 점이나 오류 제보, 제휴 문의를 남겨주세요.', keywords: '문의 문의하기 오류제보 연락처 고객센터' },
+  { to: '/contact', icon: <Mail size={22} color="#38bdf8" />, title: '노무상담 및 문의하기', desc: '궁금한 노무 이슈부터 서비스 이용 중 궁금한 점, 오류 제보, 제휴 문의까지 남겨주세요.', keywords: '문의 문의하기 오류제보 연락처 고객센터 노무상담 상담 상담받기' },
 ];
 
 // 검색창에서 찾을 때 쓰는 전체 목록 (홈 화면 카드에는 없는 항목도 포함)

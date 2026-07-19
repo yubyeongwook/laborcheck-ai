@@ -4,7 +4,7 @@ import { supabase } from '../context/AuthContext.jsx';
 
 function ContactForm() {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('aigoid1203@gmail.com');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -54,9 +54,9 @@ function ContactForm() {
   return (
     <div className="page-container page-container-narrow">
       <div className="tool-page-header">
-        <h1 className="tool-page-title"><Mail size={26} color="#38bdf8" /> 문의하기</h1>
+        <h1 className="tool-page-title"><Mail size={26} color="#38bdf8" /> 노무상담 및 문의하기</h1>
         <p className="tool-page-desc">
-          서비스 이용 중 궁금한 점이나 오류 제보, 제휴 문의 등을 남겨주시면 확인 후 답변드리겠습니다.
+          궁금한 노무 이슈, 서비스 이용 중 궁금한 점이나 오류 제보, 제휴 문의 등을 남겨주시면 확인 후 답변드리겠습니다.
         </p>
       </div>
 

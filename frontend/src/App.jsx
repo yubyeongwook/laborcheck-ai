@@ -25,7 +25,6 @@ import AiConsultant from './pages/AiConsultant.jsx';
 import ContactForm from './pages/ContactForm.jsx';
 import AdminInquiries from './pages/AdminInquiries.jsx';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
-import LaborConsultation from './pages/LaborConsultation.jsx';
 
 
 function App() {
@@ -108,7 +107,6 @@ function App() {
         <Route path="/contact" element={<ContactForm />} />
         <Route path="/admin/inquiries" element={<AdminInquiries />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/consultation" element={<LaborConsultation />} />
 
         <Route path="*" element={<Home />} />
       </Routes>
