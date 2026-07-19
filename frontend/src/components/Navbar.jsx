@@ -16,10 +16,17 @@ const NAV_LINKS = [
   { to: '/employer', label: '사업주' },
 ];
 
+const getDisplayName = (user) => {
+  if (!user?.email) return '';
+  if (user.email === ADMIN_EMAIL) return '관리자';
+  return user.email.split('@')[0];
+};
+
 function Navbar() {
   const { user, handleLogout, openLoginModal } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const displayName = getDisplayName(user);
 
   return (
     <header className="navbar">
@@ -49,7 +56,7 @@ function Navbar() {
               )}
               <div className="navbar-user-chip">
                 <span className="navbar-user-dot"></span>
-                <span>{user.email}님</span>
+                <span>{displayName}님</span>
               </div>
               <button type="button" className="navbar-btn-ghost" onClick={handleLogout}>로그아웃</button>
             </>
@@ -90,7 +97,7 @@ function Navbar() {
                 )}
                 <div className="navbar-user-chip">
                   <span className="navbar-user-dot"></span>
-                  <span>{user.email}님</span>
+                  <span>{displayName}님</span>
                 </div>
                 <button type="button" className="navbar-btn-ghost" onClick={() => { handleLogout(); setMobileOpen(false); }}>로그아웃</button>
               </>
