@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Coins, Building2, Clock, Plus, Trash2, Sun, CalendarClock, Utensils } from 'lucide-react';
-import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, applyDeductions, roundDownToTen, AVG_WEEKS_PER_MONTH } from '../utils/laborCalc.js';
+import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, applyDeductions, roundDownToTen, roundToTen, AVG_WEEKS_PER_MONTH } from '../utils/laborCalc.js';
 import UsageGuide from '../components/UsageGuide.jsx';
 
 const currentYear = new Date().getFullYear();
@@ -431,6 +431,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
   const [paymentMonth, setPaymentMonth] = useState(`${entry.year}-07`);
   const [companyName, setCompanyName] = useState('대박 사업장');
   const [absenceDays, setAbsenceDays] = useState('0');
+  const [lateLeaveHours, setLateLeaveHours] = useState('0');
   const [weeklyHoliday, setWeeklyHoliday] = useState('0'); // 0: 일요일, 1: 월요일, ...
   const [tableUnit, setTableUnit] = useState(entry.salaryType || '시급'); // 수당 세팅표 "단가" 열 표시 단위 (급여 구분과 연동, 표에서 직접 바꿀 수도 있음)
   useEffect(() => {
@@ -478,29 +479,46 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
     }
   }
 
-  // 2. 결근 공제액 및 실제 근무일수 계산
+  // 2. 결근/조퇴·지각 공제액 및 실제 근무일수 계산
+  // 공제 기준은 기본급+주휴수당+연장+야간수당(그날 실제 근무와 직접 연동되는 항목)까지 포함한다.
+  // 연차수당·휴일근로수당은 그날 출근 여부와 무관하게 별도로 발생하는 항목이라 제외한다
+  // (제외하지 않으면 이미 발생한 임금을 근거 없이 깎는 셈이 되어 임금 전액지급 원칙(근로기준법 제43조) 위반 소지가 있음).
   const isLessThan6Days = totalWeeklyDays < 6;
   const absDays = Math.max(0, parseFloat(absenceDays) || 0);
+  const lateHours = Math.max(0, parseFloat(lateLeaveHours) || 0);
   const actualWorkDays = Math.max(0, scheduledWorkDaysInMonth - absDays);
   const actualPaidHolidays = Math.max(0, holidaysInMonth - absDays);
+  const absenceDeductionBase = result.basePay + result.weeklyHolidayPay + result.overtimePay + result.nightPay;
+
+  let dailyWage = 0;
+  if (isLessThan6Days) {
+    // 주 6일 미만 근로자: 소정근로일과 주휴일을 포함한 총 소정일수 기준으로 일급을 산정
+    const totalScheduled = scheduledWorkDaysInMonth + holidaysInMonth;
+    if (totalScheduled > 0) {
+      dailyWage = roundToTen(absenceDeductionBase / totalScheduled);
+    }
+  } else {
+    // 주 6일 이상 근로자: 일반적인 일할 공제 (30일 기준) 적용
+    dailyWage = roundToTen(absenceDeductionBase / 30);
+  }
 
   let absenceDeduction = 0;
-  let dailyWage = 0;
-  if (absDays > 0) {
+  if (absDays > 0 && dailyWage > 0) {
     if (isLessThan6Days) {
-      // 주 6일 미만 근로자: 소정근로일과 주휴일을 포함한 총 소정일수 기준으로 일급을 산정하여 공제
-      const totalScheduled = scheduledWorkDaysInMonth + holidaysInMonth;
-      if (totalScheduled > 0) {
-        dailyWage = Math.round((result.basePay + result.weeklyHolidayPay) / totalScheduled);
-        // 결근일수 + 해당 결근으로 인한 주휴수당 상실 일수(결근일수와 주휴일수 중 작은 값만큼 상실)
-        const lostHolidays = Math.min(absDays, holidaysInMonth);
-        absenceDeduction = Math.round(dailyWage * (absDays + lostHolidays));
-      }
+      // 결근일수 + 해당 결근으로 인한 주휴수당 상실 일수(결근일수와 주휴일수 중 작은 값만큼 상실)
+      const lostHolidays = Math.min(absDays, holidaysInMonth);
+      absenceDeduction += roundToTen(dailyWage * (absDays + lostHolidays));
     } else {
-      // 주 6일 이상 근로자: 일반적인 일할 공제 (30일 기준) 적용
-      absenceDeduction = Math.round(((result.basePay + result.weeklyHolidayPay) / 30) * absDays);
+      absenceDeduction += roundToTen(dailyWage * absDays);
     }
   }
+  // 조퇴·지각(시간 단위)은 결근과 달리 개근으로 인정되어 주휴수당 상실은 없고,
+  // 하루 소정근로시간 대비 비율만큼만 위와 같은 기준(기본급+주휴+연장+야간)으로 공제한다.
+  const lateLeaveDeduction = (lateHours > 0 && dailyWage > 0 && result.avgDailyHours > 0)
+    ? roundToTen((dailyWage / result.avgDailyHours) * lateHours)
+    : 0;
+  absenceDeduction += lateLeaveDeduction;
+  const absenceLabel = [absDays > 0 ? `결근 ${absDays}일` : '', lateHours > 0 ? `조퇴·지각 ${lateHours}시간` : ''].filter(Boolean).join(' · ');
 
   // 3. 결근 공제를 반영하여 세금/4대보험 및 실수령액 재계산
   const adjustedGrossTotal = Math.max(0, result.grossTotal - absenceDeduction);
@@ -1401,6 +1419,10 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                 <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>결근 일수</label>
                 <input type="number" className="text-input" value={absenceDays} onChange={(e) => setAbsenceDays(e.target.value)} min="0" max="31" style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }} />
               </div>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>조퇴·지각 시간</label>
+                <input type="number" className="text-input" value={lateLeaveHours} onChange={(e) => setLateLeaveHours(e.target.value)} min="0" step="0.5" style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }} />
+              </div>
               <div style={{ gridColumn: 'span 3', padding: '0.6rem 0.8rem', background: 'rgba(99, 102, 241, 0.08)', borderRadius: '8px', fontSize: '0.75rem', border: '1px solid rgba(99, 102, 241, 0.2)', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
                 <div>
                   📅 <strong>{pYear}년 {pMonth}월 소정일수 자동계산:</strong> 소정근로일수 <strong>{scheduledWorkDaysInMonth}일</strong> | 주휴일수 <strong>{holidaysInMonth}일</strong> (총 {scheduledWorkDaysInMonth + holidaysInMonth}일)
@@ -1576,7 +1598,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                       )}
                       {absenceDeduction > 0 && (
                         <tr style={{ background: 'rgba(239, 68, 68, 0.05)' }}>
-                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#f87171', fontWeight: 'bold' }}>결근 공제 ({absenceDays}일)</td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#f87171', fontWeight: 'bold' }}>결근·조퇴 공제 ({absenceLabel})</td>
                           <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '6px 8px', fontSize: '0.7rem', color: '#f87171', textAlign: 'right', fontWeight: 'bold' }}>{absenceDeduction.toLocaleString()}원</td>
                         </tr>
                       )}
@@ -1659,12 +1681,15 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                     )}
                     {absenceDeduction > 0 && (
                       <tr style={{ background: 'rgba(239, 68, 68, 0.05)' }}>
-                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#f87171', fontWeight: 600 }}>결근 공제</td>
-                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{absenceDays}일 결근</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#f87171', fontWeight: 600 }}>결근·조퇴 공제</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{absenceLabel}</td>
                         <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
-                          {isLessThan6Days 
-                            ? `일급(${dailyWage.toLocaleString()}원) × (결근 ${absenceDays}일 + 주휴 ${Math.min(absDays, holidaysInMonth)}일 상실) = ${absenceDeduction.toLocaleString()}원 공제`
-                            : `일 기준 공제: (기본급+주휴수당 / 30) × 결근 ${absenceDays}일 = ${absenceDeduction.toLocaleString()}원 공제`}
+                          {[
+                            absDays > 0 && (isLessThan6Days
+                              ? `결근: 일급(${dailyWage.toLocaleString()}원) × (결근 ${absDays}일 + 주휴 ${Math.min(absDays, holidaysInMonth)}일 상실)`
+                              : `결근: (기본급+주휴+연장+야간 / 30) × 결근 ${absDays}일`),
+                            lateHours > 0 && `조퇴·지각: (일급 ${dailyWage.toLocaleString()}원 / 하루 ${result.avgDailyHours}시간) × ${lateHours}시간`
+                          ].filter(Boolean).join(' + ')} = {absenceDeduction.toLocaleString()}원 공제
                         </td>
                       </tr>
                     )}
@@ -1699,7 +1724,7 @@ ${entry.deductionType === '4대보험' || !entry.deductionType ? `- 국민연금
 - 장기요양보험: ${adjustedDeductions.longTermCare.toLocaleString()}원
 - 고용보험: ${adjustedDeductions.employmentInsurance.toLocaleString()}원` : entry.deductionType === '3.3%' ? `- 사업소득세(3.3%): ${(adjustedDeductions.incomeTax + adjustedDeductions.localIncomeTax).toLocaleString()}원` : `- 고용보험: ${adjustedDeductions.employmentInsurance.toLocaleString()}원
 - 일용소득세: ${adjustedDeductions.incomeTax.toLocaleString()}원`}${adjustedDeductions.incomeTax > 0 && entry.deductionType !== '3.3%' ? `\n- 소득세: ${adjustedDeductions.incomeTax.toLocaleString()}원\n- 지방소득세: ${adjustedDeductions.localIncomeTax.toLocaleString()}원` : ''}
-${absenceDeduction > 0 ? `- 결근 공제 (${absenceDays}일): ${absenceDeduction.toLocaleString()}원\n` : ''}- 공제액 합계: ${(adjustedDeductions.totalDeductions + absenceDeduction).toLocaleString()}원
+${absenceDeduction > 0 ? `- 결근·조퇴 공제 (${absenceLabel}): ${absenceDeduction.toLocaleString()}원\n` : ''}- 공제액 합계: ${(adjustedDeductions.totalDeductions + absenceDeduction).toLocaleString()}원
 
 ■ 실수령액 (차인 지급액)
 ★ 실수령액: ${adjustedDeductions.netPay.toLocaleString()}원
@@ -1707,7 +1732,7 @@ ${absenceDeduction > 0 ? `- 결근 공제 (${absenceDays}일): ${absenceDeductio
 ■ 임금 계산 상세 명세 (시급: ${result.baseHourlyWage.toLocaleString()}원)
 - 기본급: ${result.regularWorkHoursMonthly}시간 × 시급
 - 주휴수당: ${result.weeklyHolidayHoursMonthly}시간 × 시급
-${result.overtimePay > 0 ? `- 연장수당: ${result.overtimeHoursMonthly}시간 × 시급 × ${entry.companySize === '5인 이상' ? '1.5' : '1.0'}\n` : ''}${result.nightPay > 0 ? `- 야간수당: ${result.nightHoursMonthly}시간 × 시급 × ${entry.companySize === '5인 이상' ? '0.5' : '0.0'}\n` : ''}${absenceDeduction > 0 ? `- 결근공제: ${isLessThan6Days ? `일급(${dailyWage.toLocaleString()}원) × (결근 ${absenceDays}일 + 주휴 ${Math.min(absDays, holidaysInMonth)}일)` : `(기본급 / 30) × 결근 ${absenceDays}일`}\n` : ''}
+${result.overtimePay > 0 ? `- 연장수당: ${result.overtimeHoursMonthly}시간 × 시급 × ${entry.companySize === '5인 이상' ? '1.5' : '1.0'}\n` : ''}${result.nightPay > 0 ? `- 야간수당: ${result.nightHoursMonthly}시간 × 시급 × ${entry.companySize === '5인 이상' ? '0.5' : '0.0'}\n` : ''}${absenceDeduction > 0 ? `- 결근·조퇴공제 (${absenceLabel}): ${absenceDeduction.toLocaleString()}원\n` : ''}
 * 노무체크 AI를 통해 생성된 모바일 법정 급여명세서입니다.`;
                   
                   navigator.clipboard.writeText(copyText).then(() => {

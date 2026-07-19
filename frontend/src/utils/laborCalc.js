@@ -5,6 +5,8 @@ export const AVG_WEEKS_PER_MONTH = 4.345;
 
 // 금액(원) 계산 결과의 10원 미만을 절사 (엑셀 ROUNDDOWN(x, -1)와 동일)
 export const roundDownToTen = (amount) => Math.floor(amount / 10) * 10;
+// 10원 단위 반올림 (1의 자리가 5 이상이면 올림, 4 이하면 절사)
+export const roundToTen = (amount) => Math.round(amount / 10) * 10;
 
 // 하루 휴일근로에 대한 지급액 계산 (근로기준법 제56조 2항)
 // 5인 이상: 8시간 이내분은 통상임금의 50% 가산(1.5배), 8시간 초과분은 100% 가산(2.0배)
