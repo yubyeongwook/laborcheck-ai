@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { PiggyBank } from 'lucide-react';
 import { calculateSeverancePay, getTenure } from '../utils/laborCalc.js';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -39,6 +40,8 @@ function SeveranceCalculator() {
           퇴직 전 3개월간 지급받은 임금을 기준으로 예상 퇴직금을 계산합니다.
         </p>
       </div>
+
+      <UsageGuide guideKey="severance" />
 
       <div className="tool-grid">
         <section className="glass-panel">

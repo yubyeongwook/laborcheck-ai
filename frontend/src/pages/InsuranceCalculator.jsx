@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Wallet } from 'lucide-react';
 import { calculateEmployerInsurance, getDeductionRatesForYear } from '../utils/laborCalc.js';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 function InsuranceCalculator() {
   const [year, setYear] = useState('2026');
@@ -19,6 +20,8 @@ function InsuranceCalculator() {
           산재보험료율은 업종에 따라 크게 달라지므로 직접 입력해 주세요.
         </p>
       </div>
+
+      <UsageGuide guideKey="insurance" />
 
       <div className="tool-grid">
         <section className="glass-panel">

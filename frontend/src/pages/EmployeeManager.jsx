@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { calculateYearlyEntryPay, calculateEmployerInsurance, applyDeductions } from '../utils/laborCalc.js';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 function EmployeeManager() {
   const { session, user, openLoginModal } = useAuth();
@@ -858,6 +859,8 @@ function EmployeeManager() {
           직원의 급여 조건을 입력하면 최신 근로기준법에 따른 예상 월급여와 사업주 부담 4대보험이 실시간으로 집계됩니다.
         </p>
       </div>
+
+      <UsageGuide guideKey="employees" />
 
       {/* 로그인 권장 배너 */}
       {!user && (

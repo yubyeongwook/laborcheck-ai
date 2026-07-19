@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { calculateHoursAndNightHours, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, makeAutoBreakHandlers, formatMinutesAsHM } from '../utils/laborCalc.js';
 import LaborInfoSync from '../components/LaborInfoSync.jsx';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 const LOADING_TIPS = [
   "근로기준법 제18조: 4주 동안 평균하여 1주 동안의 소정근로시간이 15시간 미만인 근로자에게는 주휴수당 규정이 적용되지 않습니다.",
@@ -775,6 +776,8 @@ function ReportGenerator({ userType }) {
             : '사업장의 급여·근로시간 조건을 입력하면 법 위반 리스크와 대응 체크리스트를 정리해 드립니다.'}
         </p>
       </div>
+
+      <UsageGuide guideKey={isWorker ? 'workerReport' : 'employerReport'} />
 
       <LaborInfoSync onLoad={handleLoadInfo} currentInfo={currentInfo} />
 

@@ -5,6 +5,7 @@ import {
   HelpCircle, Upload, Play, AlertTriangle, RefreshCw 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 const SAMPLE_CONTRACTS = {
   contract: `근 로 계 약 서 (샘플)
@@ -103,6 +104,8 @@ function AiConsultant() {
           노동법(근로기준법) 위반 리스크를 식별하고, 사업주와 근로자 모두 보호할 수 있는 안전한 대안 문구를 추천해 드립니다.
         </p>
       </div>
+
+      <UsageGuide guideKey="aiConsultant" />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
         {/* 왼쪽: 계약서 입력 영역 */}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Calendar } from 'lucide-react';
 import { calculateWeeklyHolidayPay, AVG_WEEKS_PER_MONTH, calculateHoursAndNightHours, roundDownToTen, calculateElapsedHours, getStatutoryBreakMinutes } from '../utils/laborCalc.js';
 import LaborInfoSync from '../components/LaborInfoSync.jsx';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 function TimeSelectInput({ value, onChange }) {
   const [hStr, mStr] = (value || '00:00').split(':');
@@ -90,6 +91,8 @@ function WeeklyHolidayCalculator() {
           시급과 근무 조건을 입력해 대상 여부와 금액을 확인하세요.
         </p>
       </div>
+
+      <UsageGuide guideKey="weeklyHoliday" />
 
       <LaborInfoSync onLoad={handleLoadInfo} currentInfo={currentInfo} />
 

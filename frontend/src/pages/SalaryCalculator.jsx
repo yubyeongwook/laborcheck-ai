@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Coins, Building2, Clock, Plus, Trash2, Sun, CalendarClock, Utensils } from 'lucide-react';
 import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, applyDeductions, roundDownToTen, AVG_WEEKS_PER_MONTH } from '../utils/laborCalc.js';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 const currentYear = new Date().getFullYear();
 
@@ -1773,6 +1774,8 @@ function SalaryCalculator() {
           연차수당을 급여에 매월 분할해 선지급하는 방식이나 임의의 휴일근로시간도 직접 입력해 반영할 수 있습니다.
         </p>
       </div>
+
+      <UsageGuide guideKey="salary" />
 
       {entries.map((entry) => (
         <YearEntryCard

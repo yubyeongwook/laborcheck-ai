@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Coins, Building2, Clock, CalendarClock, Sun, ShieldAlert, BadgeAlert, Utensils } from 'lucide-react';
 import { calculateHoursAndNightHours, getMinWageForYear, applyDeductions, getDeductionRatesForYear, calculateNonTaxableBreakdown, NON_TAXABLE_MONTHLY_CAP, roundDownToTen, calculateHolidayDayPay, calculateElapsedHours, getStatutoryBreakMinutes, makeAutoBreakHandlers, AVG_WEEKS_PER_MONTH } from '../utils/laborCalc.js';
 import LaborInfoSync from '../components/LaborInfoSync.jsx';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 const currentYear = new Date().getFullYear();
 
@@ -714,6 +715,8 @@ function ReverseSalaryCalculator() {
           계약된 세전 급여 속에 숨겨진 **실제 기초시급**이 얼마인지 역산하고, 노동법 기준 최저임금 준수 여부 및 기본급·수당 세부 구성표를 자동으로 산출해 드립니다.
         </p>
       </div>
+
+      <UsageGuide guideKey="reverseSalary" />
 
       <LaborInfoSync onLoad={handleLoadInfo} currentInfo={currentInfo} />
 

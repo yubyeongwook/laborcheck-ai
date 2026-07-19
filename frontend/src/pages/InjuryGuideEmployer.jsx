@@ -1,5 +1,6 @@
 import React from 'react';
 import { HeartPulse } from 'lucide-react';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 function InjuryGuideEmployer() {
   return (
@@ -11,6 +12,8 @@ function InjuryGuideEmployer() {
           법적 의무를 초기 단계부터 정리했습니다.
         </p>
       </div>
+
+      <UsageGuide guideKey="employerInjury" />
 
       <section className="glass-panel guide-content">
         <h2>① 사전 예방을 위해 지금 준비할 것</h2>

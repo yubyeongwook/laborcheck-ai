@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Clock, Building2 } from 'lucide-react';
 import { calculateAnnualLeave, roundDownToTen } from '../utils/laborCalc.js';
+import UsageGuide from '../components/UsageGuide.jsx';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -27,6 +28,8 @@ function AnnualLeaveCalculator() {
           단, 연차유급휴가는 <strong>상시근로자 5인 이상 사업장에만 법적 의무</strong>이며 5인 미만 사업장은 근로기준법 시행령상 적용 제외 대상입니다.
         </p>
       </div>
+
+      <UsageGuide guideKey="annualLeave" />
 
       <div className="tool-grid">
         <section className="glass-panel">
