@@ -67,18 +67,28 @@ function HelpSearch() {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ position: 'relative', maxWidth: '520px', margin: '2rem auto 0' }}>
-      <div style={{ position: 'relative' }}>
-        <Search size={18} color="#64748b" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
+    <form onSubmit={handleSubmit} style={{ position: 'relative', maxWidth: '560px', margin: '2.25rem auto 0' }}>
+      <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.6rem' }}>
+        🔍 무엇을 도와드릴까요?
+      </div>
+      <div style={{
+        position: 'relative', borderRadius: '16px', padding: '2px',
+        background: 'linear-gradient(135deg, #6366f1, #38bdf8)',
+        boxShadow: '0 8px 28px rgba(56, 189, 248, 0.25)'
+      }}>
+        <Search size={20} color="#38bdf8" style={{ position: 'absolute', left: '1.1rem', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }} />
         <input
           type="text"
-          className="text-input"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setShowSuggestions(true); }}
           onFocus={() => setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-          placeholder="무엇을 도와드릴까요? (예: 월급, 주휴수당, 연차, 산재...)"
-          style={{ padding: '0.95rem 1rem 0.95rem 2.6rem', fontSize: '0.95rem', borderRadius: '14px' }}
+          placeholder="예: 월급, 주휴수당, 연차, 산재..."
+          style={{
+            width: '100%', boxSizing: 'border-box', padding: '1.05rem 1.2rem 1.05rem 3rem',
+            fontSize: '1rem', borderRadius: '14px', border: 'none', outline: 'none',
+            background: '#0f172a', color: '#f8fafc', fontFamily: 'inherit'
+          }}
         />
       </div>
 
