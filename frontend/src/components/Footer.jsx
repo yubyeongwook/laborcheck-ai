@@ -36,6 +36,10 @@ function Footer() {
             <Link to="/tools/annual-leave">연차 계산기</Link>
             <Link to="/tools/severance">퇴직금 계산기</Link>
           </div>
+          <div className="site-footer-col">
+            <span className="site-footer-col-title">고객센터</span>
+            <Link to="/contact">문의하기</Link>
+          </div>
         </div>
       </div>
 

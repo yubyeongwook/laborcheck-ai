@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   User, Briefcase, Coins, Calendar, Clock, Wallet, FileText, ShieldAlert,
-  HeartPulse, PiggyBank, ArrowRight, Search, Users, Sparkles
+  HeartPulse, PiggyBank, ArrowRight, Search, Users, Sparkles, Mail
 } from 'lucide-react';
 
 const COMMON_TOOLS = [
@@ -24,6 +24,7 @@ const EMPLOYER_TOOLS = [
   { to: '/employer/injury', icon: <HeartPulse size={22} color="#fbbf24" />, title: '산재 예방·대응 체크리스트', desc: '산재 발생을 막기 위한 사전 준비와 사고 발생 시 법적 의무를 안내합니다.', keywords: '산재 예방 체크리스트' },
   { to: '/employer/employees', icon: <Users size={22} color="#fbbf24" />, title: '직원관리', desc: '사업장별 직원을 등록하고 급여명세서 발행, 근태 기록까지 관리합니다.', keywords: '직원관리 직원 등록 근태 급여명세서 발행' },
   { to: '/employer/ai-consultant', icon: <Sparkles size={22} color="#fbbf24" />, title: 'AI 컨설턴트', desc: '근로계약서·취업규칙을 AI가 검토해 법 위반 리스크와 안전한 대안 문구를 제안합니다.', keywords: 'ai 컨설턴트 근로계약서 취업규칙 검토' },
+  { to: '/contact', icon: <Mail size={22} color="#38bdf8" />, title: '문의하기', desc: '서비스 이용 중 궁금한 점이나 오류 제보, 제휴 문의를 남겨주세요.', keywords: '문의 문의하기 오류제보 연락처 고객센터' },
 ];
 
 // 검색창에서 찾을 때 쓰는 전체 목록 (홈 화면 카드에는 없는 항목도 포함)
