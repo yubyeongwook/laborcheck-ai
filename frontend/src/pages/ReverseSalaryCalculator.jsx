@@ -1092,22 +1092,22 @@ function ReverseSalaryCalculator() {
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
                 <div style={{ color: '#38bdf8', fontWeight: '500' }}>기준(소정)근로시간</div>
                 <div><strong>{regularWorkHoursForBasePay.toFixed(1)}시간</strong></div>
-                <div>{Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10}시간</div>
+                <div>{Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 100) / 100}시간</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
                 <div style={{ color: '#a5b4fc', fontWeight: '500' }}>연장근로시간</div>
                 <div><strong>{weeklyOvertimeHours.toFixed(1)}시간</strong></div>
-                <div>{Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간</div>
+                <div>{Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
                 <div style={{ color: '#f472b6', fontWeight: '500' }}>야간근로시간</div>
                 <div><strong>{weeklyNightHours.toFixed(1)}시간</strong></div>
-                <div>{Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간</div>
+                <div>{Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.72rem', color: '#fff', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.25rem', marginTop: '0.25rem', textAlign: 'center' }}>
                 <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>총 실근로시간</div>
                 <div><strong>{(regularWorkHoursForBasePay + weeklyOvertimeHours).toFixed(1)}시간</strong></div>
-                <div>{Math.round((regularWorkHoursForBasePay + weeklyOvertimeHours) * AVG_WEEKS_PER_MONTH * 10) / 10}시간</div>
+                <div>{Math.round((regularWorkHoursForBasePay + weeklyOvertimeHours) * AVG_WEEKS_PER_MONTH * 100) / 100}시간</div>
               </div>
             </div>
           </div>
@@ -1118,22 +1118,22 @@ function ReverseSalaryCalculator() {
             </h4>
             
             <div className="result-row">
-              <span className="result-row-label">기본급 (월 소정근로 {Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10}시간)</span>
+              <span className="result-row-label">기본급 (월 소정근로 {Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 100) / 100}시간)</span>
               <span className="result-row-value">{basePay.toLocaleString()}원</span>
             </div>
             <div className="result-row">
-              <span className="result-row-label">주휴수당 (월 주휴 {Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간)</span>
+              <span className="result-row-label">주휴수당 (월 주휴 {Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간)</span>
               <span className="result-row-value">{weeklyHolidayPay.toLocaleString()}원</span>
             </div>
             {overtimePay > 0 && (
               <div className="result-row">
-                <span className="result-row-label">연장근로수당 (월 연장 {Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간분 · {overtimeMultiplier}배 가산)</span>
+                <span className="result-row-label">연장근로수당 (월 연장 {Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간분 · {overtimeMultiplier}배 가산)</span>
                 <span className="result-row-value">{overtimePay.toLocaleString()}원</span>
               </div>
             )}
             {nightPay > 0 && (
               <div className="result-row">
-                <span className="result-row-label">야간근로수당 (월 야간 {Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간분 · {nightMultiplier}배 가산)</span>
+                <span className="result-row-label">야간근로수당 (월 야간 {Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간분 · {nightMultiplier}배 가산)</span>
                 <span className="result-row-value">{nightPay.toLocaleString()}원</span>
               </div>
             )}
@@ -1646,33 +1646,33 @@ function ReverseSalaryCalculator() {
                   <tbody>
                     <tr>
                       <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>기본급</td>
-                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10}시간</td>
-                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>{Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10}시간 × {displayedHourlyWage.toLocaleString()}원</td>
+                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 100) / 100}시간</td>
+                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>{Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 100) / 100}시간 × {displayedHourlyWage.toLocaleString()}원</td>
                     </tr>
                     <tr>
                       <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>주휴수당</td>
-                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간</td>
+                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간</td>
                       <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
                         {weeklyHolidayHours > 0 
-                          ? `${Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간 × ${displayedHourlyWage.toLocaleString()}원` 
+                          ? `${Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간 × ${displayedHourlyWage.toLocaleString()}원` 
                           : '미발생 (주 소정근로 15시간 미만)'}
                       </td>
                     </tr>
                     {overtimePay > 0 && (
                       <tr>
                         <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>연장근로수당</td>
-                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간</td>
                         <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
-                          {Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간 × {displayedHourlyWage.toLocaleString()}원 × {is5Over ? '1.5배' : '1.0배'} (가산)
+                          {Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간 × {displayedHourlyWage.toLocaleString()}원 × {is5Over ? '1.5배' : '1.0배'} (가산)
                         </td>
                       </tr>
                     )}
                     {nightPay > 0 && (
                       <tr>
                         <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>야간근로수당</td>
-                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간</td>
                         <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
-                          {Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간 × {displayedHourlyWage.toLocaleString()}원 × {is5Over ? '0.5배' : '0.0배'} (가산)
+                          {Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간 × {displayedHourlyWage.toLocaleString()}원 × {is5Over ? '0.5배' : '0.0배'} (가산)
                         </td>
                       </tr>
                     )}
@@ -1714,9 +1714,9 @@ function ReverseSalaryCalculator() {
 * 지급일자: ${paymentDate}
 
 ■ 지급 내역
-- 기본급: ${basePay.toLocaleString()}원 (${Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10}시간)
-- 주휴수당: ${weeklyHolidayPay.toLocaleString()}원 (${Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간)
-${overtimePay > 0 ? `- 연장근로수당: ${overtimePay.toLocaleString()}원 (${Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간)\n` : ''}${nightPay > 0 ? `- 야간근로수당: ${nightPay.toLocaleString()}원 (${Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간)\n` : ''}${holidayWorkPay > 0 ? `- 휴일근로수당: ${holidayWorkPay.toLocaleString()}원 (${Math.round(monthlyHolidayWorkHours * 100) / 100}시간)\n` : ''}${annualLeavePay > 0 ? `- 연차수당: ${annualLeavePay.toLocaleString()}원 (${Math.round(monthlyLeaveHours * 100) / 100}시간)\n` : ''}${adjustPay !== 0 ? `- 추가연장수당(조정): ${adjustPay.toLocaleString()}원\n` : ''}- 지급액 합계: ${computedGrossTotal.toLocaleString()}원
+- 기본급: ${basePay.toLocaleString()}원 (${Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 100) / 100}시간)
+- 주휴수당: ${weeklyHolidayPay.toLocaleString()}원 (${Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간)
+${overtimePay > 0 ? `- 연장근로수당: ${overtimePay.toLocaleString()}원 (${Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간)\n` : ''}${nightPay > 0 ? `- 야간근로수당: ${nightPay.toLocaleString()}원 (${Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간)\n` : ''}${holidayWorkPay > 0 ? `- 휴일근로수당: ${holidayWorkPay.toLocaleString()}원 (${Math.round(monthlyHolidayWorkHours * 100) / 100}시간)\n` : ''}${annualLeavePay > 0 ? `- 연차수당: ${annualLeavePay.toLocaleString()}원 (${Math.round(monthlyLeaveHours * 100) / 100}시간)\n` : ''}${adjustPay !== 0 ? `- 추가연장수당(조정): ${adjustPay.toLocaleString()}원\n` : ''}- 지급액 합계: ${computedGrossTotal.toLocaleString()}원
 
 ■ 공제 내역
 ${deductionType === '4대보험' || !deductionType ? `- 국민연금: ${deductions.nationalPension.toLocaleString()}원
@@ -1730,9 +1730,9 @@ ${deductionType === '4대보험' || !deductionType ? `- 국민연금: ${deductio
 ★ 실수령액: ${deductions.netPay.toLocaleString()}원
 
 ■ 임금 계산 상세 명세 (시급: ${displayedHourlyWage.toLocaleString()}원)
-- 기본급: ${Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 10) / 10}시간 × 시급
-- 주휴수당: ${Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간 × 시급
-${overtimePay > 0 ? `- 연장수당: ${Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간 × 시급 × ${is5Over ? '1.5' : '1.0'}\n` : ''}${nightPay > 0 ? `- 야간수당: ${Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 10) / 10}시간 × 시급 × ${is5Over ? '0.5' : '0.0'}\n` : ''}
+- 기본급: ${Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH * 100) / 100}시간 × 시급
+- 주휴수당: ${Math.round(weeklyHolidayHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간 × 시급
+${overtimePay > 0 ? `- 연장수당: ${Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간 × 시급 × ${is5Over ? '1.5' : '1.0'}\n` : ''}${nightPay > 0 ? `- 야간수당: ${Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간 × 시급 × ${is5Over ? '0.5' : '0.0'}\n` : ''}
 * 노무체크 AI를 통해 생성된 모바일 법정 급여명세서입니다.`;
                   
                   navigator.clipboard.writeText(copyText).then(() => {

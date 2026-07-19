@@ -965,25 +965,32 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
 
             // "단가" 열 표시 단위는 급여 구분과 연동되며, 버튼으로 직접 바꿀 수도 있음
             const daysVal = result.workingDaysCount || 0;
+            const avgDailyHoursVal = parseFloat(result.avgDailyHours) || 0;
             const unitLabel = tableUnit;
+            // 그 항목의 "하루치 금액"(일급 기준)을 정확한 가산배율×정밀 주간시간으로 계산.
+            // 정확한 값을 모르는 항목(연차/휴일근로)은 월지급액÷월근무일수로 대체.
+            const dailyRateOf = (amount, rateMultiplier, weeklyHoursForRate) => {
+              if (rateMultiplier != null && weeklyHoursForRate != null && weeklyDays > 0) {
+                return wage * rateMultiplier * weeklyHoursForRate / weeklyDays;
+              }
+              return daysVal > 0 ? amount / daysVal : 0;
+            };
             const unitAmountOf = (amount, hours, rateMultiplier, weeklyHoursForRate) => {
-              // 정확한 가산배율과 주간시간을 아는 항목(기본급/주휴/연장/야간)은 기초시급×배율×시간으로 직접 계산해
-              // "반올림된 월 인정시간"을 다시 나누면서 생기는 단수 오차를 없앤다 (예: 일급 82,560원이 83,130원으로 어긋나는 문제).
+              // 시급 단가 = 그 항목의 하루치 금액 ÷ 하루 실제 근로시간.
+              // 기본급처럼 근무시간에 정비례하는 항목은 기초시급 그대로 나오고,
+              // 주휴수당처럼 근무시간과 무관한 항목은 "근무 1시간당 얼마씩 얹혀있는지"가 나온다.
+              // 사용자 요청에 따라 10원 단위 절사 없이 원 단위 그대로 계산(반올림)한다 —
+              // 절사로 사라지는 금액은 "추가수당(단수조정)" 행에 모아서 보정한다.
               if (tableUnit === '시급') {
-                if (rateMultiplier != null) return roundDownToTen(wage * rateMultiplier);
-                return hours > 0 ? roundDownToTen(amount / hours) : 0;
+                if (avgDailyHoursVal > 0) return Math.round(dailyRateOf(amount, rateMultiplier, weeklyHoursForRate) / avgDailyHoursVal);
+                return hours > 0 ? Math.round(amount / hours) : 0;
               }
-              if (tableUnit === '일급') {
-                if (rateMultiplier != null && weeklyHoursForRate != null && weeklyDays > 0) {
-                  return roundDownToTen(wage * rateMultiplier * weeklyHoursForRate / weeklyDays);
-                }
-                return daysVal > 0 ? roundDownToTen(amount / daysVal) : 0;
-              }
+              if (tableUnit === '일급') return Math.round(dailyRateOf(amount, rateMultiplier, weeklyHoursForRate));
               if (tableUnit === '주급') {
                 if (rateMultiplier != null && weeklyHoursForRate != null) {
-                  return roundDownToTen(wage * rateMultiplier * weeklyHoursForRate);
+                  return Math.round(wage * rateMultiplier * weeklyHoursForRate);
                 }
-                return roundDownToTen(amount / AVG_WEEKS_PER_MONTH);
+                return Math.round(amount / AVG_WEEKS_PER_MONTH);
               }
               return amount; // 월급
             };
@@ -1058,6 +1065,11 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             const totalAmount = rows.reduce((sum, r) => sum + r.amount, 0);
             const totalHours = rows.reduce((sum, r) => sum + r.hours, 0);
             const totalPreciseHours = rows.reduce((sum, r) => sum + (r.preciseHours != null ? r.preciseHours : r.hours), 0);
+            // 각 행의 단가(원 단위 절사 없음)를 다 더한 값과, 그 합계를 10원 단위로 맞춘 값의 차이를
+            // "추가수당(단수조정)"으로 표시해 절사로 사라지는 금액이 없도록 한다. 월급은 이미 10원 단위라 대상 제외.
+            const sumOfRates = rows.reduce((sum, r) => sum + unitAmountOf(r.amount, r.hours, r.rateMultiplier, r.weeklyHoursForRate), 0);
+            const roundedRateTotal = Math.round(sumOfRates / 10) * 10; // 절사가 아닌 10원 단위 반올림
+            const rateAdjustAmount = tableUnit !== '월급' ? roundedRateTotal - sumOfRates : 0;
 
             // 제목: 일 소정시간 + 야간시간 표시 (이미지 기준)
             const titleDetail = dailyNightH > 0
@@ -1126,12 +1138,23 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                           </td>
                         </tr>
                       ))}
+                      {rateAdjustAmount !== 0 && (
+                        <tr style={{ background: 'rgba(165, 180, 252, 0.04)' }}>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px' }}>
+                            <div style={{ color: '#a5b4fc', fontWeight: 600 }}>추가수당 (단수조정)</div>
+                            <div style={{ color: '#a5b4fc', fontWeight: 700 }}>{rateAdjustAmount > 0 ? '+' : ''}{rateAdjustAmount.toLocaleString()}원</div>
+                          </td>
+                          <td style={{ border: '1px solid rgba(255,255,255,0.06)', padding: '5px 8px' }} colSpan={3}>
+                            <span style={{ color: '#64748b', fontSize: '0.65rem' }}>각 항목을 원 단위로 계산할 때 생기는 단수를 10원 단위로 맞추기 위한 조정분</span>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                     <tfoot>
                       <tr style={{ background: 'rgba(56, 189, 248, 0.1)', borderTop: '2px solid rgba(56, 189, 248, 0.3)' }}>
                         <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px' }}>
                           <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>고정 급여 합계</div>
-                          <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>{unitAmountOf(totalAmount, totalHours).toLocaleString()}원</div>
+                          <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>{roundedRateTotal.toLocaleString()}원</div>
                         </td>
                         <td style={{ border: '1px solid rgba(56,189,248,0.2)', padding: '6px 8px', color: '#38bdf8', textAlign: 'center', fontWeight: 'bold' }}>
                           {unitHoursOf(totalHours, totalPreciseHours).toFixed(2)}시간
@@ -1148,7 +1171,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                 </div>
 
                 <p style={{ fontSize: '0.65rem', color: '#64748b', margin: '0', padding: '0.5rem 1rem' }}>
-                  ※ {unitLabel} 지급액 = 그 항목을 {tableUnit === '시급' ? '1시간' : tableUnit === '일급' ? '하루' : tableUnit === '주급' ? '1주' : '1개월'} 기준으로 환산한 금액 — 위 버튼으로 시급/일급/주급/월급 단위를 바로 바꿔볼 수 있습니다.
+                  ※ {unitLabel} 지급액 = 그 항목을 {tableUnit === '시급' ? '1시간' : tableUnit === '일급' ? '하루' : tableUnit === '주급' ? '1주' : '1개월'} 기준으로 환산한 금액 — 위 버튼으로 시급/일급/주급/월급 단위를 바로 바꿔볼 수 있습니다. {tableUnit !== '월급' && '10원 단위 절사 없이 원 단위 그대로 계산하며, 절사분은 추가수당(단수조정)에 모읍니다.'}
                   {entry.salaryType === '일급' && ` · 일급 입력 시 역산된 시급(${wage.toLocaleString()}원)이 기준이 됩니다.`}
                 </p>
               </div>
