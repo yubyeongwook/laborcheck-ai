@@ -100,7 +100,14 @@ function AdminInquiries() {
           {inquiries.map((inq) => (
             <div key={inq.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span style={{
+                    fontSize: '0.7rem', fontWeight: 'bold', padding: '0.15rem 0.5rem', borderRadius: '999px',
+                    background: inq.type === 'consultation' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                    color: inq.type === 'consultation' ? '#34d399' : '#38bdf8'
+                  }}>
+                    {inq.type === 'consultation' ? '노무상담' : '문의하기'}
+                  </span>
                   <strong style={{ color: '#f8fafc' }}>{inq.name}</strong>
                   <span style={{ color: '#38bdf8', fontSize: '0.85rem' }}>{inq.email}</span>
                   {inq.phone && <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{inq.phone}</span>}

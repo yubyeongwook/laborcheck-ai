@@ -2,10 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   User, Briefcase, Coins, Calendar, Clock, Wallet, FileText, ShieldAlert,
-  HeartPulse, PiggyBank, ArrowRight, Search, Users, Sparkles, Mail
+  HeartPulse, PiggyBank, ArrowRight, Search, Users, Sparkles, Mail, MessageCircleQuestion
 } from 'lucide-react';
 
 const COMMON_TOOLS = [
+  { to: '/consultation', icon: <MessageCircleQuestion size={22} color="#38bdf8" />, title: '노무 상담받기', desc: '궁금한 노무 이슈를 남겨주시면 담당자가 확인 후 이메일·연락처로 답변드립니다.', tag: '공용', keywords: '노무상담 상담 상담받기 문의 질문' },
   { to: '/tools/salary', icon: <Coins size={22} color="#f59e0b" />, title: '월급 계산기 & 급여명세서', desc: '실수령액 계산과 동시에 법정 급여명세서를 발급받고 카카오톡으로 전송합니다.', tag: '공용', keywords: '월급 급여 실수령액 명세서 시급 일급 연장 야간 수당' },
   { to: '/tools/reverse-salary', icon: <Coins size={22} color="#38bdf8" />, title: '역산 월급 계산기', desc: '받는 총 월급(세전)에서 근무 형태별 실제 시급과 수당 구성을 역산합니다.', tag: '공용', keywords: '역산 포괄임금 기초시급' },
   { to: '/tools/weekly-holiday', icon: <Calendar size={22} color="#38bdf8" />, title: '주휴수당 계산기', desc: '주 15시간 이상 근무 시 발생하는 주휴수당을 빠르게 확인합니다.', tag: '공용', keywords: '주휴수당 주휴' },

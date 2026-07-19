@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AlertCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -12,8 +12,18 @@ function AuthModal() {
     isSigningUp, setIsSigningUp,
     handleEmailLogin, handleEmailSignUp, handleOAuthLogin
   } = useAuth();
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
   if (!showLoginModal) return null;
+
+  const handleSubmit = (e) => {
+    if (isSigningUp && !privacyAgreed) {
+      e.preventDefault();
+      setAuthError('개인정보 수집·이용에 동의해 주세요.');
+      return;
+    }
+    (isSigningUp ? handleEmailSignUp : handleEmailLogin)(e);
+  };
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
@@ -41,7 +51,7 @@ function AuthModal() {
           </div>
         )}
 
-        <form onSubmit={isSigningUp ? handleEmailSignUp : handleEmailLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <div>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>이메일 주소</span>
             <input
@@ -76,6 +86,20 @@ function AuthModal() {
                 required
               />
             </div>
+          )}
+
+          {isSigningUp && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.75rem', color: '#94a3b8', cursor: 'pointer', marginTop: '0.25rem' }}>
+              <input
+                type="checkbox"
+                checked={privacyAgreed}
+                onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                style={{ marginTop: '0.15rem' }}
+              />
+              <span>
+                (필수) <a href="#/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', textDecoration: 'underline' }}>개인정보 수집·이용</a>에 동의합니다.
+              </span>
+            </label>
           )}
 
           <button

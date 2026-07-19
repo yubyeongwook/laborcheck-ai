@@ -38,7 +38,9 @@ function Footer() {
           </div>
           <div className="site-footer-col">
             <span className="site-footer-col-title">고객센터</span>
+            <Link to="/consultation">노무 상담받기</Link>
             <Link to="/contact">문의하기</Link>
+            <Link to="/privacy">개인정보처리방침</Link>
           </div>
         </div>
       </div>
