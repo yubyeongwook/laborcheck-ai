@@ -23,6 +23,7 @@ import ReverseSalaryCalculator from './pages/ReverseSalaryCalculator.jsx';
 import EmployeeManager from './pages/EmployeeManager.jsx';
 import AiConsultant from './pages/AiConsultant.jsx';
 import ContactForm from './pages/ContactForm.jsx';
+import AdminInquiries from './pages/AdminInquiries.jsx';
 
 
 function App() {
@@ -103,6 +104,7 @@ function App() {
         <Route path="/employer/injury" element={<InjuryGuideEmployer />} />
 
         <Route path="/contact" element={<ContactForm />} />
+        <Route path="/admin/inquiries" element={<AdminInquiries />} />
 
         <Route path="*" element={<Home />} />
       </Routes>

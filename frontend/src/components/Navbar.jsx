@@ -3,6 +3,8 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ShieldAlert, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 
+const ADMIN_EMAIL = 'aigoid1203@gmail.com';
+
 const NAV_LINKS = [
   { to: '/remedy', label: '권리구제(AI)' },
   { to: '/injury', label: '산재가이드' },
@@ -42,6 +44,9 @@ function Navbar() {
         <div className="navbar-auth navbar-auth-desktop">
           {user ? (
             <>
+              {user.email === ADMIN_EMAIL && (
+                <Link to="/admin/inquiries" className="navbar-link">관리자</Link>
+              )}
               <div className="navbar-user-chip">
                 <span className="navbar-user-dot"></span>
                 <span>{user.email}님</span>
@@ -80,6 +85,9 @@ function Navbar() {
           <div className="navbar-mobile-auth">
             {user ? (
               <>
+                {user.email === ADMIN_EMAIL && (
+                  <Link to="/admin/inquiries" className="navbar-mobile-link" onClick={() => setMobileOpen(false)}>관리자</Link>
+                )}
                 <div className="navbar-user-chip">
                   <span className="navbar-user-dot"></span>
                   <span>{user.email}님</span>
