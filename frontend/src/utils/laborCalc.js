@@ -291,9 +291,16 @@ export const calculateSalaryBreakdown = ({
     totalWeeklyDays = parseFloat(directWeeklyWorkDays) || 5;
     weeklyHours = parseFloat(directWeeklyRegularHours) || 0;
     regularWorkHoursForBasePay = Math.min(weeklyHours, 40);
-    weeklyOvertimeHours = parseFloat(directWeeklyOvertimeHours) || 0;
+    const directOver = parseFloat(directWeeklyOvertimeHours) || 0;
+    if (weeklyHours + directOver >= 40) {
+      regularWorkHoursForBasePay = 40;
+    }
+    weeklyOvertimeHours = directOver;
     weeklyNightHoursVal = parseFloat(directWeeklyNightHours) || 0;
     avgDailyHours = parseFloat(directAvgDailyHours) || 8;
+    if (weeklyHours + directOver >= 40) {
+      avgDailyHours = totalWeeklyDays > 0 ? 40 / totalWeeklyDays : 8;
+    }
   } else {
     weeklyHours = (p1D * p1H) + (p2D * p2H) + (p3D * p3H);
     const p1RegularDaily = Math.min(p1H, 8);
@@ -301,16 +308,14 @@ export const calculateSalaryBreakdown = ({
     const p3RegularDaily = Math.min(p3H, 8);
     const weeklyRegularHours = (p1D * p1RegularDaily) + (p2D * p2RegularDaily) + (p3D * p3RegularDaily);
     regularWorkHoursForBasePay = Math.min(weeklyRegularHours, 40);
+    if (weeklyHours >= 40) {
+      regularWorkHoursForBasePay = 40;
+    }
     totalWeeklyDays = p1D + p2D + p3D;
     avgDailyHours = totalWeeklyDays > 0 ? regularWorkHoursForBasePay / totalWeeklyDays : 8;
 
-    const p1DailyOvertime = Math.max(p1H - 8, 0) * p1D;
-    const p2DailyOvertime = Math.max(p2H - 8, 0) * p2D;
-    const p3DailyOvertime = Math.max(p3H - 8, 0) * p3D;
-    const dailyOvertime = p1DailyOvertime + p2DailyOvertime + p3DailyOvertime;
-
-    const weeklyOvertimeLimit = Math.max(weeklyRegularHours - 40, 0);
-    weeklyOvertimeHours = dailyOvertime + weeklyOvertimeLimit + parseFloat(extraWeeklyOvertime);
+    const weeklyOvertimeLimit = Math.max(weeklyHours - 40, 0);
+    weeklyOvertimeHours = weeklyOvertimeLimit + parseFloat(extraWeeklyOvertime);
     weeklyNightHoursVal = wNightHours;
   }
 
@@ -408,11 +413,14 @@ export const calculateSalaryBreakdown = ({
   const dailyTotalPay = roundDownToTen(monthlyTotalPay / daysVal);
   const dailyNetPay = roundDownToTen(monthlyNetPay / daysVal);
 
+  const mergedBasePay = basePay + weeklyHolidayPay;
+  const mergedRegularWorkHoursMonthly = monthlyRegularHours + monthlyWeeklyHolidayHours;
+
   return {
     hourlyWage: roundDownToTen(hourlyWage),
     taxableAllowance: taxableAllowanceAmt,
-    basePay,
-    weeklyHolidayPay,
+    basePay: mergedBasePay,
+    weeklyHolidayPay: 0,
     overtimePay,
     nightPay,
     mealAllowance: allowances.meal,
@@ -438,8 +446,8 @@ export const calculateSalaryBreakdown = ({
     weeklyOvertimeHours: Math.round(weeklyOvertimeHours * 100) / 100,
     weeklyNightHours: Math.round(weeklyNightHoursVal * 100) / 100,
     weeklyTotalHours: Math.round((regularWorkHoursForBasePay + weeklyOvertimeHours) * 100) / 100,
-    regularWorkHoursMonthly: monthlyRegularHours,
-    weeklyHolidayHoursMonthly: monthlyWeeklyHolidayHours,
+    regularWorkHoursMonthly: mergedRegularWorkHoursMonthly,
+    weeklyHolidayHoursMonthly: 0,
     overtimeHoursMonthly: Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100,
     nightHoursMonthly: Math.round(wNightHours * AVG_WEEKS_PER_MONTH * 100) / 100
   };

@@ -598,7 +598,7 @@ function ReverseSalaryCalculator() {
   const totalWeeklyDays = isDirect ? (parseFloat(directWeeklyWorkDays) || 5) : (isWeekly ? totalWeeklyDaysFromDays : (p1D + p2D + p3D));
 
   const weeklyHours = isDirect ? (parseFloat(directWeeklyRegularHours) || 0) : (isWeekly ? weeklyHoursFromDays : ((p1.workHours * p1D) + (p2.workHours * p2D) + (p3.workHours * p3D)));
-  const weeklyNightHours = isDirect ? (parseFloat(directWeeklyNightHours) || 0) : (isWeekly ? weeklyNightHoursFromDays : ((p1.nightHours * p1D) + (p2.nightHours * p2D) + (p3.nightHours * p3D)));
+  const weeklyNightHours = isDirect ? (parseFloat(directWeeklyNightHours) || 0) : (isWeekly ? weeklyNightHoursFromDays : ((p1.nightHours + p2.nightHours + p3.nightHours) * 6));
 
   // 소정근로시간 (주 최대 40시간)
   const regularWorkHoursForBasePay = Math.min(isWeekly ? weeklyRegularHoursFromDays : weeklyHours, 40);
@@ -607,18 +607,7 @@ function ReverseSalaryCalculator() {
   const weeklyOvertimeHours = isDirect ? (parseFloat(directWeeklyOvertimeHours) || 0) : (isWeekly ? (() => {
     const weeklyOvertimeLimit = Math.max(weeklyRegularHoursFromDays - 40, 0);
     return dailyOvertimeFromDays + weeklyOvertimeLimit + extraWeeklyOvertime;
-  })() : (() => {
-    const p1RegularDaily = Math.min(p1.workHours, 8);
-    const p2RegularDaily = Math.min(p2.workHours, 8);
-    const p3RegularDaily = Math.min(p3.workHours, 8);
-    const weeklyRegularHours = (p1D * p1RegularDaily) + (p2D * p2RegularDaily) + (p3D * p3RegularDaily);
-    const p1DailyOvertime = Math.max(p1.workHours - 8, 0) * p1D;
-    const p2DailyOvertime = Math.max(p2.workHours - 8, 0) * p2D;
-    const p3DailyOvertime = Math.max(p3.workHours - 8, 0) * p3D;
-    const dailyOvertime = p1DailyOvertime + p2DailyOvertime + p3DailyOvertime;
-    const weeklyOvertimeLimit = Math.max(weeklyRegularHours - 40, 0);
-    return dailyOvertime + weeklyOvertimeLimit + extraWeeklyOvertime;
-  })());
+  })() : Math.max(weeklyHours - 40, 0) + extraWeeklyOvertime);
 
   // 주휴수당 기준: 1주 15시간 이상 근무
   const hasWeeklyHoliday = weeklyHours >= 15;
@@ -684,8 +673,8 @@ function ReverseSalaryCalculator() {
     calculatedHourlyWage = workRelatedGross / totalPaidHoursDivisor;
   }
 
-  const basePay = roundDownToTen(calculatedHourlyWage * monthlyRegularHours);
-  const weeklyHolidayPay = roundDownToTen(calculatedHourlyWage * monthlyWeeklyHolidayHours);
+  const basePay = roundDownToTen(calculatedHourlyWage * (monthlyRegularHours + monthlyWeeklyHolidayHours));
+  const weeklyHolidayPay = 0;
   const overtimePay = roundDownToTen(calculatedHourlyWage * weeklyOvertimeHours * overtimeMultiplier * AVG_WEEKS_PER_MONTH);
   const nightPay = roundDownToTen(calculatedHourlyWage * weeklyNightHours * nightMultiplier * AVG_WEEKS_PER_MONTH);
   const holidayDayPay = calculateHolidayDayPay(holHours, calculatedHourlyWage, is5Over);

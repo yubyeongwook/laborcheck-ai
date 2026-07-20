@@ -133,8 +133,6 @@ function computeDerived(entry) {
 
   if (entry.scheduleType === '요일별') {
     const daysKey = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    let weeklyRegularHours = 0;
-    let dailyOvertime = 0;
 
     daysKey.forEach(day => {
       const active = entry[`${day}Active`] === true || entry[`${day}Active`] === 'true';
@@ -147,18 +145,16 @@ function computeDerived(entry) {
         weeklyNightHours += calc.nightHours;
         totalWeeklyDays += 1;
         totalBreakMinutesWeekly += bMinutes + nbMinutes;
-
-        const regularDaily = Math.min(calc.workHours, 8);
-        weeklyRegularHours += regularDaily;
-        dailyOvertime += Math.max(calc.workHours - 8, 0);
       }
     });
 
-    const regularWorkHoursForBasePay = Math.min(weeklyRegularHours, 40);
+    let regularWorkHoursForBasePay = Math.min(weeklyHours, 40);
+    if (weeklyHours >= 40) {
+      regularWorkHoursForBasePay = 40;
+    }
     const avgDailyHoursVal = totalWeeklyDays > 0 ? regularWorkHoursForBasePay / totalWeeklyDays : 8;
-    const weeklyOvertimeLimit = Math.max(weeklyRegularHours - 40, 0);
     const extraWeeklyOvertimeVal = parseFloat(entry.extraWeeklyOvertime) || 0;
-    const weeklyOvertimeHours = dailyOvertime + weeklyOvertimeLimit + extraWeeklyOvertimeVal;
+    const weeklyOvertimeHours = Math.max(weeklyHours - 40, 0) + extraWeeklyOvertimeVal;
 
     directWeeklyWorkDays = totalWeeklyDays;
     directWeeklyRegularHours = regularWorkHoursForBasePay;
@@ -168,15 +164,16 @@ function computeDerived(entry) {
   } else if (entry.scheduleType === '직접입력') {
     totalWeeklyDays = parseFloat(entry.directWeeklyWorkDays) || 5;
     const avgDaily = parseFloat(entry.directAvgDailyHours) || 8;
+    const totalHoursWeekly = avgDaily * totalWeeklyDays;
 
-    const regularDaily = Math.min(avgDaily, 8);
-    const overtimeDaily = Math.max(avgDaily - 8, 0);
-    const weeklyRegularBeforeCap = regularDaily * totalWeeklyDays;
-    // 하루 8시간을 안 넘어도 근무일수가 많아(예: 주 6~7일) 주 40시간을 넘기면 그 초과분도 연장근로
-    const weeklyOvertimeFromExtraDays = Math.max(weeklyRegularBeforeCap - 40, 0);
+    let regularWorkHoursForBasePay = Math.min(totalHoursWeekly, 40);
+    if (totalHoursWeekly >= 40) {
+      regularWorkHoursForBasePay = 40;
+    }
+    const weeklyOvertimeHours = Math.max(totalHoursWeekly - 40, 0);
 
-    directWeeklyRegularHours = weeklyRegularBeforeCap;
-    directWeeklyOvertimeHours = (overtimeDaily * totalWeeklyDays) + weeklyOvertimeFromExtraDays;
+    directWeeklyRegularHours = regularWorkHoursForBasePay;
+    directWeeklyOvertimeHours = weeklyOvertimeHours;
 
     const dailyNight = parseFloat(entry.directDailyNightHours) || 0;
     const dailyNightBreak = parseFloat(entry.directDailyNightBreakHours) || 0;
@@ -184,14 +181,14 @@ function computeDerived(entry) {
 
     directWeeklyNightHours = netDailyNight * totalWeeklyDays;
 
-    weeklyHours = directWeeklyRegularHours;
+    weeklyHours = totalHoursWeekly;
     weeklyNightHours = directWeeklyNightHours;
     directAvgDailyHours = avgDaily;
   } else {
     weeklyHours = (p1.workHours * p1Days) + (p2.workHours * p2Days) + (p3.workHours * p3Days);
     totalWeeklyDays = p1Days + p2Days + p3Days;
     totalBreakMinutesWeekly = ((p1BreakMinutes + p1NightBreakMinutes) * p1Days) + ((p2BreakMinutes + p2NightBreakMinutes) * p2Days) + ((p3BreakMinutes + p3NightBreakMinutes) * p3Days);
-    weeklyNightHours = (p1.nightHours * p1Days) + (p2.nightHours * p2Days) + (p3.nightHours * p3Days);
+    weeklyNightHours = (p1.nightHours + p2.nightHours + p3.nightHours) * 6;
   }
  
   const result = calculateYearlyEntryPay({
@@ -944,10 +941,12 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             <span className="result-row-label">기본급 {result.regularWorkHoursMonthly > 0 && `(월 소정근로 ${result.regularWorkHoursMonthly}시간)`}</span>
             <span className="result-row-value">{result.basePay.toLocaleString()}원</span>
           </div>
-          <div className="result-row">
-            <span className="result-row-label">주휴수당 {result.weeklyHolidayHoursMonthly > 0 && `(월 주휴 ${result.weeklyHolidayHoursMonthly}시간)`}</span>
-            <span className="result-row-value">{result.weeklyHolidayPay.toLocaleString()}원</span>
-          </div>
+          {result.weeklyHolidayHoursMonthly > 0 && (
+            <div className="result-row">
+              <span className="result-row-label">주휴수당 {result.weeklyHolidayHoursMonthly > 0 && `(월 주휴 ${result.weeklyHolidayHoursMonthly}시간)`}</span>
+              <span className="result-row-value">{result.weeklyHolidayPay.toLocaleString()}원</span>
+            </div>
+          )}
           <div className="result-row">
             <span className="result-row-label">연장수당 {result.overtimeHoursMonthly > 0 && `(월 연장 ${result.overtimeHoursMonthly}시간 · ${entry.companySize === '5인 이상' ? '1.5배' : '1.0배'} 가산)`}</span>
             <span className="result-row-value">{result.overtimePay.toLocaleString()}원</span>
@@ -1634,15 +1633,17 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                       <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{result.regularWorkHoursMonthly}시간</td>
                       <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>{result.regularWorkHoursMonthly}시간 × {result.baseHourlyWage.toLocaleString()}원</td>
                     </tr>
-                    <tr>
-                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>주휴수당</td>
-                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{result.weeklyHolidayHoursMonthly}시간</td>
-                      <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
-                        {result.weeklyHolidayHoursMonthly > 0 
-                          ? `${result.weeklyHolidayHoursMonthly}시간 × ${result.baseHourlyWage.toLocaleString()}원` 
-                          : '미발생 (주 소정근로 15시간 미만)'}
-                      </td>
-                    </tr>
+                    {result.weeklyHolidayHoursMonthly > 0 && (
+                      <tr>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>주휴수당</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff', textAlign: 'center' }}>{result.weeklyHolidayHoursMonthly}시간</td>
+                        <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#fff' }}>
+                          {result.weeklyHolidayHoursMonthly > 0 
+                            ? `${result.weeklyHolidayHoursMonthly}시간 × ${result.baseHourlyWage.toLocaleString()}원` 
+                            : '미발생 (주 소정근로 15시간 미만)'}
+                        </td>
+                      </tr>
+                    )}
                     {result.overtimePay > 0 && (
                       <tr>
                         <td style={{ border: '1px solid rgba(255,255,255,0.1)', padding: '5px 8px', color: '#cbd5e1', fontWeight: 600 }}>연장근로수당</td>

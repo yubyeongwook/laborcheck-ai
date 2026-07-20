@@ -288,10 +288,7 @@ function ReportGenerator({ userType }) {
       });
       setWeeklyNightHours((Math.round(totalWeeklyNight * 100) / 100).toString());
     } else {
-      const p1DaysNum = parseFloat(pattern1Days) || 0;
-      const p2DaysNum = parseFloat(pattern2Days) || 0;
-      const p3DaysNum = parseFloat(pattern3Days) || 0;
-      const totalWeeklyNight = (p1.nightHours * p1DaysNum) + (p2.nightHours * p2DaysNum) + (p3.nightHours * p3DaysNum);
+      const totalWeeklyNight = (p1.nightHours + p2.nightHours + p3.nightHours) * 6;
       setWeeklyNightHours((Math.round(totalWeeklyNight * 100) / 100).toString());
     }
   }, [

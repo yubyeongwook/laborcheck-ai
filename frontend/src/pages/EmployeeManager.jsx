@@ -423,8 +423,8 @@ function EmployeeManager() {
     const logsInMonth = employeeLogs.filter(log => log.work_date.startsWith(targetMonth) && log.status === '정상');
     
     let hourly_wage = calcs.salaryResult.baseHourlyWage || Number(emp.base_salary);
-    let base_hours = calcs.salaryResult.regularWorkHoursMonthly || 174;
-    let weekly_holiday_hours = calcs.salaryResult.weeklyHolidayHoursMonthly || 35;
+    let base_hours = calcs.salaryResult.regularWorkHoursMonthly !== undefined ? calcs.salaryResult.regularWorkHoursMonthly : 174;
+    let weekly_holiday_hours = calcs.salaryResult.weeklyHolidayHoursMonthly !== undefined ? calcs.salaryResult.weeklyHolidayHoursMonthly : 35;
 
     // 5인 이상 여부
     const is5Over = selectedCompany.size_type === '5인 이상';
@@ -475,14 +475,16 @@ function EmployeeManager() {
 
       // 주휴수당 계산: 174시간 대비 비례 산정 (최대 35시간)
       const avgWeeklyHours = (totalHours / totalDays) * emp.weekly_work_days;
+      let calculated_holiday_hours = 0;
       if (avgWeeklyHours >= 15) {
-        weekly_holiday_hours = Math.min(Math.round((totalHours / 174) * 35 * 100) / 100, 35);
-      } else {
-        weekly_holiday_hours = 0;
+        calculated_holiday_hours = Math.min(Math.round((totalHours / 174) * 35 * 100) / 100, 35);
       }
       
+      base_hours = base_hours + calculated_holiday_hours;
+      weekly_holiday_hours = 0;
+      
       base_pay = hourly_wage * base_hours;
-      weekly_holiday_pay = hourly_wage * weekly_holiday_hours;
+      weekly_holiday_pay = 0;
       overtime_pay = hourly_wage * overtime_hours;
       night_pay = hourly_wage * night_hours;
     }
@@ -1754,13 +1756,15 @@ function EmployeeManager() {
                           </td>
                           <td style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px', textAlign: 'right' }}>{stubForm.base_pay.toLocaleString()}원</td>
                         </tr>
-                        <tr>
-                          <td style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px', fontWeight: 'bold' }}>주휴수당</td>
-                          <td style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '2px' }}>
-                            <input type="number" step="0.01" className="text-input" style={{ padding: '2px 4px', fontSize: '0.75rem', textAlign: 'center' }} value={stubForm.weekly_holiday_hours} onChange={(e) => updateStubFields({ weekly_holiday_hours: e.target.value })} />
-                          </td>
-                          <td style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px', textAlign: 'right' }}>{stubForm.weekly_holiday_pay.toLocaleString()}원</td>
-                        </tr>
+                        {Number(stubForm.weekly_holiday_hours) > 0 && (
+                          <tr>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px', fontWeight: 'bold' }}>주휴수당</td>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '2px' }}>
+                              <input type="number" step="0.01" className="text-input" style={{ padding: '2px 4px', fontSize: '0.75rem', textAlign: 'center' }} value={stubForm.weekly_holiday_hours} onChange={(e) => updateStubFields({ weekly_holiday_hours: e.target.value })} />
+                            </td>
+                            <td style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px', textAlign: 'right' }}>{stubForm.weekly_holiday_pay.toLocaleString()}원</td>
+                          </tr>
+                        )}
                         <tr>
                           <td style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '6px', fontWeight: 'bold' }}>연장수당</td>
                           <td style={{ border: '1px solid rgba(255,255,255,0.08)', padding: '2px' }}>
