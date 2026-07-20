@@ -1022,13 +1022,13 @@ function ReverseSalaryCalculator() {
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
                 <span style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>총 근로시간</span>
                 <strong style={{ fontSize: '0.85rem', color: '#fff' }}>
-                  {(monthlyRegularHours + (weeklyOvertimeHours * AVG_WEEKS_PER_MONTH)).toFixed(1)}h
+                  {(weeklyHours * AVG_WEEKS_PER_MONTH).toFixed(1)}h
                 </strong>
               </div>
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
                 <span style={{ fontSize: '0.6rem', color: '#38bdf8', display: 'block', marginBottom: '0.15rem' }}>기준근로시간</span>
                 <strong style={{ fontSize: '0.85rem', color: '#38bdf8' }}>
-                  {monthlyRegularHours}h
+                  {Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH)}h
                 </strong>
               </div>
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
