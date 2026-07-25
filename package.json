@@ -8,7 +8,8 @@
     "dev": "concurrently \"nodemon server.js\" \"npm run frontend-dev\"",
     "install-all": "npm install && cd frontend && npm install",
     "test-engine": "ts-node src/engine/testCalculator.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "vercel-build": "cd frontend && npm install && npm run build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.11.4",

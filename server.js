@@ -1498,23 +1498,31 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'LaborCheck AI', time: new Date() });
 });
 
-// 모든 기타 GET 요청은 React SPA index.html 또는 API 안내 반환
+// 메인 루트 / 요청 시 index.html 렌더링
+app.get('/', (req, res) => {
+  const indexPath = path.join(frontendDistPath, 'index.html');
+  if (require('fs').existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head><meta charset="UTF-8"><title>노무체크 AI Server</title></head>
+    <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+      <h1>🚀 노무체크 AI 서버가 정상 구동 중입니다.</h1>
+      <p>백엔드 API 및 정밀 계산 엔진이 포트에서 가동 중입니다.</p>
+    </body>
+    </html>
+  `);
+});
+
+// 모든 기타 GET 요청은 React SPA index.html 또는 fallback 반환
 app.get('*', (req, res) => {
   const indexPath = path.join(frontendDistPath, 'index.html');
   if (require('fs').existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="ko">
-      <head><meta charset="UTF-8"><title>노무체크 AI Server</title></head>
-      <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-        <h1>🚀 노무체크 AI 서버가 정상 구동 중입니다.</h1>
-        <p>백엔드 API 및 정밀 계산 엔진이 포트에서 가동 중입니다.</p>
-      </body>
-      </html>
-    `);
+    return res.sendFile(indexPath);
   }
+  res.status(404).json({ error: 'Not Found' });
 });
 
 app.listen(PORT, () => {
