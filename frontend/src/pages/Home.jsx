@@ -99,6 +99,50 @@ const STEP_NAV_ITEMS = [
   { step: 8, label: '8.비과세' },
 ];
 
+const STEP_CHOICE_OPTIONS = {
+  1: [
+    { label: '💡 월급제', value: '월급' },
+    { label: '⏱️ 시급제', value: '시급' },
+    { label: '📅 일급제', value: '일급' },
+    { label: '💼 포괄임금제', value: '포괄임금' }
+  ],
+  2: [
+    { label: '🏢 5인 이상 사업장', value: '5인 이상' },
+    { label: '🏪 5인 미만 사업장', value: '5인 미만' }
+  ],
+  3: [
+    { label: '🗓️ 주 5일 (월~금 9시~18시)', value: '월~금 9시~18시' },
+    { label: '📆 주 6일 (월~토 9시~18시)', value: '월~토 9시~18시' },
+    { label: '🕒 평일 9~18시 / 토 9~15시', value: '평일 9~18시 / 토 9~15시' },
+    { label: '🌙 야간 포함 (22시~06시)', value: '밤 10시~아침 6시 야간근로 포함' }
+  ],
+  4: [
+    { label: '☕ 하루 총 1시간 (점심 1h)', value: '총 1시간 (휴게 1시간)' },
+    { label: '🥪 하루 총 1.5시간', value: '총 1.5시간' },
+    { label: '🍽️ 하루 총 2시간 (식사1h + 휴게1h)', value: '총 2시간 (식사1h + 휴게1h)' },
+    { label: '❌ 휴게시간 없음 (0시간)', value: '휴게시간 없음' }
+  ],
+  5: [
+    { label: '☀️ 야간근로 없음 (0시간)', value: '야간근로 없음 (0시간)' },
+    { label: '🌙 야간근로 2시간 포함', value: '야간근로 2시간 포함' },
+    { label: '🌌 야간근로 4시간 포함', value: '야간근로 4시간 포함' }
+  ],
+  6: [
+    { label: '🚩 공휴일/대체공휴일 모두 쉬움', value: '공휴일 쉬움' },
+    { label: '🏢 공휴일에도 나와서 근무함', value: '공휴일 근무' }
+  ],
+  7: [
+    { label: '📅 1년 이상 (연차 수당 미포함 / 휴가 사용)', value: '1년 이상, 연차 수당 미포함 (휴가로 사용)' },
+    { label: '💰 1년 이상 (미사용 연차수당 급여 포함)', value: '1년 이상, 미사용 연차수당 급여 포함' },
+    { label: '🐣 1년 미만 (월 1개 발생 연차)', value: '1년 미만, 연차 0개' }
+  ],
+  8: [
+    { label: '🍚 식대 20만원 비과세 분할 (절세형)', value: '식대 20만원 비과세 포함' },
+    { label: '🚗 식대 20만 + 자가운전 20만 비과세', value: '식대 20만원 + 자가운전 20만원 비과세' },
+    { label: '❌ 비과세 수당 없음 (전액 과세)', value: '비과세 수당 없음' }
+  ]
+};
+
 const QUESTION_PROMPTS = {
   1: '1️⃣ **첫 번째 질문 (급여 지급 방식)**: **시급, 일급, 월급, 포괄임금** 중 어떤 방식으로 급여를 받으시나요?',
   2: '2️⃣ **두 번째 질문 (5인 이상 법적 판정)**: 사장님 본인 및 동거 친족을 제외하고 **함께 일하는 상시 근로자가 5명 이상**인가요?',
@@ -326,11 +370,13 @@ export default function Home() {
     setChatStep(9);
   };
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!inputMsg.trim() && !attachedFile) return;
+  const handleSendMessage = async (e, customText = null) => {
+    if (e && e.preventDefault) e.preventDefault();
+    
+    let rawText = customText !== null ? customText : inputMsg;
+    if (!rawText.trim() && !attachedFile) return;
 
-    let userText = inputMsg.trim();
+    let userText = rawText.trim();
     const currentFile = attachedFile;
     
     if (currentFile) {
@@ -776,8 +822,57 @@ export default function Home() {
               </div>
             )}
 
+            {/* 💡 모든 질문 단계별 원클릭 보기 선택지 칩 (Quick Choice Chips) */}
+            {isChatActive && chatStep >= 1 && chatStep <= 8 && STEP_CHOICE_OPTIONS[editingStep || chatStep] && (
+              <div style={{
+                padding: '0.65rem 1.25rem',
+                background: 'rgba(15, 23, 42, 0.95)',
+                borderTop: '1px solid rgba(56, 189, 248, 0.25)',
+                display: 'flex',
+                gap: '0.5rem',
+                overflowX: 'auto',
+                alignItems: 'center'
+              }}>
+                <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <Sparkles size={14} color="#38bdf8" /> 원클릭 답변 선택:
+                </span>
+                {STEP_CHOICE_OPTIONS[editingStep || chatStep].map((opt, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSendMessage(null, opt.value)}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))',
+                      border: '1px solid rgba(56, 189, 248, 0.45)',
+                      color: '#ffffff',
+                      borderRadius: '20px',
+                      padding: '0.45rem 0.9rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(56, 189, 248, 0.3)';
+                      e.currentTarget.style.borderColor = '#38bdf8';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))';
+                      e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.45)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* 챗봇 입력창 */}
-            <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', background: '#1e293b', borderTop: '1px solid rgba(56, 189, 248, 0.2)' }}>
+            <form onSubmit={(e) => handleSendMessage(e)} style={{ padding: '1rem 1.5rem', background: '#1e293b', borderTop: '1px solid rgba(56, 189, 248, 0.2)' }}>
               <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.5rem' }}>
                 {/* 📎 서류 첨부 버튼 */}
                 <button
