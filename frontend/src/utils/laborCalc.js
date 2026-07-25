@@ -50,7 +50,7 @@ export const DEDUCTION_RATES_BY_YEAR = {
   2022: { health: 0.03495, care: 0.1227, pension: 0.045, employment: 0.0085 },
   2023: { health: 0.03545, care: 0.1281, pension: 0.045, employment: 0.009 },
   2024: { health: 0.03545, care: 0.1295, pension: 0.045, employment: 0.009 },
-  2025: { health: 0.03545, care: 0.1295, pension: 0.045, employment: 0.009 },
+  2025: { health: 0.03545, care: 0.1314, pension: 0.0475, employment: 0.009 },
   2026: { health: 0.03595, care: 0.1314, pension: 0.0475, employment: 0.009 }
 };
 

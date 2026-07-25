@@ -375,8 +375,8 @@ export class TaxExemptSalaryCalculator {
     const totalTaxExemptAmount = mealExempt + drivingExempt + childcareExempt + researchExempt;
     const netTaxableAmount = Math.max(0, reportedSalary - totalTaxExemptAmount);
 
-    // 비과세 적용에 따른 월 4대보험 및 소득세 절감 추정액 (약 18.5% 합산 요율 적용)
-    const taxSavingsEstimate = Math.round(totalTaxExemptAmount * 0.185);
+    // 비과세 적용에 따른 월 4대보험 및 소득세 절감 추정액 (국민연금 4.75% 포함 합산 요율 적용)
+    const taxSavingsEstimate = Math.round(totalTaxExemptAmount * 0.1875);
 
     const hasDiscrepancy = realSalary !== reportedSalary;
     let discrepancyNotice = '';
