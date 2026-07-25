@@ -181,7 +181,7 @@ export default function PayslipModal({ data = {}, onClose }) {
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>건강보험</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>3.545%</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>3.595%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{healthInsurance.toLocaleString()}</td>
                   </tr>
                   <tr>
