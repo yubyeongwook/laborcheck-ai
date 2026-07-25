@@ -49,8 +49,8 @@ export default function Home() {
     // 업종 및 상황 맥락(Context) 분석 후 노무비서실장의 맞춤형 1차 질문 동적 생성
     let initialGreeting = '';
     
-    if (initialText.includes('취업규칙') || initialText.includes('계약서')) {
-      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 작성을 도와드리겠습니다. 업장에 딱 맞는 맞춤 규정을 만들기 위해 몇 가지 확인하겠습니다:\n\n1. **업종**이 어떻게 되시나요? (예: IT, 외식업, 제조업, 병의원 등)\n2. **상시 근로자 수가 10인 이상**(고용노동부 신고 의무)인가요?\n3. 회사 자체 **주휴일 및 약정 휴가(창립일, 명절 등)** 방침이 있으신가요?`;
+    if (initialText.includes('취업규칙') || initialText.includes('계약서') || initialText.includes('복지')) {
+      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 및 복리후생 규정 작성을 도와드리겠습니다. 업장 특약 및 복지 규정을 명시하기 위해 몇 가지 확인하겠습니다:\n\n1. **업종 및 상시 근로자 수** (10인 이상 신고 의무 / 5인 이상 가산수당)\n2. **경조사 휴가 규정 (상당할 때)**: 부모/배우자상(상당할 때 3~5일), 결혼, 조부모상 등 경조 휴가를 유급으로 부여하시나요?\n3. **하계휴가 / 동계휴가** (여름/겨울 휴가 일수 및 연차 차감/별도 유급 여부)\n4. **기타 복리후생 방침**: 식사 무상 제공, 유니폼 지원, 경조금 지원, 장기근속 포상 등이 있으신가요?`;
     } else if (initialText.includes('퇴직금') || initialText.includes('퇴사')) {
       initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 정밀 산출을 위해 업장 특성을 파악하겠습니다:\n\n1. **퇴직연금 유형**이 무엇인가요? (일반 법정퇴직금 / DB형 / DC형 / IRP)\n2. 재직 중 **육아휴직, 산재 병가, 회사 휴업 기간**이 포함되어 있나요?\n3. 퇴직 전 **최근 3개월 급여 및 연간 상여금**은 얼마인가요?`;
     } else if (initialText.includes('산재') || initialText.includes('다침')) {
