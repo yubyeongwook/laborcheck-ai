@@ -206,12 +206,18 @@ export default function Home() {
       } else if (userText.includes('5명') || userText.includes('5인') || userText.includes('인 이상') || userText.includes('인 미만')) {
         const is5 = !userText.includes('미만');
         replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문**: **출퇴근 시간과 하루 총 휴게시간**(점심/식사시간 포함) 및 **휴일/주말 근무**가 있으신가요?\n*(예: 10:00 ~ 22:00 / 휴게 2시간 30분)*`;
-      } else if ((userText.includes('~') || userText.includes('시')) && !userText.includes('연차') && !userText.includes('식대') && !userText.includes('비과세') && !userText.includes('포함') && !userText.includes('별도')) {
-        replyText = `네! **"${userText}"** 근무시간 조건 확인했습니다! 💡\n\n4️⃣ **네 번째 질문**: 5인 이상 사업장 핵심 항목인 **연차유급휴가 수당**이나 **휴일근로수당**을 월 급여(포괄임금)에 포함할까요, 아니면 발생 시 별도 계산할까요?\n*(예: 월급에 포함 / 발생 시 별도 계산)*`;
-      } else if (userText.includes('연차') || userText.includes('휴일') || userText.includes('포함') || userText.includes('별도')) {
-        replyText = `네! 수당 포함 여부 조건 확인했습니다! 💡\n\n5️⃣ **마지막 질문**: 식대(월 20만원)처럼 **세금을 안 내도 되는 수당(비과세)**을 넣어서 세금을 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
+      } else if ((userText.includes('~') || userText.includes('시')) && !userText.includes('명절') && !userText.includes('쉬') && !userText.includes('입사일') && !userText.includes('식대') && !userText.includes('비과세')) {
+        replyText = `네! **"${userText}"** 근무시간 조건 확인했습니다! 💡\n\n4️⃣ **네 번째 질문 (공휴일/명절 근로 여부)**: 설날·추석 등 **명절 및 관공서 공휴일(연 약 15일)**에 사업장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 해당 관공서 공휴일은 유급휴일로 처리되어 휴일근로수당 계산 시 차감 적용됩니다)*`;
+      } else if (userText.includes('명절') || userText.includes('공휴일') || userText.includes('쉬') || userText.includes('일해') || userText.includes('나와')) {
+        const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
+        replyText = `확인했습니다! (**${restsOnHolidays ? '명절/공휴일 휴무 - 휴일근로 수당 차감 반영' : '명절/공휴일 근무 - 1.5배 휴일근로수당 적용'}**) 💡\n\n5️⃣ **다섯 번째 질문 (입사일 & 연차 산정)**: 근로자분의 **입사일(또는 재직 기간이 1년 미만인지, 1년 이상인지)**은 어떻게 되시나요?\n*(근로기준법 제60조에 따라 1년 미만은 월 1일[최대 11일], 1년 이상은 연 15일 유급연차가 산정됩니다)*`;
+      } else if (userText.includes('입사') || userText.includes('년') || userText.includes('개월') || userText.includes('신규') || userText.includes('미만') || userText.includes('이상')) {
+        replyText = `네! 입사일 및 재직기간 조건 확인했습니다! 💡\n\n6️⃣ **마지막 질문**: 식대(월 20만원)처럼 **세금을 안 내도 되는 수당(비과세)**을 넣어서 세금을 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
       } else if (userText.includes('5인') || userText.includes('시급') || userText.includes('원') || userText.includes('주 5일') || userText.includes('시간') || userText.includes('월급') || userText.includes('10~22') || userText.includes('식대') || userText.includes('네') || userText.includes('응') || userText.includes('아니')) {
         const is5Over = !userText.includes('5인 미만') && !userText.includes('5인미만');
+        const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
+        const isUnder1Year = userText.includes('1년 미만') || userText.includes('개월');
+
         let dailyWorkHours = 9.5;
         let breakHours = 2.5;
         
@@ -253,12 +259,13 @@ export default function Home() {
         const hasMeal = !userText.includes('아니');
         const mealPay = hasMeal ? 200000 : 0;
         
-        // 5인 이상 사업장 시 월 연차유급휴가 수당 (월 1.25일분)
-        const annualLeaveMonthlyPay = is5Over ? Math.round(minWage * 8 * 1.25) : 0; // 약 103,200원
+        // 연차유급휴가 수당 (1년 미만: 월 1일 / 1년 이상: 연 15일 -> 월 1.25일분)
+        const annualLeaveDaysMonthly = isUnder1Year ? 1.0 : 1.25;
+        const annualLeaveMonthlyPay = is5Over ? Math.round(minWage * 8 * annualLeaveDaysMonthly) : 0;
 
         const totalGross = basePay + overtimePay + mealPay + annualLeaveMonthlyPay;
 
-        replyText = `### 🎩 노무비서실장의 [근무시간 & 급여 맞춤 정밀 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 하루 실근로 ${dailyWorkHours.toFixed(2)}시간${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 5인 이상 법적 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **법적 적용 규정**: 연장·야간·휴일근로 가산수당 1.5배 및 근로기준법 제60조 연차유급휴가 의무 적용\n\n---\n\n### 📊 2. 하루 & 한 달 근로시간 분석\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${is5Over ? `  - **월 연차유급휴가 수당 (1.25일분)**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : ''}${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
+        replyText = `### 🎩 노무비서실장의 [근무시간 & 급여 맞춤 정밀 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 하루 실근로 ${dailyWorkHours.toFixed(2)}시간${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **관공서 공휴일(명절/대체공휴일) 적용**: **${restsOnHolidays ? '명절 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '명절 근무 (1.5배 휴일근로수당 가산)'}**\n- **입사일 기준 연차유급휴가 규정**: 근로기준법 제60조 기준 **${isUnder1Year ? '1년 미만 (월 1일 발생)' : '1년 이상 (연 15일 발생, 월 1.25일분 환산 반영)'}**\n\n---\n\n### 📊 2. 하루 & 한 달 근로시간 분석\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${is5Over ? `  - **월 연차유급휴가 수당 (${annualLeaveDaysMonthly}일분)**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : ''}${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
       } else {
         replyText = `네, 말씀해주신 **"${userText}"** 조건을 확인하였습니다. 🎩\n\n관련 법령 및 주요 대법원 판례를 대조 분석 중입니다.\n\n추가로 진단서 파일(📎)을 올려주시면 관련 법령 분석 가이드를 함께 제공해 드립니다.`;
       }
