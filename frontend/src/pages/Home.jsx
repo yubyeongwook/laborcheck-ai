@@ -170,6 +170,14 @@ export default function Home() {
   const [editingStep, setEditingStep] = useState(null);
   const [isCalculatedOnce, setIsCalculatedOnce] = useState(false);
 
+  // 🕒 3단계 근무시간 세분화 스마트 입력 폼 state
+  const [workDaysWeek, setWorkDaysWeek] = useState('주 5일');
+  const [weekdayStart, setWeekdayStart] = useState('09:00');
+  const [weekdayEnd, setWeekdayEnd] = useState('18:00');
+  const [hasWeekendWork, setHasWeekendWork] = useState(false);
+  const [weekendStart, setWeekendStart] = useState('09:00');
+  const [weekendEnd, setWeekendEnd] = useState('15:00');
+
   const fileInputRef = useRef(null);
   const chatEndRef = useRef(null);
 
@@ -822,8 +830,121 @@ export default function Home() {
               </div>
             )}
 
-            {/* 💡 모든 질문 단계별 원클릭 보기 선택지 칩 (Quick Choice Chips) */}
-            {isChatActive && chatStep >= 1 && chatStep <= 8 && STEP_CHOICE_OPTIONS[editingStep || chatStep] && (
+            {/* 🕒 3단계 전용: 세부 근무일수 & 출퇴근 시간 정밀 세팅 입력 폼 */}
+            {isChatActive && (editingStep || chatStep) === 3 && (
+              <div style={{
+                padding: '1.1rem 1.25rem',
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98))',
+                borderTop: '2px solid #38bdf8',
+                boxShadow: '0 -10px 25px rgba(0, 0, 0, 0.4)'
+              }}>
+                <div style={{ color: '#38bdf8', marginBottom: '0.75rem', fontSize: '0.9rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Clock size={18} color="#38bdf8" /> 3단계 세부 설정: 주 몇 일 근로 & 평일/주말 출퇴근 시간 정밀 입력
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  {/* 주 근로일수 선택 */}
+                  <div>
+                    <label style={{ fontSize: '0.76rem', color: '#94a3b8', display: 'block', marginBottom: '0.3rem', fontWeight: 700 }}>📅 주 근로일수</label>
+                    <select
+                      value={workDaysWeek}
+                      onChange={(e) => setWorkDaysWeek(e.target.value)}
+                      style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '8px', background: '#0f172a', color: '#ffffff', border: '1px solid rgba(56, 189, 248, 0.35)', outline: 'none', fontSize: '0.85rem' }}
+                    >
+                      <option value="주 5일">주 5일 근무 (월~금)</option>
+                      <option value="주 6일">주 6일 근무 (월~토)</option>
+                      <option value="주 4일">주 4일 근무</option>
+                      <option value="주 3일">주 3일 근무</option>
+                      <option value="주 2일">주 2일 근무 (파트타임)</option>
+                    </select>
+                  </div>
+
+                  {/* 주말 근무 여부 토글 */}
+                  <div>
+                    <label style={{ fontSize: '0.76rem', color: '#94a3b8', display: 'block', marginBottom: '0.3rem', fontWeight: 700 }}>📆 주말(토/일) 근무 구분</label>
+                    <button
+                      type="button"
+                      onClick={() => setHasWeekendWork(!hasWeekendWork)}
+                      style={{
+                        width: '100%', padding: '0.5rem 0.7rem', borderRadius: '8px',
+                        background: hasWeekendWork ? 'rgba(245, 158, 11, 0.25)' : 'rgba(56, 189, 248, 0.12)',
+                        color: hasWeekendWork ? '#f59e0b' : '#38bdf8',
+                        border: `1px solid ${hasWeekendWork ? '#f59e0b' : 'rgba(56, 189, 248, 0.4)'}`,
+                        fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem'
+                      }}
+                    >
+                      {hasWeekendWork ? '⚠️ 주말 근무 포함 (시간 다름)' : '✅ 주말 휴무 (평일 동일)'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 평일 출퇴근 시간 */}
+                <div style={{ background: '#0f172a', padding: '0.65rem 0.85rem', borderRadius: '10px', marginBottom: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                  <div style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.35rem' }}>
+                    🏢 평일 출퇴근 시간 선택
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="time"
+                      value={weekdayStart}
+                      onChange={(e) => setWeekdayStart(e.target.value)}
+                      style={{ flex: 1, padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', outline: 'none', fontSize: '0.85rem' }}
+                    />
+                    <span style={{ color: '#94a3b8', fontWeight: 700 }}>~</span>
+                    <input
+                      type="time"
+                      value={weekdayEnd}
+                      onChange={(e) => setWeekdayEnd(e.target.value)}
+                      style={{ flex: 1, padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', outline: 'none', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                </div>
+
+                {/* 주말 출퇴근 시간 (주말 근무 체크 시) */}
+                {hasWeekendWork && (
+                  <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '0.65rem 0.85rem', borderRadius: '10px', marginBottom: '0.75rem', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                    <div style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 700, marginBottom: '0.35rem' }}>
+                      🏖️ 주말(토/일) 별도 출퇴근 시간
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input
+                        type="time"
+                        value={weekendStart}
+                        onChange={(e) => setWeekendStart(e.target.value)}
+                        style={{ flex: 1, padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', outline: 'none', fontSize: '0.85rem' }}
+                      />
+                      <span style={{ color: '#94a3b8', fontWeight: 700 }}>~</span>
+                      <input
+                        type="time"
+                        value={weekendEnd}
+                        onChange={(e) => setWeekendEnd(e.target.value)}
+                        style={{ flex: 1, padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', outline: 'none', fontSize: '0.85rem' }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 전송 버튼 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const timeText = `${workDaysWeek} / 평일 ${weekdayStart}~${weekdayEnd}${hasWeekendWork ? ` / 주말 ${weekendStart}~${weekendEnd}` : ' (주말 휴무)'}`;
+                    handleSendMessage(null, timeText);
+                  }}
+                  style={{
+                    width: '100%', padding: '0.65rem', borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #0284c7, #38bdf8)', color: '#ffffff',
+                    fontWeight: 800, border: 'none', cursor: 'pointer', fontSize: '0.88rem',
+                    boxShadow: '0 4px 12px rgba(56, 189, 248, 0.35)'
+                  }}
+                >
+                  ✅ 입력한 근무일수 & 출퇴근 시간 정밀 적용하기
+                </button>
+              </div>
+            )}
+
+            {/* 💡 1, 2, 4~8단계 원클릭 보기 선택지 칩 (Quick Choice Chips) */}
+            {isChatActive && (editingStep || chatStep) !== 3 && chatStep >= 1 && chatStep <= 8 && STEP_CHOICE_OPTIONS[editingStep || chatStep] && (
               <div style={{
                 padding: '0.65rem 1.25rem',
                 background: 'rgba(15, 23, 42, 0.95)',
