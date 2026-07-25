@@ -142,7 +142,7 @@ export default function Home() {
     setEditingStep(targetStep);
     setLatestCalcResult(null);
     const existingVal = stepAnswers[targetStep] ? ` *(이전 입력: "${stepAnswers[targetStep]}")*` : '';
-    const text = `🔄 **[${targetStep}단계 질문 수정]**\n\n${QUESTION_PROMPTS[targetStep] || ''}${existingVal}\n\n수정하실 내용만 새로 입력해 주세요. **이후 질문들을 다시 반복하지 않고 바로 재계산 결과가 반영됩니다!**`;
+    const text = `🔄 **[${targetStep}단계 질문 수정]**\n\n${QUESTION_PROMPTS[targetStep] || ''}${existingVal}\n\n수정하실 내용만 새로 입력해 주세요. 수정 완료 후 이어서 다음 질문 단계로 자연스럽게 연결됩니다!`;
     setMessages(prev => [...prev, { sender: 'secretary', text, step: targetStep }]);
   };
 
@@ -347,10 +347,26 @@ export default function Home() {
         const updatedAnswers = { ...stepAnswers, [activeStep]: userText };
         setStepAnswers(updatedAnswers);
 
-        // 💡 특정 질문 항목을 수정 중이거나, 이미 1회 이상 전체 진단을 완료한 상태라면:
-        // 이후 질문들을 다시 연달아 요구하지 않고, 수정한 항목만 쏙 바꿔서 즉시 최종 정밀 계산을 갱신합니다!
-        if (editingStep !== null || isCalculatedOnce) {
+        // 💡 1. 8단계까지 이미 전체 진단을 마친 상태(isCalculatedOnce === true)에서 수정한 경우:
+        // 즉시 최종 계산서를 재산출하여 보여줍니다.
+        if (isCalculatedOnce) {
           calculateAndRespond(updatedAnswers, activeStep);
+          setIsTyping(false);
+          return;
+        }
+
+        // 💡 2. 아직 8단계까지 질문이 모두 완료되지 않은 순차 인터뷰 진행 중 특정 단계를 수정한 경우:
+        // 수정한 항목만 갱신하고, 아직 작성하지 않은 다음 질문 단계(nextStep)로 계속 이어서 진행합니다!
+        if (editingStep !== null) {
+          setEditingStep(null);
+          
+          const nextStep = activeStep < 8 ? activeStep + 1 : 8;
+          setChatStep(nextStep);
+
+          const nextQuestionPrompt = QUESTION_PROMPTS[nextStep];
+          const replyText = `✅ **[${activeStep}단계 답변 수정 완료]**\n\n수정해주신 내용(**"${userText}"**)이 정상 반영되었습니다! 이어서 **${nextStep}단계 질문**을 계속 진행해 주세요:\n\n${nextQuestionPrompt}`;
+          
+          setMessages(prev => [...prev, { sender: 'secretary', text: replyText, step: nextStep }]);
           setIsTyping(false);
           return;
         }
