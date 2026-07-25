@@ -7,6 +7,7 @@ import {
   Scale, Stethoscope
 } from 'lucide-react';
 import PayslipModal from '../components/PayslipModal';
+import WageCalculatorModal from '../components/WageCalculatorModal';
 
 const SMART_QUICK_PROMPTS = [
   '⚖️ 산재 불승인 시 이의신청 절차 & 판례 모음 알려줘',
@@ -220,6 +221,55 @@ export default function Home() {
       });
       return next;
     });
+  };
+
+  // 🧮 대화형 실시간 월급계산기 모달 상태
+  const [isWageCalcOpen, setIsWageCalcOpen] = useState(false);
+
+  const handleApplyCalcModalChanges = (updatedCalc) => {
+    const res = updatedCalc.calculatedResult;
+    const currentObj = latestCalcResult || {};
+
+    const newResultObj = {
+      ...currentObj,
+      employeeName: '신청 근로자',
+      companyName: '노무체크 검증 사업장',
+      hourlyRate: updatedCalc.hourlyRate,
+      baseHours: res.baseHoursMonthly || 209,
+      baseSalary: res.actualBasePay,
+      overtimeHours: res.monthlyOvertime,
+      overtimeAllowance: res.monthlyOvertimePay,
+      nightHours: res.monthlyNightHours,
+      nightAllowance: res.nightAllowance,
+      holidayAllowance: res.holidayPayMonthly,
+      annualLeaveAllowance: res.annualLeaveMonthlyPay,
+      mealAllowanceTaxExempt: res.mealPay,
+      totalGrossSalary: res.totalGross,
+      totalGross: res.totalGross,
+      basePay: res.actualBasePay,
+      overtimePay: res.monthlyOvertimePay,
+      mealPay: res.mealPay,
+      annualLeaveMonthlyPay: res.annualLeaveMonthlyPay,
+      nationalPension: res.nationalPension,
+      healthInsurance: res.healthInsurance,
+      longtermCare: res.longtermCare,
+      employmentInsurance: res.employmentInsurance,
+      incomeTax: res.incomeTax,
+      localIncomeTax: res.localIncomeTax,
+      totalDeduction: res.totalDeductions,
+      netPay: res.netPay
+    };
+
+    setLatestCalcResult(newResultObj);
+
+    // 챗봇 메시지에 변경사항 안내 메시지 추가
+    setMessages(prev => [
+      ...prev,
+      {
+        sender: 'secretary',
+        text: `🧮 **[월급 계산기 수치 직접 수정 반영 완료]**\n\n월급 계산기에서 수정하신 조건(**시급 ${updatedCalc.hourlyRate.toLocaleString()}원, 주 ${updatedCalc.weeklyDays}일 근무, 하루 ${updatedCalc.dailyWorkHours}시간**)이 0% 오차로 정밀 반영되었습니다! 💡\n\n---\n\n- 💰 **세전 월급 총액**: **${res.totalGross.toLocaleString()}원**\n- 💵 **예상 실수령액**: **${res.netPay.toLocaleString()}원**\n- 📄 아래 **[급여명세서 보기/출력]** 및 **[실시간 계산기 수정]** 버튼을 통해 언제든지 수치를 자유롭게 재조정하실 수 있습니다!`
+      }
+    ]);
   };
 
   // 🌙 야간 근로시간 (22시~06시 24시간제 정밀 검증) 실시간 자동 도출 함수
@@ -826,16 +876,33 @@ export default function Home() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setIsChatActive(false)}
-                style={{
-                  background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%',
-                  width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#94a3b8', cursor: 'pointer'
-                }}
-              >
-                <X size={20} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsWageCalcOpen(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                    color: '#ffffff', border: 'none', borderRadius: '10px',
+                    padding: '0.45rem 0.85rem', fontSize: '0.8rem', fontWeight: 800,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem',
+                    boxShadow: '0 4px 12px rgba(56, 189, 248, 0.3)'
+                  }}
+                  title="월급 계산기 폼을 직접 열어서 세분화된 수치를 자유롭게 수정합니다"
+                >
+                  🧮 대화형 월급계산기 직접 수정
+                </button>
+
+                <button
+                  onClick={() => setIsChatActive(false)}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '50%',
+                    width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#94a3b8', cursor: 'pointer'
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {/* 🎯 8단계 질문 진행 현황 및 자유 선택 수정 바 */}
@@ -1471,29 +1538,51 @@ export default function Home() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowPayslipModal(true)}
-                    style={{
-                      background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '0.45rem 0.9rem',
-                      fontSize: '0.82rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
-                      transition: 'transform 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                  >
-                    📄 법정 급여명세서 상세/출력
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsWageCalcOpen(true)}
+                      style={{
+                        background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '0.45rem 0.9rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        boxShadow: '0 4px 12px rgba(56, 189, 248, 0.35)'
+                      }}
+                    >
+                      🧮 실시간 계산기 수치 직접 수정
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPayslipModal(true)}
+                      style={{
+                        background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '0.45rem 0.9rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
+                        transition: 'transform 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    >
+                      📄 법정 급여명세서 상세/출력
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1501,17 +1590,30 @@ export default function Home() {
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                   💡 📎 버튼으로 산재 진단서, 급여명세서를 올리시면 AI가 승인 확률과 휴업급여를 즉시 진단 및 산출해 드립니다.
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setShowPayslipModal(true)}
-                  style={{
-                    background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)',
-                    color: '#38bdf8', borderRadius: '8px', padding: '0.4rem 0.8rem', fontSize: '0.8rem',
-                    fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem'
-                  }}
-                >
-                  📄 근로기준법 제48조 법정 급여명세서 보기/출력
-                </button>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsWageCalcOpen(true)}
+                    style={{
+                      background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)',
+                      color: '#38bdf8', borderRadius: '8px', padding: '0.4rem 0.8rem', fontSize: '0.8rem',
+                      fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem'
+                    }}
+                  >
+                    🧮 대화형 월급계산기 열기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPayslipModal(true)}
+                    style={{
+                      background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)',
+                      color: '#38bdf8', borderRadius: '8px', padding: '0.4rem 0.8rem', fontSize: '0.8rem',
+                      fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem'
+                    }}
+                  >
+                    📄 법정 급여명세서 보기/출력
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1522,6 +1624,14 @@ export default function Home() {
       {showPayslipModal && (
         <PayslipModal data={latestCalcResult || {}} onClose={() => setShowPayslipModal(false)} />
       )}
+
+      {/* 🧮 대화형 실시간 월급계산기 수치 직접 수정 모달 */}
+      <WageCalculatorModal
+        isOpen={isWageCalcOpen}
+        onClose={() => setIsWageCalcOpen(false)}
+        calcData={latestCalcResult}
+        onApplyChanges={handleApplyCalcModalChanges}
+      />
 
     </div>
   );
