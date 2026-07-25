@@ -28,6 +28,66 @@ const AGENT_TEAM = [
   { name: '재무제표·신용진단 수석', role: '재무제표 진단 및 신보/기보 보증서 승인 시뮬레이션', icon: <Wallet size={24} color="#a78bfa" /> }
 ];
 
+// 마크다운 문법(###, **, --- 등)을 일반 사용자가 읽기 쉬운 깔끔한 디자인으로 변환해 주는 뷰 컴포넌트
+function FormattedMessage({ text }) {
+  if (!text) return null;
+
+  const lines = text.split('\n');
+
+  const renderInline = (str) => {
+    // **강조** 와 `코드` 변환
+    const parts = str.split(/(\*\*.*?\*\*|`.*?`)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} style={{ color: '#ffffff', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return (
+          <span key={i} style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '0.1rem 0.4rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+            {part.slice(1, -1)}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={idx} style={{ height: '0.3rem' }} />;
+
+        if (trimmed.startsWith('### ')) {
+          return (
+            <div key={idx} style={{ fontSize: '1.05rem', fontWeight: 800, color: '#38bdf8', marginTop: '0.8rem', marginBottom: '0.3rem' }}>
+              {renderInline(trimmed.replace('### ', ''))}
+            </div>
+          );
+        }
+
+        if (trimmed === '---') {
+          return <div key={idx} style={{ height: '1px', background: 'rgba(255, 255, 255, 0.12)', margin: '0.6rem 0' }} />;
+        }
+
+        if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('✅ ') || trimmed.startsWith('💡 ')) {
+          return (
+            <div key={idx} style={{ paddingLeft: '0.5rem', color: '#cbd5e1', lineHeight: 1.55 }}>
+              {renderInline(trimmed)}
+            </div>
+          );
+        }
+
+        return (
+          <div key={idx} style={{ color: '#e2e8f0', lineHeight: 1.6 }}>
+            {renderInline(line)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Home() {
   const [query, setQuery] = useState('');
   const [isChatActive, setIsChatActive] = useState(false);
@@ -117,8 +177,53 @@ export default function Home() {
       } else if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
         const fileName = currentFile ? currentFile.name : '진단서_소견서.png';
         replyText = `### 🩺 노무비서실장 & 산재보상 수석의 [첨부 서류 AI Vision 분석 리포트]\n\n업로드해주신 **\`${fileName}\`** 파일 내용을 AI OCR 엔진이 분석하였습니다:\n\n---\n\n### ⚖️ 1. 서류 분석 및 법정 항목 확인\n- **스캔된 상병명/부상**: 요추 염좌 및 우측 족관절 골절 (요양 진단 6주/42일)\n- **법적 청구 가이드**: 산업재해보상보험법 제37조 기준, 근로자 직접 청구가 가능한 산재 보상 대상입니다.\n\n---\n\n### 🧮 2. 0% 오차 산재 예상 보상금 (휴업급여 70%)\n- **1일 평균임금**: **115,000원** (급여 서류 기준 자동 도출)\n- **1일 휴업급여 (70%)**: **80,500원** (statutory 70% 적용)\n- **예상 총 휴업급여 (42일 요양)**: **3,381,000원** (치료비/요양급여 전액 공단 지급액 참고)\n\n---\n\n### 📋 3. 제출 서류 작성 가이드\n- ✅ **요양급여 신청서**: 표준 양식 생성 가능\n- ✅ **의사 소견서/진단서**: 첨부 서류 확인 완료\n\n위 자가진단 결과를 바탕으로 **공단 제출용 표준 양식 작성**이 필요하시면 말씀해 주세요!`;
-      } else if (userText.includes('5인') || userText.includes('시급') || userText.includes('원') || userText.includes('주 5일') || userText.includes('시간') || userText.includes('월급') || userText.includes('식당') || userText.includes('IT') || userText.includes('비과세') || userText.includes('신고')) {
-        replyText = `### 🎩 노무비서실장의 [업장·세무 맞춤형] 정밀 진단 & 계산 리포트\n\n답변해주신 **업종, 실급여액/세무신고액 조건 및 비과세 반영 항목**을 백엔드 정밀 세무·노무 계산 엔진이 산출하였습니다:\n\n---\n\n### ⚖️ 1. 법적 근거 및 세무/노무 리스크 진단\n- **적용 법령**: 근로기준법 제55조(휴일), 제56조(가산임금) 및 소득세법 제12조(비과세소득)\n- **비과세 절세 반영**: 식대(20만원), 자가운전(20만원) 비과세 항목 포함으로 월 약 74,000원의 4대보험/소득세 합법 절세 세팅\n\n---\n\n### 🧮 2. 수식 내역 및 0% 오차 금액 산출\n- **월 기본급 산정시간**: **209시간** (174h 기본 + 35h 주휴)\n- **고정 연장근로시간**: **123.55시간** (주 19h × 1.5배 × 4.3333주)\n- **휴일근로 월 분할시간**: **21.25시간** (연 15일, 일 10.5h 8시간초과 2.0배 중복가산 적용)\n- **비과세 수당 산입액**: **월 400,000원** (식대 20만원 + 운전보조금 20만원)\n- **총 유급 인정시간**: **361.13시간**\n\n💰 **최종 산출된 월 급여 총액**: **4,333,560원** (과세 대상 급여 3,933,560원 + 비과세 400,000원)\n\n---\n\n### 💬 3. 노무비서실장의 안내\n위 조건에 맞춘 **급여명세서 표준 서식**, **재직증명서 양식**이 필요하시면 말씀해 주세요!`;
+      } else if (userText.includes('5인') || userText.includes('시급') || userText.includes('원') || userText.includes('주 5일') || userText.includes('시간') || userText.includes('월급') || userText.includes('10~22') || userText.includes('식대')) {
+        // 입력받은 근무 형태 및 시간 조건 동적 파싱
+        const is5Over = !userText.includes('5인 미만') && !userText.includes('5인미만');
+        let dailyWorkHours = 9.5;
+        let breakHours = 2.5;
+        
+        const timeMatch = userText.match(/(\d{1,2})\s*~\s*(\d{1,2})/);
+        if (timeMatch) {
+          const start = parseInt(timeMatch[1], 10);
+          const end = parseInt(timeMatch[2], 10);
+          const elapsed = end > start ? end - start : (24 - start + end);
+          
+          let parsedBreak = 1;
+          const breakMatch = userText.match(/(\d+)\s*시간\s*(\d+)?\s*분?/);
+          if (breakMatch) {
+            const h = parseFloat(breakMatch[1]) || 0;
+            const m = parseFloat(breakMatch[2]) || 0;
+            parsedBreak = h + (m / 60);
+          } else if (userText.includes('1.5시간') || userText.includes('1시간 30분')) {
+            parsedBreak = 1.5;
+          } else if (userText.includes('2시간 30분') || userText.includes('2.5시간')) {
+            parsedBreak = 2.5;
+          } else if (userText.includes('2시간')) {
+            parsedBreak = 2;
+          }
+          
+          breakHours = parsedBreak;
+          dailyWorkHours = Math.max(0, elapsed - breakHours);
+        }
+
+        const dailyRegular = Math.min(dailyWorkHours, 8);
+        const dailyOvertime = Math.max(0, dailyWorkHours - 8);
+        
+        const weeklyOvertime = dailyOvertime * 5;
+        const monthlyOvertime = Math.round(weeklyOvertime * 4.35 * 100) / 100;
+        const overtimeMult = is5Over ? 1.5 : 1.0;
+        const monthlyOvertimeWeighted = Math.round(monthlyOvertime * overtimeMult * 100) / 100;
+        
+        const minWage = 10320; // 2026년 기준 최저시급
+        const basePay = 209 * minWage; // 2,156,880원
+        const overtimePay = Math.round((monthlyOvertimeWeighted * minWage) / 10) * 10;
+        const hasMeal = userText.includes('식대');
+        const mealPay = hasMeal ? 200000 : 0;
+        
+        const totalGross = basePay + overtimePay + mealPay;
+
+        replyText = `### 🎩 노무비서실장의 [근무시간 & 급여 맞춤 정밀 진단]\n\n말씀해 주신 근무 조건(**${is5Over ? '5인 이상 사업장' : '5인 미만 사업장'} · 하루 실근로 ${dailyWorkHours.toFixed(2)}시간${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 기반으로 정밀 산출한 결과입니다:\n\n---\n\n### 📊 1. 하루 & 한 달 근로시간 분석\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 2. 2026년 최저시급(10,320원) 기준 예상 월급\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}\n---\n\n### 💡 3. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
       } else {
         replyText = `네, 말씀해주신 **"${userText}"** 조건을 확인하였습니다. 🎩\n\n관련 법령 및 주요 대법원 판례를 대조 분석 중입니다.\n\n추가로 진단서 파일(📎)을 올려주시면 관련 법령 분석 가이드를 함께 제공해 드립니다.`;
       }
@@ -308,13 +413,13 @@ export default function Home() {
 
                   <div style={{
                     maxWidth: '80%', padding: '1.1rem 1.3rem', borderRadius: '16px',
-                    fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap',
+                    fontSize: '0.95rem', lineHeight: 1.6,
                     background: msg.sender === 'user' ? 'linear-gradient(135deg, #38bdf8, #6366f1)' : '#1e293b',
                     color: msg.sender === 'user' ? '#ffffff' : '#e2e8f0',
                     border: msg.sender === 'user' ? 'none' : '1px solid rgba(56, 189, 248, 0.15)',
                     boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                   }}>
-                    {msg.text}
+                    {msg.sender === 'user' ? msg.text : <FormattedMessage text={msg.text} />}
                   </div>
                 </div>
               ))}
