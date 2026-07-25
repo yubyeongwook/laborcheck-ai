@@ -38,6 +38,129 @@ export const CONSTANTS = {
 };
 
 // ----------------------------------------------------------------------
+// 6. 산재보상보험법 정밀 계산 엔진 (IndustrialAccidentCalculator)
+// ----------------------------------------------------------------------
+export interface SanjaeCalcInput {
+  /** 1일 평균임금 (원) */
+  averageDailyWage: number;
+
+  /** 요양/입원/통원 치료 일수 (일) */
+  treatmentDays: number;
+
+  /** 근로자 연령 (세, 65세 이상 시 감액 적용) */
+  age?: number;
+
+  /** 장해 등급 (1급~14급, 미발생 시 null/0) */
+  disabilityGrade?: number;
+
+  /** 유족 보상 여부 (true: 유족급여 및 장의비 계산) */
+  isFatal?: boolean;
+}
+
+export interface SanjaeCalcOutput {
+  /** 1일 휴업급여액 (평균임금 70%, 상하한 및 연령 감액 반영) (원) */
+  dailyOffWorkAllowance: number;
+
+  /** 총 휴업급여 지급액 (원) */
+  totalOffWorkAllowance: number;
+
+  /** 장해급여 일시금/연금 일수 (일분) */
+  disabilityDays: number;
+
+  /** 장해급여 추정액 (원) */
+  disabilityCompensation: number;
+
+  /** 유족급여 일시금 추정액 (1,300일분) (원) */
+  survivorCompensation: number;
+
+  /** 장의비 추정액 (120일분) (원) */
+  funeralExpense: number;
+
+  /** 총 산재 보상 추정액 (요양급여 비급여 제외 종합) (원) */
+  totalEstimatedCompensation: number;
+
+  /** 법적 자문 팁 */
+  legalAdviceNotes: string[];
+}
+
+export class IndustrialAccidentCalculator {
+  // 2026년 기준 산재 보상 상·하한액 (원)
+  private static MAX_DAILY_OFF_WORK = 127600; // 최고보상기준 1일 상한
+  private static MIN_DAILY_OFF_WORK = 80240;  // 최저보상기준 1일 하한 (최저임금 8h 연동)
+
+  /**
+   * 산재 보상금 (휴업, 장해, 유족, 장의비) 정밀 산출
+   */
+  public static calculate(input: SanjaeCalcInput): SanjaeCalcOutput {
+    const { averageDailyWage, treatmentDays, age = 40, disabilityGrade = 0, isFatal = false } = input;
+    const notes: string[] = [];
+
+    // 1. 1일 휴업급여 기본액 (평균임금의 70%)
+    let baseDailyOffWork = averageDailyWage * 0.7;
+
+    // 2. 65세 이상 연령별 감액 규칙 (산재보험법 제55조)
+    if (age >= 65) {
+      if (age === 65) baseDailyOffWork *= 0.65;
+      else if (age === 66) baseDailyOffWork *= 0.60;
+      else if (age === 67) baseDailyOffWork *= 0.55;
+      else if (age === 68) baseDailyOffWork *= 0.50;
+      else baseDailyOffWork *= 0.45;
+      notes.push(`65세 이상 고령 근로자 연령별 휴업급여 감액율(${age}세)이 적용되었습니다.`);
+    }
+
+    // 3. 상한액 및 하한액 보정
+    let dailyOffWorkAllowance = Math.round(baseDailyOffWork);
+    if (dailyOffWorkAllowance > this.MAX_DAILY_OFF_WORK) {
+      dailyOffWorkAllowance = this.MAX_DAILY_OFF_WORK;
+      notes.push('1일 휴업급여 최고 보상 상한액(127,600원)이 적용되었습니다.');
+    } else if (dailyOffWorkAllowance < this.MIN_DAILY_OFF_WORK && age < 65) {
+      dailyOffWorkAllowance = this.MIN_DAILY_OFF_WORK;
+      notes.push('1일 휴업급여 최저 보상 하한액(80,240원)이 적용되었습니다.');
+    }
+
+    // 총 휴업급여액
+    const totalOffWorkAllowance = Math.max(0, dailyOffWorkAllowance * treatmentDays);
+
+    // 4. 장해급여 일수 산정 (장해등급 1급~14급)
+    const disabilityGradeDaysMap: Record<number, number> = {
+      1: 1474, 2: 1309, 3: 1155, 4: 1012, 5: 869, 6: 737, 7: 616,
+      8: 495, 9: 385, 10: 297, 11: 220, 12: 154, 13: 99, 14: 55
+    };
+
+    const disabilityDays = disabilityGradeDaysMap[disabilityGrade] || 0;
+    const disabilityCompensation = Math.round(averageDailyWage * disabilityDays);
+    if (disabilityGrade > 0) {
+      notes.push(`장해 제${disabilityGrade}급 기준 일수(${disabilityDays}일분 평균임금)가 반영되었습니다.`);
+    }
+
+    // 5. 사망 시 유족급여(1,300일분) 및 장의비(120일분)
+    let survivorCompensation = 0;
+    let funeralExpense = 0;
+    if (isFatal) {
+      survivorCompensation = Math.round(averageDailyWage * 1300);
+      funeralExpense = Math.round(averageDailyWage * 120);
+      notes.push('사망 재해에 따른 유족보상 일시금(1,300일분) 및 장의비(120일분)가 반영되었습니다.');
+    }
+
+    notes.push('2018년 개정으로 사업주 동의(날인)가 없어도 근로자가 근로복지공단에 직접 신청할 수 있습니다.');
+    notes.push('출퇴근 중 다친 경우(도보, 대중교통, 자가용)도 100% 산재 처리 대상입니다.');
+
+    const totalEstimatedCompensation = totalOffWorkAllowance + disabilityCompensation + survivorCompensation + funeralExpense;
+
+    return {
+      dailyOffWorkAllowance,
+      totalOffWorkAllowance,
+      disabilityDays,
+      disabilityCompensation,
+      survivorCompensation,
+      funeralExpense,
+      totalEstimatedCompensation,
+      legalAdviceNotes: notes
+    };
+  }
+}
+
+// ----------------------------------------------------------------------
 // 2. 입력 및 출력 타입 정의
 // ----------------------------------------------------------------------
 export interface LaborCalcInput {
