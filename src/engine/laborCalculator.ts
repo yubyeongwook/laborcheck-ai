@@ -41,6 +41,12 @@ export const CONSTANTS = {
 // 2. 입력 및 출력 타입 정의
 // ----------------------------------------------------------------------
 export interface LaborCalcInput {
+  /** 임금 형태 (hourly: 시급, daily: 일급, weekly: 주급, monthly: 정액월급) */
+  wageType?: 'hourly' | 'daily' | 'weekly' | 'monthly';
+
+  /** 약정 임금액 (원) */
+  wageAmount?: number;
+
   /** 주당 실 소정근로시간 (예: 40) */
   weeklyContractedHours: number;
 
@@ -58,6 +64,15 @@ export interface LaborCalcInput {
 
   /** 연간 부여 연차 일수 (예: 11일 또는 15일) */
   annualLeaveCount?: number;
+
+  /** 하계휴가 부여 일수 (예: 3일) */
+  summerLeaveDays?: number;
+
+  /** 동계휴가 부여 일수 (예: 2일) */
+  winterLeaveDays?: number;
+
+  /** 하계/동계 휴가를 월급 포함 약정 수당/휴일근로수당으로 산입할지 여부 */
+  vacationIncludeInMonthly?: boolean;
 
   /** 약정 시급 또는 기본급 (기본급 입력 시 시급 역산) */
   hourlyRate?: number;
