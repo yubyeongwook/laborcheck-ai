@@ -1,6 +1,7 @@
-# 일반 검색엔진은 허용 (SEO 노출 유지)
+# 일반 검색엔진 허용 및 Sitemap 지정
 User-agent: *
 Allow: /
+Sitemap: https://www.xn--ai-h74ir53a94vh9e.com/sitemap.xml
 
 # AI 학습/스크레이핑용 크롤러 차단
 User-agent: GPTBot
