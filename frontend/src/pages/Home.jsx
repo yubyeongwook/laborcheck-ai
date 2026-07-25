@@ -49,8 +49,8 @@ export default function Home() {
     // 업종 및 상황 맥락(Context) 분석 후 노무비서실장의 맞춤형 1차 질문 동적 생성
     let initialGreeting = '';
     
-    if (initialText.includes('취업규칙') || initialText.includes('계약서') || initialText.includes('유통') || initialText.includes('마트')) {
-      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 작성을 도와드릴게요. 매장이나 유통업장 특약에 딱 맞게 정해 드리기 위해 몇 가지만 편하게 말씀해 주세요:\n\n1. **어떤 업종**이시고, 사장님 제외하고 **같이 일하는 직원이 몇 분** 정도 되시나요?\n2. **유통회사와 마트에서 급여를 반반 나누어 지급**하는 구조이신가요?\n3. **마트(사용처)와의 계약이 끝나면 근로계약도 자동으로 종료(퇴직)**되는 특약 조항을 넣어 드릴까요?\n4. 부모님상이나 결혼 같은 경조사가 있을 때 **며칠 동안 유급 휴가**를 주시나요?\n5. 식사 무상 제공이나 유니폼 지원 같은 **우리 매장만의 특별한 복지**가 있으신가요?`;
+    if (initialText.includes('취업규칙') || initialText.includes('계약서') || initialText.includes('유통') || initialText.includes('마트') || initialText.includes('간주')) {
+      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 작성을 도와드릴게요. 매장이나 유통업장 특약에 딱 맞게 정해 드리기 위해 몇 가지만 편하게 말씀해 주세요:\n\n1. **어떤 업종**이시고, 사장님 제외하고 **같이 일하는 직원이 몇 분** 정도 되시나요?\n2. **유통회사와 마트에서 급여를 반반 나누어 지급**하는 구조이신가요?\n3. 마트 상주직이나 외근직처럼 **밖에서 일하는 [간주근로자] 특약 조항**(1일 8시간 근무로 간주하는 조항)을 넣어 드릴까요?\n4. **마트(사용처)와의 계약이 끝나면 근로계약도 자동으로 종료(퇴직)**되는 특약 조항을 넣어 드릴까요?\n5. 부모님상이나 결혼 같은 경조사가 있을 때 **며칠 동안 유급 휴가**를 주시나요?`;
     } else if (initialText.includes('퇴직금') || initialText.includes('퇴사')) {
       initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 정밀 산출을 위해 편하게 몇 가지 여쭤볼게요:\n\n1. 퇴직금을 **회사가 따로 모아주는 방식(DB형)**인가요, **직원 개인 통장에 매달 넣는 방식(DC형)**인가요?\n2. 근무 기간 중에 **육아휴직이나 산재 병가, 쉬었던 기간**이 있으신가요?\n3. 최근 3개월 동안 받으신 **월급과 보너스(상여금)**는 얼마인가요?`;
     } else if (initialText.includes('산재') || initialText.includes('다침')) {
