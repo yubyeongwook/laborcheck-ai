@@ -134,7 +134,7 @@ export default function Home() {
     } else if (initialText.includes('퇴직금') || initialText.includes('퇴사')) {
       initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 정밀 산출을 위해 편하게 몇 가지 여쭤볼게요:\n\n1. 퇴직금을 **회사가 따로 모아주는 방식(DB형)**인가요, **직원 개인 통장에 매달 넣는 방식(DC형)**인가요?\n2. 근무 기간 중에 **육아휴직이나 산재 병가, 쉬었던 기간**이 있으신가요?\n3. 최근 3개월 동안 받으신 **월급과 보너스(상여금)**는 얼마인가요?`;
     } else {
-      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 정밀 계산을 위해 편하게 몇 가지만 말씀해 주세요:\n\n1. **시급, 일급, 월급** 중 어떤 방식으로 급여를 받으시나요?\n2. 사장님을 제외하고 **평소 매장에서 같이 일하는 직원이 5명 이상**인가요?\n3. **직원분들 출퇴근 시간이 각각 다른가요?** (근무시간표대로 돌아가며 일하시는지)\n4. **점심·저녁 식사시간과 중간 쉬는 시간**을 다 합치면 하루에 몇 시간인가요?\n5. 식대처럼 **세금을 안 내도 되는 수당(비과세)**을 넣어서 세금을 아껴드릴까요?\n\n💡 **쉽고 빠른 입력 팁**: 1~5번 번호에 맞출 필요 없이 한 줄로 편하게 **"월급 5인이상 10~22시 휴게 2시간 30분 식대포함"** 처럼 생각나시는 대로 한꺼번에 적어주셔도 AI가 똑똑하게 즉시 계산해 드립니다!`;
+      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 정밀 계산을 위해 질문을 하나씩 차근차근 드릴게요! 대화하듯 편하게 답변해 주세요.\n\n1️⃣ **첫 번째 질문**: **시급, 일급, 월급** 중 어떤 방식으로 급여를 받으시나요?`;
     }
 
     setMessages([
@@ -177,8 +177,19 @@ export default function Home() {
       } else if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
         const fileName = currentFile ? currentFile.name : '진단서_소견서.png';
         replyText = `### 🩺 노무비서실장 & 산재보상 수석의 [첨부 서류 AI Vision 분석 리포트]\n\n업로드해주신 **\`${fileName}\`** 파일 내용을 AI OCR 엔진이 분석하였습니다:\n\n---\n\n### ⚖️ 1. 서류 분석 및 법정 항목 확인\n- **스캔된 상병명/부상**: 요추 염좌 및 우측 족관절 골절 (요양 진단 6주/42일)\n- **법적 청구 가이드**: 산업재해보상보험법 제37조 기준, 근로자 직접 청구가 가능한 산재 보상 대상입니다.\n\n---\n\n### 🧮 2. 0% 오차 산재 예상 보상금 (휴업급여 70%)\n- **1일 평균임금**: **115,000원** (급여 서류 기준 자동 도출)\n- **1일 휴업급여 (70%)**: **80,500원** (statutory 70% 적용)\n- **예상 총 휴업급여 (42일 요양)**: **3,381,000원** (치료비/요양급여 전액 공단 지급액 참고)\n\n---\n\n### 📋 3. 제출 서류 작성 가이드\n- ✅ **요양급여 신청서**: 표준 양식 생성 가능\n- ✅ **의사 소견서/진단서**: 첨부 서류 확인 완료\n\n위 자가진단 결과를 바탕으로 **공단 제출용 표준 양식 작성**이 필요하시면 말씀해 주세요!`;
-      } else if (userText.includes('5인') || userText.includes('시급') || userText.includes('원') || userText.includes('주 5일') || userText.includes('시간') || userText.includes('월급') || userText.includes('10~22') || userText.includes('식대')) {
-        // 입력받은 근무 형태 및 시간 조건 동적 파싱
+      } else if (userText === '월급' || userText === '시급' || userText === '일급' || userText.includes('월급으로') || userText.includes('시급으로')) {
+        // Step 1 답한 경우 -> Step 2 질문
+        const typeStr = userText.includes('시급') ? '시급' : userText.includes('일급') ? '일급' : '월급';
+        replyText = `네, **${typeStr}** 방식으로 확인하였습니다! 💡\n\n2️⃣ **두 번째 질문**: 사장님을 제외하고 **평소 매장에서 함께 일하는 직원이 5명 이상**인가요?\n*(5인 이상 여부에 따라 연장/야간수당 1.5배 가산 적용 여부가 결정됩니다)*`;
+      } else if (userText.includes('5명') || userText.includes('5인') || userText.includes('인 이상') || userText.includes('인 미만')) {
+        // Step 2 답한 경우 -> Step 3 질문
+        const is5 = !userText.includes('미만');
+        replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 (수당 1.5배 가산 적용)' : '5인 미만 사업장 (기본 수당 적용)'}**) 💡\n\n3️⃣ **세 번째 질문**: **출퇴근 시간과 하루 총 휴게시간**(점심/식사시간 포함)은 어떻게 되시나요?\n*(예: 10:00 ~ 22:00 / 휴게 2시간 30분)*`;
+      } else if ((userText.includes('~') || userText.includes('시')) && !userText.includes('식대') && !userText.includes('비과세') && !userText.includes('네') && !userText.includes('응')) {
+        // Step 3 답한 경우 -> Step 4 질문
+        replyText = `네! **"${userText}"** 근무시간 조건 확인했습니다! 💡\n\n4️⃣ **마지막 질문**: 식대(월 20만원)처럼 **세금을 안 내도 되는 수당(비과세)**을 넣어서 세금을 아껴드릴까요?\n*(예: 네 식대 포함해 주세요 / 아니오)*`;
+      } else if (userText.includes('5인') || userText.includes('시급') || userText.includes('원') || userText.includes('주 5일') || userText.includes('시간') || userText.includes('월급') || userText.includes('10~22') || userText.includes('식대') || userText.includes('네') || userText.includes('응') || userText.includes('아니')) {
+        // 모든 정보 합산 또는 Step 4 최종 결과 출력
         const is5Over = !userText.includes('5인 미만') && !userText.includes('5인미만');
         let dailyWorkHours = 9.5;
         let breakHours = 2.5;
