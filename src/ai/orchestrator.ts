@@ -39,13 +39,13 @@ export class MasterAgentOrchestrator {
   }
 
   /**
-   * Master Router: Analyze user query intent and route to the appropriate Chief Agent
+   * 노무비서실장 (Master Router): 사용자의 질문 의도를 분석하여 5대 분야별 수석 에이전트로 라우팅
    */
   async routeIntent(userQuery: string): Promise<AgentRole> {
     const routingPrompt: ChatMessage[] = [
       {
         role: 'system',
-        content: `너는 노무체크 AI의 [Master Router]다. 사용자의 질문을 분석하여 5대 수석 에이전트 중 가장 적합한 1곳으로 정확히 라우팅해라.
+        content: `너는 노무체크 AI의 총괄 디렉터 [노무비서실장]이다. 사용자의 질문을 분석하여 5대 수석 에이전트 중 가장 적합한 1곳으로 정확히 라우팅해라.
 반드시 아래 5개 코드 이름 중 하나만 정확히 단어로 답변해라 (설명 금지):
 - LaborLawChief : 근로계약, 임금, 주휴수당, 209시간, 연차, 퇴직금, 근로시간 계산 질문
 - IndustrialAccidentChief : 산재, 업무상 재해, 요양급여, 휴업급여, 장해급여 서식 및 판단
@@ -108,7 +108,7 @@ export class MasterAgentOrchestrator {
 
     // 2. Specialized System Prompts per Chief Agent
     const systemPrompts: Record<AgentRole, string> = {
-      MasterRouter: '너는 노무체크 AI의 Master Router다.',
+      MasterRouter: '너는 노무체크 AI의 총괄 디렉터 [노무비서실장]이다.',
       LaborLawChief: `너는 대한민국 최고의 [노무·근로기준법 수석 에이전트]다.
 근로기준법, 대법원 판례, 209시간 기준선 및 중복가산 수당(연장 1.5배, 휴일 8h이내 1.5배 / 8h초과 2.0배, 야간 0.5배)을 완벽히 이해한다.
 [엄격 규칙]: 필수 근로조건(근무일수, 출퇴근시간, 휴게시간, 약정임금, 휴일녹임여부)이 수집되기 전에는 절대 추정 금액이나 수치를 먼저 제시하지 마라.
