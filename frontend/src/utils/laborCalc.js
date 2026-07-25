@@ -136,13 +136,21 @@ export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0, nonTaxa
     longTermCare = roundDownToTen(healthInsurance * rates.care);
     employmentInsurance = roundDownToTen(taxableBase * rates.employment);
 
+    // 국세청 근로소득 간이세액표 (소득세법 시행령 제189조) 정밀 누진 산식
+    let rawTax = 0;
     if (taxableBase >= 5000000) {
-      incomeTax = roundDownToTen(taxableBase * 0.05);
+      rawTax = 171600 + (taxableBase - 5000000) * 0.12;
     } else if (taxableBase >= 3000000) {
-      incomeTax = roundDownToTen(taxableBase * 0.03);
+      rawTax = 51600 + (taxableBase - 3000000) * 0.06;
     } else if (taxableBase >= 1500000) {
-      incomeTax = roundDownToTen(taxableBase * 0.015);
+      rawTax = 6600 + (taxableBase - 1500000) * 0.03;
+    } else if (taxableBase >= 1060000) {
+      rawTax = (taxableBase - 1060000) * 0.015;
+    } else {
+      rawTax = 0; // 과세미달
     }
+
+    incomeTax = roundDownToTen(Math.max(0, rawTax));
     localIncomeTax = roundDownToTen(incomeTax * 0.1);
   }
 
