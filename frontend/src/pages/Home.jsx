@@ -128,8 +128,10 @@ const STEP_CHOICE_OPTIONS = {
     { label: '🌌 야간근로 4시간 포함', value: '야간근로 4시간 포함' }
   ],
   6: [
-    { label: '🚩 공휴일/대체공휴일 모두 쉬움', value: '공휴일 쉬움' },
-    { label: '🏢 공휴일에도 나와서 근무함', value: '공휴일 근무' }
+    { label: '🚩 공휴일/대체공휴일 모두 휴무 (쉬움)', value: '공휴일 모두 쉬움' },
+    { label: '🏢 공휴일 연간 15일 전일 나와서 근무', value: '공휴일 연간 15일 전일 근무' },
+    { label: '🌗 주요 공휴일 연간 약 7일 근무', value: '공휴일 연간 7일 근무' },
+    { label: '🌕 명절 포함 연간 약 4일 근무', value: '공휴일 연간 4일 근무' }
   ],
   7: [
     { label: '📅 1년 이상 (연차 수당 미포함 / 휴가 사용)', value: '1년 이상, 연차 수당 미포함 (휴가로 사용)' },
@@ -149,7 +151,7 @@ const QUESTION_PROMPTS = {
   3: '3️⃣ **세 번째 질문 (근무일수 & 평일/주말 구분)**: 주 5일 근무이더라도 **평일(월~금)만 일하시나요, 아니면 토/일 주말이 포함되어 있나요?** 요일별 시간이 다른가요?',
   4: '4️⃣ **네 번째 질문 (식사 & 주간/야간 휴게시간)**: **식사시간을 포함하여 하루 총 휴게시간이 몇 시간인가요?**',
   5: '5️⃣ **다섯 번째 질문 (야간근로 22시~06시)**: 밤 10시부터 다음날 아침 6시 사이에 일하는 야간근로가 있으신가요?',
-  6: '6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일에 매장이 쉬나요, 나와서 일하시나요?**',
+  6: '6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로일수 확인)**: 설날·추석 등 **연간 공휴일/대체공휴일(총 15일)**에 쉬나요, 나와서 일하시나요? 일하신다면 **1년에 며칠 정도 나오시나요?**',
   7: '7️⃣ **일곱 번째 질문 (입사일 & 연차 사용일수 & 급여 포함 여부)**: 재직 기간(1년 미만/이상)과 **사용하신 연차가 며칠**이신가요? **미사용 연차수당을 이번 급여에 포함할까요?**',
   8: '8️⃣ **마지막 질문 (비과세 절세 수당 반영)**: **식대(월 20만원)** 등 세금을 안 내는 비과세 수당을 적용하여 절세해 드릴까요?'
 };
@@ -401,9 +403,28 @@ export default function Home() {
     const unusedLeaveDays = Math.max(0, totalLeaveDays - usedLeaveDays);
     const annualLeaveMonthlyPay = (includeAnnualLeavePay && is5Over) ? Math.round((minWage * 8 * (unusedLeaveDays / 12))) : 0;
 
+    // 💡 공휴일 근무 일수 정밀 파악 및 월분할 수당 산정 (연간 15일 / 7일 / 4일 / 0일)
+    let holidayWorkDaysYear = 0;
+    if (!restsOnHolidays) {
+      const hMatch = allText.match(/(\d{1,2})\s*일\s*근무/);
+      if (hMatch) {
+        holidayWorkDaysYear = parseInt(hMatch[1], 10) || 15;
+      } else if (allText.includes('7일')) {
+        holidayWorkDaysYear = 7;
+      } else if (allText.includes('4일')) {
+        holidayWorkDaysYear = 4;
+      } else {
+        holidayWorkDaysYear = 15; // 기본 전일
+      }
+    }
+
+    const holidayMult = is5Over ? 1.5 : 1.0;
+    const singleHolidayPay = dailyWorkHours * minWage * holidayMult;
+    const holidayPayMonthly = restsOnHolidays ? 0 : Math.round((singleHolidayPay * holidayWorkDaysYear) / 12 / 10) * 10;
+
     // 기본급 및 총액 산정: 기본 표준은 약정 2,156,880원 내 기본급 1,956,880원 + 식대 200,000원 세팅!
     const actualBasePay = (hasMeal && !isAddOnTop) ? (basePayFull - mealPay) : basePayFull;
-    const totalGross = actualBasePay + overtimePay + mealPay + annualLeaveMonthlyPay;
+    const totalGross = actualBasePay + overtimePay + mealPay + annualLeaveMonthlyPay + holidayPayMonthly;
 
     // 4대보험 & 세금 정밀 산출
     const taxableTotal = totalGross - mealPay;
@@ -452,8 +473,8 @@ export default function Home() {
       baseSalary: actualBasePay,
       overtimeHours: Math.round(monthlyOvertime * 100) / 100,
       overtimeAllowance: overtimePay,
-      holidayHours: 0,
-      holidayAllowance: 0,
+      holidayHours: holidayWorkDaysYear > 0 ? Math.round((holidayWorkDaysYear * dailyWorkHours / 12) * 100) / 100 : 0,
+      holidayAllowance: holidayPayMonthly,
       annualLeaveHours: includeAnnualLeavePay ? Math.round((unusedLeaveDays / 12 * 8) * 100) / 100 : 0,
       annualLeaveAllowance: annualLeaveMonthlyPay,
       mealAllowanceTaxExempt: mealPay,
