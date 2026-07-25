@@ -129,7 +129,7 @@ export default function Home() {
     if (initialText.includes('판사') || initialText.includes('소송') || initialText.includes('재판') || initialText.includes('변호사') || initialText.includes('민사') || initialText.includes('불승인')) {
       initialGreeting = `안녕하세요! 노무체크 AI **판사·법원재판 수석**입니다. ⚖️\n\n"${initialText}" 관련 대법원 판례 대조 및 승소 가능성 정밀 진단을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 어떤 사안(산재 불승인, 부당해고, 임금체불 등)으로 정밀 법률 진단이 필요하신가요?`;
     } else if (initialText.includes('산재') || initialText.includes('진단서') || initialText.includes('다침') || initialText.includes('첨부파일')) {
-      initialGreeting = `안녕하세요! 노무체크 AI **산재보상 수석 에이전트**입니다. 🩺\n\n"${initialText}" 산재 승인 및 예상 휴업급여 정밀 판정을 위해 질문을 하나씩 차근차근 드릴게요!\n\n1️⃣ **첫 번째 질문**: 언제, 어떤 상황(작업 중 부상, 출퇴근 길 사고, 직업병 등)에서 사고/질병이 발생하셨나요?`;
+      initialGreeting = `안녕하세요! 노무check AI **산재보상 수석 에이전트**입니다. 🩺\n\n"${initialText}" 산재 승인 및 예상 휴업급여 정밀 분석을 위해 질문을 하나씩 차근차근 드릴게요!\n\n1️⃣ **첫 번째 질문**: 언제, 어떤 상황(작업 중 부상, 출퇴근 길 사고, 직업병 등)에서 사고/질병이 발생하셨나요?`;
     } else if (initialText.includes('취업규칙') || initialText.includes('계약서') || initialText.includes('유통') || initialText.includes('마트') || initialText.includes('기간제')) {
       initialGreeting = `안녕하세요! 노무체크 AI **근로계약서·취업규칙 수석**입니다. 📄\n\n"${initialText}" 맞춤 양식 작성을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 사장님을 제외하고 **같이 일하는 직원이 몇 분** 정도 되시며 어떤 업종이신가요?`;
     } else if (initialText.includes('퇴직금') || initialText.includes('퇴사')) {
@@ -427,7 +427,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
-                    노무비서실장 <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 600 }}>(1:1 실시간 자문 & 서류 AI 판정)</span>
+                    노무비서실장 <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 600 }}>(1:1 실시간 자문 & 서류 AI 분석)</span>
                   </h3>
                   <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>
                     5대 전문 수석 에이전트 & 산재 진단서/급여 서류 Vision 분석
@@ -555,7 +555,7 @@ export default function Home() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                  💡 📎 버튼으로 산재 진단서, 급여명세서를 올리시면 AI가 승인 확률과 휴업급여를 즉시 판정합니다.
+                  💡 📎 버튼으로 산재 진단서, 급여명세서를 올리시면 AI가 승인 확률과 휴업급여를 즉시 진단 및 산출해 드립니다.
                 </span>
                 <button
                   type="button"
