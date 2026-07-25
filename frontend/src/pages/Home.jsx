@@ -171,7 +171,8 @@ export default function Home() {
     setIsTyping(true);
 
     setTimeout(() => {
-      let replyText = '';
+      try {
+        let replyText = '';
       
       if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
         if (currentFile || userText.includes('주') || userText.includes('일') || userText.includes('원') || userText.includes('골절')) {
@@ -280,9 +281,14 @@ export default function Home() {
         }
       }
 
-      setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
-      setIsTyping(false);
-    }, 1200);
+        setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+      } catch (err) {
+        console.error(err);
+        setMessages(prev => [...prev, { sender: 'secretary', text: '네, 말씀해주신 답변 조건을 확인하였습니다! 💡 다음 항목에 대해 말씀해 주세요.' }]);
+      } finally {
+        setIsTyping(false);
+      }
+    }, 600);
   };
 
   return (
