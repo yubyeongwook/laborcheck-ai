@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "concurrently \"nodemon server.js\" \"npm run frontend-dev\"",
     "install-all": "npm install && cd frontend && npm install",
-    "frontend-dev": "cd frontend && npm run dev"
+    "test-engine": "ts-node src/engine/testCalculator.ts",
+    "build": "tsc"
   },
   "dependencies": {
     "@google/generative-ai": "^0.11.4",
@@ -18,7 +19,10 @@
     "helmet": "^8.3.0"
   },
   "devDependencies": {
+    "@types/node": "^20.12.0",
     "concurrently": "^10.0.3",
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.3"
   }
 }
