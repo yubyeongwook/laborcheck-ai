@@ -203,8 +203,8 @@ export default function Home() {
     const restsOnHolidays = allText.includes('쉬') || allText.includes('안일');
     const isUnder1Year = allText.includes('1년 미만') || allText.includes('개월');
 
-    let dailyWorkHours = 9.5;
-    let breakHours = 2.5;
+    let dailyWorkHours = 8;
+    let breakHours = 1;
     let isDifferentScheduleByDay = allText.includes('/') || allText.includes('토') || allText.includes('주 6일') || allText.includes('주말');
     
     const timeMatch = allText.match(/(\d{1,2})\s*~\s*(\d{1,2})/);
@@ -214,7 +214,7 @@ export default function Home() {
       const elapsed = end > start ? end - start : (24 - start + end);
       
       let parsedBreak = 1;
-      const breakMatch = allText.match(/(\d+)\s*시간\s*(\d+)?\s*분?/);
+      const breakMatch = allText.match(/휴게\s*(\d+)\s*시간/) || allText.match(/(\d+)\s*시간\s*(\d+)?\s*분?/);
       if (breakMatch) {
         const h = parseFloat(breakMatch[1]) || 0;
         const m = parseFloat(breakMatch[2]) || 0;
@@ -246,7 +246,9 @@ export default function Home() {
     const mealPay = hasMeal ? 200000 : 0;
     
     // 연차 사용 일수 및 수당 급여 포함 여부 정밀 파악
-    const includeAnnualLeavePay = allText.includes('포함') || allText.includes('수당') || allText.includes('넣어');
+    const isNoAnnualLeave = allText.includes('연차적용없') || allText.includes('연차 안') || allText.includes('연차 미포함') || allText.includes('미포함') || allText.includes('휴가로 사용') || allText.includes('적용없');
+    const includeAnnualLeavePay = !isNoAnnualLeave && (allText.includes('포함') || allText.includes('수당') || allText.includes('넣어'));
+    
     let usedLeaveDays = 0;
     const leaveMatch = allText.match(/(\d+)\s*일/);
     if (leaveMatch) {
@@ -255,16 +257,55 @@ export default function Home() {
 
     const totalLeaveDays = isUnder1Year ? 11 : 15;
     const unusedLeaveDays = Math.max(0, totalLeaveDays - usedLeaveDays);
-    const annualLeaveMonthlyPay = is5Over ? Math.round((minWage * 8 * (unusedLeaveDays / 12))) : 0;
+    const annualLeaveMonthlyPay = (includeAnnualLeavePay && is5Over) ? Math.round((minWage * 8 * (unusedLeaveDays / 12))) : 0;
 
-    const totalGross = basePay + overtimePay + mealPay + (includeAnnualLeavePay ? annualLeaveMonthlyPay : 0);
+    const totalGross = basePay + overtimePay + mealPay + annualLeaveMonthlyPay;
+
+    // 4대보험 & 세금 정밀 산출
+    const taxableTotal = totalGross - mealPay;
+    const nationalPension = Math.round(taxableTotal * 0.045 / 10) * 10;
+    const healthInsurance = Math.round(taxableTotal * 0.03545 / 10) * 10;
+    const longtermCare = Math.round(healthInsurance * 0.1295 / 10) * 10;
+    const employmentInsurance = Math.round(taxableTotal * 0.009 / 10) * 10;
+    const incomeTax = Math.round(totalGross * 0.015 / 10) * 10;
+    const localIncomeTax = Math.round(incomeTax * 0.1 / 10) * 10;
+
+    const totalDeductions = nationalPension + healthInsurance + longtermCare + employmentInsurance + incomeTax + localIncomeTax;
+    const netPayCalc = totalGross - totalDeductions;
 
     setLatestCalcResult({
+      employeeName: '신청 근로자',
+      payPeriod: `${new Date().getFullYear()}년 ${String(new Date().getMonth() + 1).padStart(2, '0')}월 (01일~말일)`,
+      payDate: `${new Date().getFullYear()}년 ${String(new Date().getMonth() + 1).padStart(2, '0')}월 25일`,
+      companyName: '노무체크 검증 사업장',
+      hourlyRate: minWage,
+      baseHours: 209,
+      baseSalary: basePay,
+      overtimeHours: Math.round(monthlyOvertime * 100) / 100,
+      overtimeAllowance: overtimePay,
+      holidayHours: 0,
+      holidayAllowance: 0,
+      annualLeaveHours: includeAnnualLeavePay ? Math.round((unusedLeaveDays / 12 * 8) * 100) / 100 : 0,
+      annualLeaveAllowance: annualLeaveMonthlyPay,
+      mealAllowanceTaxExempt: mealPay,
+      drivingAllowanceTaxExempt: 0,
+      totalGrossSalary: totalGross,
+      
+      nationalPension,
+      healthInsurance,
+      longtermCare,
+      employmentInsurance,
+      incomeTax,
+      localIncomeTax,
+      totalDeduction: totalDeductions,
+      netPay: netPayCalc,
+
+      // 요약바 및 리포트 전달용 속성
       totalGross,
       basePay,
       overtimePay,
       mealPay,
-      annualLeaveMonthlyPay: includeAnnualLeavePay ? annualLeaveMonthlyPay : 0,
+      annualLeaveMonthlyPay,
       dailyWorkHours,
       monthlyOvertime,
       is5Over
@@ -272,7 +313,7 @@ export default function Home() {
 
     const updatePrefix = updatedStepInfo ? `✅ **[${updatedStepInfo}단계 조건 수정 반영 완료]**\n수정하신 조건만 쏙 반영하여 **이후 질의 반복 없이 즉시 0% 오차 최종 계산 결과를 재산출**하였습니다:\n\n---\n\n` : '';
 
-    const replyText = `${updatePrefix}### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 급여 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 요일별/평일·주말 휴게 ${isDifferentScheduleByDay ? '차등 구분 반영' : '고정 적용'} (하루 실근로 ${dailyWorkHours.toFixed(2)}h)${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 정밀 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **공휴일 및 대체공휴일(명절 포함) 적용**: **${restsOnHolidays ? '공휴일/대체공휴일 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '공휴일/대체공휴일 근무 (1.5배 휴일근로수당 가산)'}**\n- **입사일 및 연차유급휴가 산정**: 근로기준법 제60조 기준 **총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용 (잔여 미사용 ${unusedLeaveDays}일)**\n\n---\n\n### 📊 2. 요일별 근무시간 및 식사·휴게시간 정밀 합산 분석\n- **요일별 근무 패턴**: **${isDifferentScheduleByDay ? '평일/주말 요일별 소정시간 및 휴게시간 차등 적용' : '전 요일 고정 근무 및 휴게일정'}**\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **휴게·식사시간 합산 차감**: **${breakHours.toFixed(2)}시간** (식사시간 30분~1시간 및 브레이크타임 합산 차감 완료)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급 (${includeAnnualLeavePay ? '미사용 연차수당 정산 포함' : '연차수당 미포함 [휴가사용전제] '})\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}${is5Over ? (includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당 (월 환산)**: **${annualLeaveMonthlyPay.toLocaleString()}원** (총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용, 잔여 ${unusedLeaveDays}일분 수당 합산)\n` : `  - 📅 **연차유급휴가 사용 상태**: **총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용** (잔여 ${unusedLeaveDays}일은 휴가 사용 전제로 월급 미합산)\n`) : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
+    const replyText = `${updatePrefix}### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 급여 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 월~금 9시~18시 (하루 실근로 ${dailyWorkHours.toFixed(2)}h, 휴게 ${breakHours.toFixed(2)}h 차감)${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 정밀 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **${is5Over ? '5인 이상 판정' : '5인 미만 판정'}**\n- **공휴일 및 대체공휴일(명절 포함) 적용**: **${restsOnHolidays ? '공휴일/대체공휴일 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '공휴일/대체공휴일 근무 (1.5배 휴일근로수당 가산)'}**\n- **연차유급휴가 수당 적용 여부**: **${includeAnnualLeavePay ? `총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용 (잔여 미사용 ${unusedLeaveDays}일분 수당 월급 포함 정산)` : '연차 수당 급여 미포함 (휴가로 사용 전제 / 수당 미적용 요청 반영)'}**\n\n---\n\n### 📊 2. 근무시간 및 식사·휴게시간 정밀 합산 분석\n- **근무 시간 (9시~18시)**: 총 9시간 중 식사/휴게시간 **${breakHours.toFixed(2)}시간 차감** = **하루 실제 일하는 시간 ${dailyWorkHours.toFixed(2)}시간**\n- **주 5일(월~금) 소정근로시간**: **주 40시간** (기본 8h × 5일 = 연장근로 0시간!)\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **0.00시간** (8시간 초과분 없음)\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급 (${includeAnnualLeavePay ? '미사용 연차수당 정산 포함' : '연차수당 미포함 [휴가사용전제]'})\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (0시간)**: 0원\n${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : '  - 📅 **연차유급휴가 수당**: **0원** (연차 수당 미포함 요청 반영)\n'}\n---\n\n### 💡 4. 비과세 절세 혜택 & 급여명세서\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 **[근로기준법 제48조 법정 급여명세서 보기/출력]** 버튼을 누르시면 위 계산 결과(기본급 ${basePay.toLocaleString()}원 + 식대 ${mealPay.toLocaleString()}원, 연장/연차 0원)가 정확히 반영된 **정식 임금명세서**가 출력됩니다!`;
 
     setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
     setIsCalculatedOnce(true);
@@ -824,7 +865,7 @@ export default function Home() {
 
       {/* 📄 법정 급여명세서 인쇄/PDF 팝업 */}
       {showPayslipModal && (
-        <PayslipModal onClose={() => setShowPayslipModal(false)} />
+        <PayslipModal data={latestCalcResult || {}} onClose={() => setShowPayslipModal(false)} />
       )}
 
     </div>

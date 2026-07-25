@@ -9,33 +9,36 @@ export default function PayslipModal({ data = {}, onClose }) {
     window.print();
   };
 
+  const currentYear = new Date().getFullYear();
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+
   const {
-    employeeName = '홍길동',
-    payPeriod = '2026년 07월 (2026.07.01 ~ 2026.07.31)',
-    payDate = '2026년 08월 05일',
-    companyName = '(주)노무체크',
-    hourlyRate = 12000,
+    employeeName = '신청 근로자',
+    payPeriod = `${currentYear}년 ${currentMonth}월 (01일~말일)`,
+    payDate = `${currentYear}년 ${currentMonth}월 25일`,
+    companyName = '노무체크 검증 사업장',
+    hourlyRate = 10320,
     baseHours = 209,
-    baseSalary = 2508000,
-    overtimeHours = 123.55,
-    overtimeAllowance = 2223900,
-    holidayHours = 21.25,
-    holidayAllowance = 382500,
-    annualLeaveHours = 7.33,
-    annualLeaveAllowance = 131940,
+    baseSalary = 2156880,
+    overtimeHours = 0,
+    overtimeAllowance = 0,
+    holidayHours = 0,
+    holidayAllowance = 0,
+    annualLeaveHours = 0,
+    annualLeaveAllowance = 0,
     mealAllowanceTaxExempt = 200000,
-    drivingAllowanceTaxExempt = 200000,
-    totalGrossSalary = 5446340,
+    drivingAllowanceTaxExempt = 0,
+    totalGrossSalary = 2356880,
     
     // 4대보험 및 세금 공제액
-    nationalPension = 227080,
-    healthInsurance = 179120,
-    longtermCare = 23190,
-    employmentInsurance = 45410,
-    incomeTax = 285400,
-    localIncomeTax = 28540,
-    totalDeduction = 788740,
-    netPay = 4657600
+    nationalPension = 97050,
+    healthInsurance = 76460,
+    longtermCare = 9900,
+    employmentInsurance = 19410,
+    incomeTax = 32350,
+    localIncomeTax = 3230,
+    totalDeduction = 238400,
+    netPay = 2118480
   } = data;
 
   return (
