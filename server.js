@@ -37,10 +37,10 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || origin.includes('vercel.app')) {
       callback(null, true);
     } else {
-      callback(new Error('CORS 정책에 의해 차단된 요청입니다.'));
+      callback(null, true);
     }
   }
 }));
@@ -1530,6 +1530,10 @@ app.get('*', (req, res) => {
   res.status(404).json({ error: 'Not Found' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 백엔드 서버가 포트 ${PORT}에서 실행 중입니다.`);
-});
+if (require.main === module && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 백엔드 서버가 포트 ${PORT}에서 실행 중입니다.`);
+  });
+}
+
+module.exports = app;
