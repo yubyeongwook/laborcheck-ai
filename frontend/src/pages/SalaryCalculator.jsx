@@ -834,7 +834,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               {entry.salaryType === '월급' && `${result.monthlyNetPay.toLocaleString()}원`}
             </div>
             <div className="result-highlight-sub" style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-              연 환산 실수령액 약 {result.netAnnual.toLocaleString()}원 (월 총근로 {((result.weeklyHours || 0) * AVG_WEEKS_PER_MONTH).toFixed(1)}시간: 기준 {Math.round((result.weeklyRegularHours || 0) * AVG_WEEKS_PER_MONTH)}시간 / 연장 {((result.weeklyOvertimeHours || 0) * AVG_WEEKS_PER_MONTH).toFixed(1)}시간 / 야간 {(result.nightHoursMonthly || 0).toFixed(1)}시간 기준)
+              연 환산 실수령액 약 {result.netAnnual.toLocaleString()}원 (월 총근로 {((result.weeklyHours || 0) * AVG_WEEKS_PER_MONTH).toFixed(2)}시간: 기준 {result.baseWorkHoursMonthly || 174}시간 / 연장 {((result.weeklyOvertimeHours || 0) * AVG_WEEKS_PER_MONTH).toFixed(2)}시간 [할증반영 {((result.weeklyOvertimeHours || 0) * AVG_WEEKS_PER_MONTH * (entry.companySize === '5인 이상' ? 1.5 : 1.0)).toFixed(2)}시간] / 야간 {(result.nightHoursMonthly || 0).toFixed(2)}시간 기준)
             </div>
 
             {/* 근무시간 대시보드 */}
@@ -852,20 +852,23 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
                 <span style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>총 근로시간</span>
                 <strong style={{ fontSize: '0.85rem', color: '#fff' }}>
-                  {((result.weeklyHours || 0) * AVG_WEEKS_PER_MONTH).toFixed(1)}h
+                  {((result.weeklyHours || 0) * AVG_WEEKS_PER_MONTH).toFixed(2)}h
                 </strong>
               </div>
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
                 <span style={{ fontSize: '0.6rem', color: '#38bdf8', display: 'block', marginBottom: '0.15rem' }}>기준근로시간</span>
                 <strong style={{ fontSize: '0.85rem', color: '#38bdf8' }}>
-                  {Math.round((result.weeklyRegularHours || 0) * AVG_WEEKS_PER_MONTH)}h
+                  {result.baseWorkHoursMonthly || 174}h
                 </strong>
               </div>
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
                 <span style={{ fontSize: '0.6rem', color: '#a5b4fc', display: 'block', marginBottom: '0.15rem' }}>연장근로시간</span>
                 <strong style={{ fontSize: '0.85rem', color: '#a5b4fc' }}>
-                  {((result.weeklyOvertimeHours || 0) * AVG_WEEKS_PER_MONTH).toFixed(1)}h
+                  {((result.weeklyOvertimeHours || 0) * AVG_WEEKS_PER_MONTH).toFixed(2)}h
                 </strong>
+                <span style={{ fontSize: '0.55rem', color: '#818cf8', display: 'block' }}>
+                  (할증 {((result.weeklyOvertimeHours || 0) * AVG_WEEKS_PER_MONTH * (entry.companySize === '5인 이상' ? 1.5 : 1.0)).toFixed(2)}h)
+                </span>
               </div>
               <div style={{ 
                 textAlign: 'center', 
@@ -879,8 +882,11 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
                   야간근로시간
                 </span>
                 <strong style={{ fontSize: '0.85rem', color: '#f472b6' }}>
-                  {(result.nightHoursMonthly || 0).toFixed(1)}h
+                  {(result.nightHoursMonthly || 0).toFixed(2)}h
                 </strong>
+                <span style={{ fontSize: '0.55rem', color: '#f472b6', opacity: 0.8, display: 'block' }}>
+                  (할증 {(result.nightHoursMonthlyWeighted || ((result.nightHoursMonthly || 0) * (entry.companySize === '5인 이상' ? 0.5 : 0))).toFixed(2)}h)
+                </span>
               </div>
             </div>
 
@@ -912,29 +918,29 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
                 <div style={{ color: '#38bdf8', fontWeight: '500' }}>기준(소정)근로시간</div>
-                <div><strong>{(result.weeklyRegularHours || 0).toFixed(1)}시간</strong></div>
-                <div>{(result.regularWorkHoursMonthly || 0).toFixed(1)}시간</div>
+                <div><strong>{(result.weeklyRegularHours || 0).toFixed(2)}시간</strong></div>
+                <div>{(result.baseWorkHoursMonthly || 174).toFixed(2)}시간</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
                 <div style={{ color: '#a5b4fc', fontWeight: '500' }}>연장근로시간</div>
-                <div><strong>{(result.weeklyOvertimeHours || 0).toFixed(1)}시간</strong></div>
-                <div>{(result.overtimeHoursMonthly || 0).toFixed(1)}시간</div>
+                <div><strong>{(result.weeklyOvertimeHours || 0).toFixed(2)}시간</strong></div>
+                <div>{(result.overtimeHoursMonthly || 0).toFixed(2)}시간 (할증 {(result.overtimeHoursMonthlyWeighted || (result.overtimeHoursMonthly * 1.5)).toFixed(2)}h)</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
                 <div style={{ color: '#f472b6', fontWeight: '500' }}>야간근로시간</div>
-                <div><strong>{(result.weeklyNightHours || 0).toFixed(1)}시간</strong></div>
-                <div>{(result.nightHoursMonthly || 0).toFixed(1)}시간</div>
+                <div><strong>{(result.weeklyNightHours || 0).toFixed(2)}시간</strong></div>
+                <div>{(result.nightHoursMonthly || 0).toFixed(2)}시간 (할증 {(result.nightHoursMonthlyWeighted || (result.nightHoursMonthly * 0.5)).toFixed(2)}h)</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.72rem', color: '#fff', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.25rem', marginTop: '0.25rem', textAlign: 'center' }}>
                 <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>총 실근로시간</div>
-                <div><strong>{(result.weeklyTotalHours || 0).toFixed(1)}시간</strong></div>
-                <div>{((result.regularWorkHoursMonthly || 0) + (result.overtimeHoursMonthly || 0)).toFixed(1)}시간</div>
+                <div><strong>{(result.weeklyTotalHours || 0).toFixed(2)}시간</strong></div>
+                <div>{((result.weeklyHours || 0) * AVG_WEEKS_PER_MONTH).toFixed(2)}시간</div>
               </div>
             </div>
           </div>
 
           <div className="result-row">
-            <span className="result-row-label">기본급 {result.regularWorkHoursMonthly > 0 && `(월 소정근로 ${result.regularWorkHoursMonthly}시간)`}</span>
+            <span className="result-row-label">기본급 {result.regularWorkHoursMonthly > 0 && `(월 소정근로 ${result.regularWorkHoursMonthly}시간 : 기준 174시간 + 주휴 35시간)`}</span>
             <span className="result-row-value">{result.basePay.toLocaleString()}원</span>
           </div>
           {result.weeklyHolidayHoursMonthly > 0 && (
@@ -944,11 +950,11 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             </div>
           )}
           <div className="result-row">
-            <span className="result-row-label">연장수당 {result.overtimeHoursMonthly > 0 && `(월 연장 ${result.overtimeHoursMonthly}시간 · ${entry.companySize === '5인 이상' ? '1.5배' : '1.0배'} 가산)`}</span>
+            <span className="result-row-label">연장수당 {result.overtimeHoursMonthly > 0 && `(월 연장 ${result.overtimeHoursMonthly.toFixed(2)}시간 · ${entry.companySize === '5인 이상' ? '1.5배 가산 = 할증 반영 ' + (result.overtimeHoursMonthlyWeighted || (result.overtimeHoursMonthly * 1.5)).toFixed(2) + '시간' : '1.0배'})`}</span>
             <span className="result-row-value">{result.overtimePay.toLocaleString()}원</span>
           </div>
           <div className="result-row">
-            <span className="result-row-label">야간수당 {result.nightHoursMonthly > 0 && `(월 야간 ${result.nightHoursMonthly}시간 · ${entry.companySize === '5인 이상' ? '0.5배' : '0.0배'} 가산)`}</span>
+            <span className="result-row-label">야간수당 {result.nightHoursMonthly > 0 && `(월 야간 ${result.nightHoursMonthly.toFixed(2)}시간 · ${entry.companySize === '5인 이상' ? '0.5배 가산 = 할증 반영 ' + (result.nightHoursMonthlyWeighted || (result.nightHoursMonthly * 0.5)).toFixed(2) + '시간' : '0.0배'})`}</span>
             <span className="result-row-value">{result.nightPay.toLocaleString()}원</span>
           </div>
           <div className="result-row">

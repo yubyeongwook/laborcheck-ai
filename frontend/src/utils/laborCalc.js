@@ -1,7 +1,7 @@
 // 근로기준법 기반 공용 계산 유틸리티
 
 export const MIN_WAGE = 10030; // 시간당 최저임금 (원, 기본값 = 2025년 기준)
-export const AVG_WEEKS_PER_MONTH = 4.345;
+export const AVG_WEEKS_PER_MONTH = 4.35; // 40시간 * 4.35 = 174시간 (대한민국 근로기준법 월 소정근로 174시간 정밀 표준)
 
 // 금액(원) 계산 결과의 10원 미만을 절사 (엑셀 ROUNDDOWN(x, -1)와 동일)
 export const roundDownToTen = (amount) => Math.floor(amount / 10) * 10;
@@ -454,10 +454,13 @@ export const calculateSalaryBreakdown = ({
     weeklyOvertimeHours: Math.round(weeklyOvertimeHours * 100) / 100,
     weeklyNightHours: Math.round(weeklyNightHoursVal * 100) / 100,
     weeklyTotalHours: Math.round((regularWorkHoursForBasePay + weeklyOvertimeHours) * 100) / 100,
+    baseWorkHoursMonthly: monthlyRegularHours, // 174시간
     regularWorkHoursMonthly: mergedRegularWorkHoursMonthly,
     weeklyHolidayHoursMonthly: 0,
     overtimeHoursMonthly: Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100,
-    nightHoursMonthly: Math.round(wNightHours * AVG_WEEKS_PER_MONTH * 100) / 100
+    overtimeHoursMonthlyWeighted: Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * overtimeMultiplier * 100) / 100,
+    nightHoursMonthly: Math.round(weeklyNightHoursVal * AVG_WEEKS_PER_MONTH * 100) / 100,
+    nightHoursMonthlyWeighted: Math.round(weeklyNightHoursVal * AVG_WEEKS_PER_MONTH * nightMultiplier * 100) / 100
   };
 };
 

@@ -1022,20 +1022,23 @@ function ReverseSalaryCalculator() {
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
                 <span style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>총 근로시간</span>
                 <strong style={{ fontSize: '0.85rem', color: '#fff' }}>
-                  {(weeklyHours * AVG_WEEKS_PER_MONTH).toFixed(1)}h
+                  {(weeklyHours * AVG_WEEKS_PER_MONTH).toFixed(2)}h
                 </strong>
               </div>
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
                 <span style={{ fontSize: '0.6rem', color: '#38bdf8', display: 'block', marginBottom: '0.15rem' }}>기준근로시간</span>
                 <strong style={{ fontSize: '0.85rem', color: '#38bdf8' }}>
-                  {Math.round(regularWorkHoursForBasePay * AVG_WEEKS_PER_MONTH)}h
+                  {monthlyRegularHours || 174}h
                 </strong>
               </div>
               <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.01)', padding: '0.35rem 0.2rem', borderRadius: '6px' }}>
                 <span style={{ fontSize: '0.6rem', color: '#a5b4fc', display: 'block', marginBottom: '0.15rem' }}>연장근로시간</span>
                 <strong style={{ fontSize: '0.85rem', color: '#a5b4fc' }}>
-                  {(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH).toFixed(1)}h
+                  {(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH).toFixed(2)}h
                 </strong>
+                <span style={{ fontSize: '0.55rem', color: '#818cf8', display: 'block' }}>
+                  (할증 {(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * overtimeMultiplier).toFixed(2)}h)
+                </span>
               </div>
               <div style={{ 
                 textAlign: 'center', 
@@ -1049,8 +1052,11 @@ function ReverseSalaryCalculator() {
                   야간근로시간
                 </span>
                 <strong style={{ fontSize: '0.85rem', color: '#f472b6' }}>
-                  {(weeklyNightHours * AVG_WEEKS_PER_MONTH).toFixed(1)}h
+                  {(weeklyNightHours * AVG_WEEKS_PER_MONTH).toFixed(2)}h
                 </strong>
+                <span style={{ fontSize: '0.55rem', color: '#f472b6', opacity: 0.8, display: 'block' }}>
+                  (할증 {(weeklyNightHours * AVG_WEEKS_PER_MONTH * nightMultiplier).toFixed(2)}h)
+                </span>
               </div>
             </div>
 
@@ -1082,23 +1088,23 @@ function ReverseSalaryCalculator() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
                 <div style={{ color: '#38bdf8', fontWeight: '500' }}>기준(소정)근로시간</div>
-                <div><strong>{regularWorkHoursForBasePay.toFixed(1)}시간</strong></div>
-                <div>{monthlyRegularHours}시간</div>
+                <div><strong>{regularWorkHoursForBasePay.toFixed(2)}시간</strong></div>
+                <div>{(monthlyRegularHours || 174).toFixed(2)}시간</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
                 <div style={{ color: '#a5b4fc', fontWeight: '500' }}>연장근로시간</div>
-                <div><strong>{weeklyOvertimeHours.toFixed(1)}시간</strong></div>
-                <div>{Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간</div>
+                <div><strong>{weeklyOvertimeHours.toFixed(2)}시간</strong></div>
+                <div>{(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH).toFixed(2)}시간 (할증 {(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * overtimeMultiplier).toFixed(2)}h)</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.7rem', color: '#cbd5e1', padding: '0.2rem 0', textAlign: 'center' }}>
                 <div style={{ color: '#f472b6', fontWeight: '500' }}>야간근로시간</div>
-                <div><strong>{weeklyNightHours.toFixed(1)}시간</strong></div>
-                <div>{Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간</div>
+                <div><strong>{weeklyNightHours.toFixed(2)}시간</strong></div>
+                <div>{(weeklyNightHours * AVG_WEEKS_PER_MONTH).toFixed(2)}시간 (할증 {(weeklyNightHours * AVG_WEEKS_PER_MONTH * nightMultiplier).toFixed(2)}h)</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.25rem', fontSize: '0.72rem', color: '#fff', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.25rem', marginTop: '0.25rem', textAlign: 'center' }}>
                 <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>총 실근로시간</div>
-                <div><strong>{(regularWorkHoursForBasePay + weeklyOvertimeHours).toFixed(1)}시간</strong></div>
-                <div>{Math.round((regularWorkHoursForBasePay + weeklyOvertimeHours) * AVG_WEEKS_PER_MONTH * 100) / 100}시간</div>
+                <div><strong>{(regularWorkHoursForBasePay + weeklyOvertimeHours).toFixed(2)}시간</strong></div>
+                <div>{(weeklyHours * AVG_WEEKS_PER_MONTH).toFixed(2)}시간</div>
               </div>
             </div>
           </div>
@@ -1109,7 +1115,7 @@ function ReverseSalaryCalculator() {
             </h4>
             
             <div className="result-row">
-              <span className="result-row-label">기본급 (월 소정근로 {monthlyRegularHours}시간)</span>
+              <span className="result-row-label">기본급 (월 소정근로 {monthlyRegularHours + monthlyWeeklyHolidayHours}시간 : 기준 {monthlyRegularHours}시간 + 주휴 {monthlyWeeklyHolidayHours}시간)</span>
               <span className="result-row-value">{basePay.toLocaleString()}원</span>
             </div>
             <div className="result-row">
@@ -1118,13 +1124,13 @@ function ReverseSalaryCalculator() {
             </div>
             {overtimePay > 0 && (
               <div className="result-row">
-                <span className="result-row-label">연장근로수당 (월 연장 {Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간분 · {overtimeMultiplier}배 가산)</span>
+                <span className="result-row-label">연장근로수당 (월 연장 {(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH).toFixed(2)}시간분 · {overtimeMultiplier}배 가산 = 할증 반영 {(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * overtimeMultiplier).toFixed(2)}시간)</span>
                 <span className="result-row-value">{overtimePay.toLocaleString()}원</span>
               </div>
             )}
             {nightPay > 0 && (
               <div className="result-row">
-                <span className="result-row-label">야간근로수당 (월 야간 {Math.round(weeklyNightHours * AVG_WEEKS_PER_MONTH * 100) / 100}시간분 · {nightMultiplier}배 가산)</span>
+                <span className="result-row-label">야간근로수당 (월 야간 {(weeklyNightHours * AVG_WEEKS_PER_MONTH).toFixed(2)}시간분 · {nightMultiplier}배 가산 = 할증 반영 {(weeklyNightHours * AVG_WEEKS_PER_MONTH * nightMultiplier).toFixed(2)}시간)</span>
                 <span className="result-row-value">{nightPay.toLocaleString()}원</span>
               </div>
             )}
