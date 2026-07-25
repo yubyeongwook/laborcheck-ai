@@ -180,7 +180,12 @@ export default function Home() {
   const [fixedBreak, setFixedBreak] = useState('1.0');
   const [fixedNightBreak, setFixedNightBreak] = useState('0.0');
 
-  // 요일별 변동 근무용 state
+  // 요일별 변동 근무용 state & 일괄 적용용 state
+  const [batchDays, setBatchDays] = useState(['월', '화', '수', '목', '금']);
+  const [batchStart, setBatchStart] = useState('09:00');
+  const [batchEnd, setBatchEnd] = useState('18:00');
+  const [batchBreak, setBatchBreak] = useState('1.0');
+
   const [daySchedules, setDaySchedules] = useState({
     월: { active: true, start: '09:00', end: '18:00', breakTime: '1.0', nightBreak: '0.0' },
     화: { active: true, start: '09:00', end: '18:00', breakTime: '1.0', nightBreak: '0.0' },
@@ -191,7 +196,24 @@ export default function Home() {
     일: { active: false, start: '09:00', end: '15:00', breakTime: '0.5', nightBreak: '0.0' },
   });
 
-  // 🌙 야간 근로시간 (22시~06시) 실시간 자동 도출 함수
+  // 선택한 요일들에 출퇴근시간 및 휴게시간 일괄 적용 함수
+  const handleApplyBatchToSelectedDays = () => {
+    setDaySchedules(prev => {
+      const next = { ...prev };
+      batchDays.forEach(day => {
+        next[day] = {
+          ...next[day],
+          active: true,
+          start: batchStart,
+          end: batchEnd,
+          breakTime: batchBreak
+        };
+      });
+      return next;
+    });
+  };
+
+  // 🌙 야간 근로시간 (22시~06시 24시간제 정밀 검증) 실시간 자동 도출 함수
   const calculateNightHours = (startStr, endStr) => {
     if (!startStr || !endStr) return 0;
     const [sH, sM] = startStr.split(':').map(Number);
@@ -987,8 +1009,86 @@ export default function Home() {
                 {/* B. 🔀 요일별 변동 근무 입력 모드 (핵심 기능!) */}
                 {scheduleType === 'flexible' && (
                   <div>
+                    {/* ⚡ 선택 요일 먼저 체크 후 출퇴근/휴게시간 일괄 동일 적용 툴 */}
+                    <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(56, 189, 248, 0.3)', marginBottom: '0.85rem' }}>
+                      <div style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>⚡ 선택한 요일들 먼저 체크 ➔ 동일 근무시간 & 휴게시간 일괄 적용</span>
+                      </div>
+
+                      {/* 1) 요일 먼저 체크 */}
+                      <div style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.5rem' }}>
+                        {['월', '화', '수', '목', '금', '토', '일'].map((day) => {
+                          const isChecked = batchDays.includes(day);
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => {
+                                setBatchDays(prev => isChecked ? prev.filter(d => d !== day) : [...prev, day]);
+                              }}
+                              style={{
+                                flex: 1, padding: '0.35rem 0', borderRadius: '6px',
+                                background: isChecked ? '#0284c7' : '#0f172a',
+                                color: isChecked ? '#ffffff' : '#64748b',
+                                border: `1px solid ${isChecked ? '#38bdf8' : '#334155'}`,
+                                fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer'
+                              }}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* 2) 출퇴근시각(24시간제) & 휴게시간 */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr', gap: '0.4rem', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                          <input
+                            type="time"
+                            value={batchStart}
+                            onChange={(e) => setBatchStart(e.target.value)}
+                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.78rem' }}
+                          />
+                          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>~</span>
+                          <input
+                            type="time"
+                            value={batchEnd}
+                            onChange={(e) => setBatchEnd(e.target.value)}
+                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.78rem' }}
+                          />
+                        </div>
+
+                        <select
+                          value={batchBreak}
+                          onChange={(e) => setBatchBreak(e.target.value)}
+                          style={{ padding: '0.3rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.76rem' }}
+                        >
+                          <option value="1.0">휴게 1시간</option>
+                          <option value="1.5">휴게 1.5시간</option>
+                          <option value="2.0">휴게 2시간</option>
+                          <option value="0.5">휴게 0.5시간</option>
+                          <option value="0.0">휴게 없음</option>
+                        </select>
+
+                        <button
+                          type="button"
+                          onClick={handleApplyBatchToSelectedDays}
+                          style={{
+                            padding: '0.35rem 0.5rem', borderRadius: '6px',
+                            background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                            color: '#fff', border: 'none', fontWeight: 800, fontSize: '0.76rem', cursor: 'pointer'
+                          }}
+                        >
+                          일괄 적용
+                        </button>
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.35rem', fontStyle: 'italic' }}>
+                        * 24시간제 자동 적용 (오후 10시 ➔ 22:00, 오후 1시 ➔ 13:00)
+                      </div>
+                    </div>
+
                     <div style={{ fontSize: '0.76rem', color: '#f59e0b', fontWeight: 700, marginBottom: '0.5rem' }}>
-                      💡 요일별로 출퇴근 시간 및 휴게시간이 다른 경우 각각 체크하여 설정하세요:
+                      💡 아래 요일별 개별 카드에서 출퇴근 시각과 휴게시간을 개별 수정할 수 있습니다:
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
