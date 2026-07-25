@@ -416,47 +416,6 @@ export default function Home() {
         <PayslipModal onClose={() => setShowPayslipModal(false)} />
       )}
 
-      {/* 🏛️ 5대 전담 수석 에이전트 조직 안내 */}
-      <div style={{ marginBottom: '3.5rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f8fafc', marginBottom: '0.5rem' }}>
-            🎩 노무비서실장이 총괄 지휘하는 <span style={{ color: '#38bdf8' }}>5대 전문 수석 에이전트</span>
-          </h2>
-          <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
-            어떠한 노무 질문이든 노무비서실장이 판단하여 해당 분야 최고 수석 에이전트를 즉시 배정합니다.
-          </p>
-        </div>
-
-        <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.2rem'
-        }}>
-          {AGENT_TEAM.map((agent, index) => (
-            <div
-              key={index}
-              style={{
-                background: '#0f172a', border: '1px solid rgba(56, 189, 248, 0.15)',
-                borderRadius: '16px', padding: '1.5rem 1.2rem', textAlign: 'center',
-                boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)'
-              }}
-            >
-              <div style={{
-                width: '52px', height: '52px', borderRadius: '14px',
-                background: 'rgba(30, 41, 59, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 1rem'
-              }}>
-                {agent.icon}
-              </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc', marginBottom: '0.5rem' }}>
-                {agent.name}
-              </h3>
-              <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                {agent.role}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
     </div>
   );
 }
