@@ -246,3 +246,89 @@ export class PureLaborCalculator {
     };
   }
 }
+
+// ----------------------------------------------------------------------
+// 5. 퇴직연금 유형별 & 휴직·병가 정밀 퇴직금 산정 엔진
+// ----------------------------------------------------------------------
+export type SeverancePensionType = 'legal' | 'db' | 'dc' | 'irp';
+
+export interface SeveranceCalcInput {
+  pensionType: SeverancePensionType; // 'legal'(법정퇴직금), 'db'(확정급여형), 'dc'(확정기여형), 'irp'(개인형)
+  totalTenureDays: number;            // 총 재직일수 (입사일~퇴직일)
+  last3MonthsTotalSalary: number;     // 퇴직 전 3개월 간 임금 총액 (원)
+  last3MonthsDays?: number;           // 3개월 간 총 일수 (기본값 92일)
+  annualBonus?: number;               // 연간 상여금 총액 (3/12 반영)
+  annualLeaveAllowance?: number;      // 연차유급휴가 미사용수당 총액 (3/12 반영)
+  excludedPeriodDays?: number;        // 육아휴직, 산재병가, 사용자 귀책 휴업 일수 (평균임금 제외일수)
+  annualSalaryTotalDC?: number;       // DC형 연간 임금 총액 (원)
+}
+
+export interface SeveranceCalcOutput {
+  pensionType: SeverancePensionType;
+  pensionTypeName: string;
+  averageDailySalary: number;         // 1일 평균임금 (원)
+  adjusted3MonthsDays: number;       // 제외기간 공제 후 평균임금 산정 일수
+  totalSeveranceAmount: number;      // 최종 산출 퇴직금 (원)
+  breakdown: {
+    base3MonthsSalary: number;
+    bonusReflected: number;           // 상여금 3/12 반영분
+    leaveReflected: number;           // 연차수당 3/12 반영분
+    excludedDaysDeducted: number;     // 공제된 육아휴직/병가 일수
+    calculatedSeverance: number;     // 최종 퇴직금 (원)
+  };
+  legalNotice: string;
+}
+
+export class PureSeveranceCalculator {
+  public static calculate(input: SeveranceCalcInput): SeveranceCalcOutput {
+    const pensionType = input.pensionType || 'legal';
+    const totalTenureDays = Math.max(0, input.totalTenureDays);
+    const last3MonthsDays = input.last3MonthsDays || 92;
+    const excludedDays = Math.max(0, input.excludedPeriodDays || 0);
+
+    // 평균임금 산정 대상 일수 (근로기준법 시행령 제2조: 육아휴직, 산재병가 등은 제외)
+    const adjusted3MonthsDays = Math.max(1, last3MonthsDays - excludedDays);
+    const netTenureDays = Math.max(1, totalTenureDays - excludedDays);
+
+    // 상여금 및 연차수당 3/12 산입분
+    const bonusReflected = Math.round(((input.annualBonus || 0) * 3.0) / 12.0);
+    const leaveReflected = Math.round(((input.annualLeaveAllowance || 0) * 3.0) / 12.0);
+
+    // 1일 평균임금 계산
+    const total3MonthsCompensation = input.last3MonthsTotalSalary + bonusReflected + leaveReflected;
+    const averageDailySalary = roundPrecision(total3MonthsCompensation / adjusted3MonthsDays, 2);
+
+    let totalSeveranceAmount = 0;
+    let pensionTypeName = '';
+    let legalNotice = '';
+
+    if (pensionType === 'dc') {
+      // DC형 (확정기여형): 연간 임금 총액의 1/12 이상 매년 납부
+      pensionTypeName = 'DC형 (확정기여형 퇴직연금)';
+      const annualTotal = input.annualSalaryTotalDC || input.last3MonthsTotalSalary * 4.0;
+      totalSeveranceAmount = Math.round(annualTotal / 12.0);
+      legalNotice = 'DC형은 매년 연간 임금 총액의 1/12 이상을 근로자 개인 계좌로 납입하는 방식입니다.';
+    } else {
+      // 법정 퇴직금 및 DB형 (확정급여형): 평균임금 * 30일 * (재직일수 - 제외일수) / 365
+      pensionTypeName = pensionType === 'db' ? 'DB형 (확정급여형 퇴직연금)' : '법정 일반 퇴직금';
+      totalSeveranceAmount = Math.round((averageDailySalary * 30.0 * netTenureDays) / 365.0);
+      legalNotice = '근로기준법 제2조 및 시행령 제2조에 따라 육아휴직 및 산재 병가 기간은 평균임금 산정 일수와 총 재직기간 양쪽에서 제외하여 불이익을 방지합니다.';
+    }
+
+    return {
+      pensionType,
+      pensionTypeName,
+      averageDailySalary,
+      adjusted3MonthsDays,
+      totalSeveranceAmount,
+      breakdown: {
+        base3MonthsSalary: input.last3MonthsTotalSalary,
+        bonusReflected,
+        leaveReflected,
+        excludedDaysDeducted: excludedDays,
+        calculatedSeverance: totalSeveranceAmount,
+      },
+      legalNotice,
+    };
+  }
+}
