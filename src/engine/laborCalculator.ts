@@ -332,3 +332,80 @@ export class PureSeveranceCalculator {
     };
   }
 }
+
+// ----------------------------------------------------------------------
+// 6. 실급여액 vs 세무신고액 분리 및 비과세 항목(식대, 자가운전, 보육 등) 정밀 진단 엔진
+// ----------------------------------------------------------------------
+export interface TaxExemptInput {
+  realMonthlySalary: number;            // 실지급 급여액 (원)
+  reportedTaxSalary?: number;          // 세무/4대보험 신고 급여액 (원, 미입력 시 실지급액)
+  includeMealAllowance?: boolean;      // 식대 비과세 (월 20만원 한도)
+  includeDrivingAllowance?: boolean;   // 자가운전보조금 비과세 (월 20만원 한도)
+  includeChildcareAllowance?: boolean; // 6세 이하 자녀 보육수당 비과세 (월 20만원 한도)
+  includeResearchAllowance?: boolean;  // 연구보조비 비과세 (월 20만원 한도)
+}
+
+export interface TaxExemptOutput {
+  realMonthlySalary: number;
+  reportedTaxSalary: number;
+  totalTaxExemptAmount: number;        // 총 비과세 인정액 (원)
+  netTaxableAmount: number;            // 과세 대상 급여액 (원, 4대보험 및 소득세 과세표준)
+  taxSavingsEstimate: number;          // 월 4대보험 및 근로소득세 절감 추정액 (원)
+  hasDiscrepancy: boolean;            // 실급여와 신고급여 불일치 여부
+  discrepancyNotice: string;           // 세무/노무 불일치 리스크 진단 및 조치가이드
+  taxExemptBreakdown: {
+    meal: number;
+    driving: number;
+    childcare: number;
+    research: number;
+  };
+}
+
+export class TaxExemptSalaryCalculator {
+  public static calculate(input: TaxExemptInput): TaxExemptOutput {
+    const realSalary = Math.max(0, input.realMonthlySalary);
+    const reportedSalary = input.reportedTaxSalary !== undefined ? input.reportedTaxSalary : realSalary;
+
+    // 비과세 수당 법정 한도 (2026년 최신 세법 기준)
+    const mealExempt = input.includeMealAllowance ? Math.min(200000, realSalary) : 0;
+    const drivingExempt = input.includeDrivingAllowance ? Math.min(200000, Math.max(0, realSalary - mealExempt)) : 0;
+    const childcareExempt = input.includeChildcareAllowance ? Math.min(200000, Math.max(0, realSalary - mealExempt - drivingExempt)) : 0;
+    const researchExempt = input.includeResearchAllowance ? Math.min(200000, Math.max(0, realSalary - mealExempt - drivingExempt - childcareExempt)) : 0;
+
+    const totalTaxExemptAmount = mealExempt + drivingExempt + childcareExempt + researchExempt;
+    const netTaxableAmount = Math.max(0, reportedSalary - totalTaxExemptAmount);
+
+    // 비과세 적용에 따른 월 4대보험 및 소득세 절감 추정액 (약 18.5% 합산 요율 적용)
+    const taxSavingsEstimate = Math.round(totalTaxExemptAmount * 0.185);
+
+    const hasDiscrepancy = realSalary !== reportedSalary;
+    let discrepancyNotice = '';
+
+    if (hasDiscrepancy) {
+      if (reportedSalary < realSalary) {
+        discrepancyNotice = `⚠️ [주의] 세무신고액(${reportedSalary.toLocaleString()}원)이 실지급액(${realSalary.toLocaleString()}원)보다 작습니다.\n- 노동청 임금체불 진정 시 퇴직금 및 통상임금은 '실지급액' 기준으로 산정됩니다.\n- 4대보험 공단 정산 시 차액에 대해 소급 추징금 및 과태료가 발생할 수 있습니다.`;
+      } else {
+        discrepancyNotice = `ℹ️ 세무신고액이 실지급액보다 높게 신고되어 있습니다. 세금 과다 납부 여부를 점검해 보세요.`;
+      }
+    } else {
+      discrepancyNotice = `✅ 실지급액과 세무신고액이 동일하게 정상 신고되고 있습니다. 비과세 수당(${totalTaxExemptAmount.toLocaleString()}원)을 활용하여 월 약 ${taxSavingsEstimate.toLocaleString()}원의 4대보험/세금을 정당하게 절세 중입니다.`;
+    }
+
+    return {
+      realMonthlySalary: realSalary,
+      reportedTaxSalary: reportedSalary,
+      totalTaxExemptAmount,
+      netTaxableAmount,
+      taxSavingsEstimate,
+      hasDiscrepancy,
+      discrepancyNotice,
+      taxExemptBreakdown: {
+        meal: mealExempt,
+        driving: drivingExempt,
+        childcare: childcareExempt,
+        research: researchExempt,
+      },
+    };
+  }
+}
+
