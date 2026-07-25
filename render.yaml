@@ -10,5 +10,5 @@ services:
         value: no-cache, no-store, must-revalidate
     routes:
       - type: rewrite
-        source: /*
+        source: /((?!naverc.*\.html|sitemap\.xml|robots\.txt|assets/|.*\..*).*)
         destination: /index.html
