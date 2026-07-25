@@ -1488,9 +1488,33 @@ ${contractText}
   }
 });
 
-// 기본 헬스체크 라우트
+// 프론트엔드 빌드 정적 파일 서빙 (frontend/dist)
+const path = require('path');
+const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
+app.use(express.static(frontendDistPath));
+
+// 기본 헬스체크 API 라우트
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date() });
+  res.json({ status: 'ok', service: 'LaborCheck AI', time: new Date() });
+});
+
+// 모든 기타 GET 요청은 React SPA index.html 또는 API 안내 반환
+app.get('*', (req, res) => {
+  const indexPath = path.join(frontendDistPath, 'index.html');
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="ko">
+      <head><meta charset="UTF-8"><title>노무체크 AI Server</title></head>
+      <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+        <h1>🚀 노무체크 AI 서버가 정상 구동 중입니다.</h1>
+        <p>백엔드 API 및 정밀 계산 엔진이 포트에서 가동 중입니다.</p>
+      </body>
+      </html>
+    `);
+  }
 });
 
 app.listen(PORT, () => {
