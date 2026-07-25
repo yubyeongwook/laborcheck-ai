@@ -22,6 +22,8 @@ export default function PayslipModal({ data = {}, onClose }) {
     baseSalary = 2156880,
     overtimeHours = 0,
     overtimeAllowance = 0,
+    nightHours = 0,
+    nightAllowance = 0,
     holidayHours = 0,
     holidayAllowance = 0,
     annualLeaveHours = 0,
@@ -134,6 +136,11 @@ export default function PayslipModal({ data = {}, onClose }) {
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>연장근로수당 (1.5배)</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{overtimeHours}h</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{overtimeAllowance.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>야간근로수당 (0.5배 가산)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{nightHours}h</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{(nightAllowance || 0).toLocaleString()}</td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>휴일근로수당 (중복가산)</td>

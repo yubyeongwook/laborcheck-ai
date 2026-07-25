@@ -318,11 +318,12 @@ export default function Home() {
     const restsOnHolidays = allText.includes('쉬') || allText.includes('안일');
     const isUnder1Year = allText.includes('1년 미만') || allText.includes('개월');
 
-    // 💡 0% 오차 정밀 스케줄 및 연장근로 파싱 엔진 (오파싱 완벽 원천 차단)
+    // 💡 0% 오차 정밀 스케줄 및 연장근로/야간근로 파싱 엔진
     let dailyWorkHours = 8;
     let breakHours = 1;
     let weeklyWorkHoursTotal = 40;
     let weeklyOvertimeHoursTotal = 0;
+    let weeklyNightHoursTotal = 0;
 
     if (scheduleType === 'fixed') {
       const [sH, sM] = fixedStart.split(':').map(Number);
@@ -340,6 +341,11 @@ export default function Home() {
       const dailyOverSum = dailyOvertime * daysCount;
       const weeklyTotalRaw = dailyWorkHours * daysCount;
       
+      // 야간근로 (22:00~06:00) 정밀 계산
+      const rawNight = calculateNightHours(fixedStart, fixedEnd);
+      const netDailyNight = Math.max(0, rawNight - (parseFloat(fixedNightBreak) || 0));
+      weeklyNightHoursTotal = netDailyNight * daysCount;
+
       // 주 40시간 초과분도 법정 연장근로에 포함
       const weeklyOverFromTotal = Math.max(0, weeklyTotalRaw - 40);
       weeklyOvertimeHoursTotal = Math.max(dailyOverSum, weeklyOverFromTotal);
@@ -348,6 +354,7 @@ export default function Home() {
       let activeDaysCount = 0;
       let totalWeeklyWork = 0;
       let totalDailyOvertime = 0;
+      let totalNightSum = 0;
 
       Object.keys(daySchedules).forEach(day => {
         const sched = daySchedules[day];
@@ -365,6 +372,10 @@ export default function Home() {
           
           totalWeeklyWork += dayRealWork;
           totalDailyOvertime += Math.max(0, dayRealWork - 8);
+
+          const dayRawNight = calculateNightHours(sched.start, sched.end);
+          const dayNetNight = Math.max(0, dayRawNight - (parseFloat(sched.nightBreak) || 0));
+          totalNightSum += dayNetNight;
         }
       });
 
@@ -372,17 +383,23 @@ export default function Home() {
         dailyWorkHours = totalWeeklyWork / activeDaysCount;
       }
       weeklyWorkHoursTotal = totalWeeklyWork;
+      weeklyNightHoursTotal = totalNightSum;
       const weeklyOverFrom40 = Math.max(0, totalWeeklyWork - 40);
       weeklyOvertimeHoursTotal = Math.max(totalDailyOvertime, weeklyOverFrom40);
     }
 
     const monthlyOvertime = Math.round(weeklyOvertimeHoursTotal * 4.35 * 100) / 100;
+    const monthlyNightHours = Math.round(weeklyNightHoursTotal * 4.35 * 100) / 100;
+
     const overtimeMult = is5Over ? 1.5 : 1.0;
     const monthlyOvertimeWeighted = Math.round(monthlyOvertime * overtimeMult * 100) / 100;
     
     const minWage = 10320; // 2026년 기준 최저시급
     const basePayFull = 209 * minWage; // 2,156,880원 (주 40시간 기본 209시간 총액)
     const overtimePay = Math.round((monthlyOvertimeWeighted * minWage) / 10) * 10;
+    
+    // 법정 야간근로수당 (5인 이상 0.5배 가산)
+    const nightAllowance = is5Over ? Math.round((monthlyNightHours * minWage * 0.5) / 10) * 10 : 0;
     const hasMeal = !allText.includes('식대 아니') && !allText.includes('식대 미포함');
     const mealPay = hasMeal ? 200000 : 0;
     
@@ -424,7 +441,7 @@ export default function Home() {
 
     // 기본급 및 총액 산정: 기본 표준은 약정 2,156,880원 내 기본급 1,956,880원 + 식대 200,000원 세팅!
     const actualBasePay = (hasMeal && !isAddOnTop) ? (basePayFull - mealPay) : basePayFull;
-    const totalGross = actualBasePay + overtimePay + mealPay + annualLeaveMonthlyPay + holidayPayMonthly;
+    const totalGross = actualBasePay + overtimePay + mealPay + annualLeaveMonthlyPay + holidayPayMonthly + nightAllowance;
 
     // 4대보험 & 세금 정밀 산출
     const taxableTotal = totalGross - mealPay;
@@ -473,6 +490,8 @@ export default function Home() {
       baseSalary: actualBasePay,
       overtimeHours: Math.round(monthlyOvertime * 100) / 100,
       overtimeAllowance: overtimePay,
+      nightHours: monthlyNightHours,
+      nightAllowance,
       holidayHours: holidayWorkDaysYear > 0 ? Math.round((holidayWorkDaysYear * dailyWorkHours / 12) * 100) / 100 : 0,
       holidayAllowance: holidayPayMonthly,
       annualLeaveHours: includeAnnualLeavePay ? Math.round((unusedLeaveDays / 12 * 8) * 100) / 100 : 0,
