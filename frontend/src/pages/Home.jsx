@@ -211,7 +211,7 @@ export default function Home() {
       } else if (userText.includes('휴게') || userText.includes('점심') || userText.includes('저녁') || userText.includes('아침') || userText.includes('브레이크') || userText.includes('쉬는시간')) {
         replyText = `확인했습니다! (식사시간 및 브레이크타임 합산 차감 적용) 💡\n\n5️⃣ **다섯 번째 질문 (야간근로 22시~06시 포함 여부)**: 밤 10시(22:00)부터 다음날 아침 6시(06:00) 사이에 일하는 **야간근로 시간**이 포함되어 있나요?\n*(5인 이상 사업장은 야간근로 시 1.5배 가산수당이 의무 적용됩니다)*`;
       } else if ((userText.includes('~') || userText.includes('시') || userText.includes('월') || userText.includes('토') || userText.includes('일')) && !userText.includes('명절') && !userText.includes('쉬') && !userText.includes('야간') && !userText.includes('입사일') && !userText.includes('식대') && !userText.includes('비과세')) {
-        replyText = `네! 요일별/평일·주말 근무조건(**"${userText}"**)을 확인했습니다! 💡\n\n4️⃣ **네 번째 질문 (식사시간 & 브레이크타임 합산)**: 하루 **식사시간(아침/점심/저녁 각 30분~1시간)**과 **중간 브레이크 타임(쉬는시간)**이 다 합치면 하루 총 몇 시간인가요? 평일과 주말의 휴게시간이 다른가요?\n*(예: "점심 1시간 + 저녁 30분 + 브레이크 1시간 = 총 2시간 30분 휴게" 처럼 말씀해 주세요)*`;
+        replyText = `네! 요일별/평일·주말 근무조건(**"${userText}"**)을 확인했습니다! 💡\n\n4️⃣ **네 번째 질문**: **식사시간을 포함하여 하루 총 휴게시간이 어떻게 되시나요?**\n*(예: "점심 1시간 + 브레이크 1시간 = 총 2시간" 또는 "1시간 30분")*`;
       } else if (userText.includes('야간') || userText.includes('밤') || userText.includes('새벽') || userText.includes('22시') || userText.includes('없음') || userText.includes('없어')) {
         replyText = `네! 야간근로 조건 확인했습니다! 💡\n\n6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 매장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 유급휴일로 처리되어 휴일근로수당에서 차감되며, 나와서 일하시는 경우 1.5배 휴일근로수당이 적용됩니다)*`;
       } else if (userText.includes('명절') || userText.includes('공휴일') || userText.includes('대체') || userText.includes('쉬') || userText.includes('일해') || userText.includes('나와')) {
