@@ -196,18 +196,25 @@ export default function Home() {
     일: { active: false, start: '09:00', end: '15:00', breakTime: '0.5', nightBreak: '0.0' },
   });
 
-  // 선택한 요일들에 출퇴근시간 및 휴게시간 일괄 적용 함수
+  // 선택한 요일들에 출퇴근시간 및 휴게시간 일괄 적용 함수 (선택한 요일만 근무 활성화, 미선택 요일은 자동 휴무 처리!)
   const handleApplyBatchToSelectedDays = () => {
     setDaySchedules(prev => {
       const next = { ...prev };
-      batchDays.forEach(day => {
-        next[day] = {
-          ...next[day],
-          active: true,
-          start: batchStart,
-          end: batchEnd,
-          breakTime: batchBreak
-        };
+      ['월', '화', '수', '목', '금', '토', '일'].forEach(day => {
+        if (batchDays.includes(day)) {
+          next[day] = {
+            ...next[day],
+            active: true,
+            start: batchStart,
+            end: batchEnd,
+            breakTime: batchBreak
+          };
+        } else {
+          next[day] = {
+            ...next[day],
+            active: false
+          };
+        }
       });
       return next;
     });
@@ -1080,7 +1087,7 @@ export default function Home() {
                     {/* ⚡ 선택 요일 먼저 체크 후 출퇴근/휴게시간 일괄 동일 적용 툴 */}
                     <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(56, 189, 248, 0.3)', marginBottom: '0.85rem' }}>
                       <div style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span>⚡ 선택한 요일들 먼저 체크 ➔ 동일 근무시간 & 휴게시간 일괄 적용</span>
+                        <span>⚡ 일할 요일들 체크 ➔ 일괄 적용 (체크한 요일만 근무 전환!)</span>
                       </div>
 
                       {/* 1) 요일 먼저 체크 */}
@@ -1150,13 +1157,13 @@ export default function Home() {
                           일괄 적용
                         </button>
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.35rem', fontStyle: 'italic' }}>
-                        * 24시간제 자동 적용 (오후 10시 ➔ 22:00, 오후 1시 ➔ 13:00)
+                      <div style={{ fontSize: '0.72rem', color: '#38bdf8', marginTop: '0.35rem', fontWeight: 600 }}>
+                        💡 [일괄 적용] 누르시면 체크한 요일만 근무로 켜지고 나머지 요일은 자동 휴무 처리됩니다!
                       </div>
                     </div>
 
                     <div style={{ fontSize: '0.76rem', color: '#f59e0b', fontWeight: 700, marginBottom: '0.5rem' }}>
-                      💡 아래 요일별 개별 카드에서 출퇴근 시각과 휴게시간을 개별 수정할 수 있습니다:
+                      💡 토요일 등 남은 요일만 아래 카드에서 [근무]로 켜고 시간을 세팅하시면 자동 합산됩니다:
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
