@@ -82,7 +82,7 @@ export class MasterAgentOrchestrator {
     if (currentSlots.workDaysPerWeek === undefined) missing.push('주당 근무일수 (예: 주 5일)');
     if (!currentSlots.dailyStartTime) missing.push('일일 출근시간 (예: 09:00)');
     if (!currentSlots.dailyEndTime) missing.push('일일 퇴근시간 (예: 18:00)');
-    if (currentSlots.breakTimeMinutes === undefined) missing.push('일일 휴게시간 (예: 60분)');
+    if (currentSlots.breakTimeMinutes === undefined) missing.push('일일 총 휴게시간 (식사시간 + 브레이크 타임 합산 분)');
     if (currentSlots.hourlyOrMonthlyBaseSalary === undefined) missing.push('약정 임금 (시급 또는 월 기본급 원)');
     if (currentSlots.hasHolidayAllowanceIncluded === undefined) missing.push('포괄임금/휴일·연차수당 녹임 여부');
 
