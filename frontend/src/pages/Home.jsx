@@ -133,7 +133,7 @@ export default function Home() {
     } else if (initialText.includes('퇴직금') || initialText.includes('퇴사')) {
       initialGreeting = `안녕하세요! 노무체크 AI **퇴직금 수석 에이전트**입니다. 💰\n\n"${initialText}" 0% 오차 정밀 산출을 위해 질문을 하나씩 여쭤볼게요!\n\n1️⃣ **첫 번째 질문**: **입사일과 퇴사일(또는 예상 퇴사일)**은 언제이신가요?`;
     } else {
-      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 정밀 계산을 위해 질문을 하나씩 차근차근 드릴게요! 대화하듯 편하게 답변해 주세요.\n\n1️⃣ **첫 번째 질문**: **시급, 일급, 월급** 중 어떤 방식으로 급여를 받으시나요?`;
+      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 0% 오차 정밀 산출을 위해 **고정밀 8단계 질문**을 하나씩 차근차근 드릴게요! 대화하듯 편하게 답변해 주세요.\n\n1️⃣ **첫 번째 질문**: **시급, 일급, 월급, 포괄임금** 중 어떤 방식으로 급여를 받으시나요?`;
     }
 
     setMessages([
@@ -200,19 +200,23 @@ export default function Home() {
           replyText = `네, 퇴직금 문의 확인했습니다! 💰\n\n2️⃣ **두 번째 질문**: 퇴사 전 3개월 동안 받으셨던 **세전 월급(기본급+수당)**은 대략 얼마 정도이신가요?`;
         }
       }
-      else if (userText === '월급' || userText === '시급' || userText === '일급' || userText.includes('월급으로') || userText.includes('시급으로')) {
-        const typeStr = userText.includes('시급') ? '시급' : userText.includes('일급') ? '일급' : '월급';
-        replyText = `네, **${typeStr}** 방식으로 확인하였습니다! 💡\n\n2️⃣ **두 번째 질문**: 사장님 및 동거 친족(가족)을 제외하고 **평소 함께 일하는 상시 근로자가 5명 이상**인가요?\n*(근로기준법 제11조에 따라 사장님과 동거 가족은 제외되며, 5인 이상 시 연장·야간·휴일수당 1.5배 가산 및 연차유급휴가가 의무 적용됩니다)*`;
+      else if (userText === '월급' || userText === '시급' || userText === '일급' || userText.includes('월급으로') || userText.includes('시급으로') || userText.includes('포괄임금')) {
+        const typeStr = userText.includes('시급') ? '시급' : userText.includes('일급') ? '일급' : userText.includes('포괄') ? '포괄임금' : '월급';
+        replyText = `네, **${typeStr}** 방식으로 확인하였습니다! 💡\n\n2️⃣ **두 번째 질문 (5인 이상 법적 판정)**: 사장님 본인 및 동거하는 친족(가족)을 제외하고 **평소 매장에서 함께 일하는 순수 상시 근로자가 5명 이상**인가요?\n*(근로기준법 제11조에 따라 사장님과 동거 가족은 제외되며, 5인 이상 시 연장·야간·휴일수당 1.5배 가산 및 연차유급휴가가 의무 적용됩니다)*`;
       } else if (userText.includes('5명') || userText.includes('5인') || userText.includes('인 이상') || userText.includes('인 미만')) {
         const is5 = !userText.includes('미만');
-        replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문 (근무시간 & 식사·브레이크타임 합산)**: 출퇴근 시간과 하루 **식사시간(아침/점심/저녁 각 30분 또는 1시간)** 및 **브레이크 타임(중간 쉬는시간)**을 다 합치면 하루 총 몇 시간인가요?\n*(예: "월~금 10:00~22:00 / 점심 1시간 + 저녁 30분 + 브레이크 1시간 = 총 휴게 2시간 30분" 처럼 말씀해 주시면 정확히 합산 차감 산정합니다!)*`;
-      } else if ((userText.includes('~') || userText.includes('시') || userText.includes('월') || userText.includes('토') || userText.includes('일')) && !userText.includes('명절') && !userText.includes('쉬') && !userText.includes('입사일') && !userText.includes('식대') && !userText.includes('비과세')) {
-        replyText = `네! 요일별 근무시간 및 식사/브레이크타임 조건(**"${userText}"**)을 확인했습니다! 💡\n\n4️⃣ **네 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 사업장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 해당 공휴일 및 대체공휴일은 유급휴일로 처리되어 휴일근로수당 계산 시 차감 적용됩니다)*`;
+        replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문 (근무일수 & 요일별 출퇴근 시간)**: 주 며칠 근무하시나요? 그리고 **평일과 주말의 출퇴근 시간이 같은가요, 요일별로 다른가요?**\n*(다르면 예: "월~금 10:00~22:00 / 토요일 10:00~17:00" 처럼 나눠서 말씀해 주세요)*`;
+      } else if ((userText.includes('~') || userText.includes('시') || userText.includes('월') || userText.includes('토') || userText.includes('일')) && !userText.includes('명절') && !userText.includes('쉬') && !userText.includes('야간') && !userText.includes('입사일') && !userText.includes('식대') && !userText.includes('비과세')) {
+        replyText = `네! 요일별 근무시간 조건(**"${userText}"**)을 확인했습니다! 💡\n\n4️⃣ **네 번째 질문 (식사시간 & 브레이크타임 합산)**: 하루 **식사시간(아침/점심/저녁 각 30분~1시간)**과 **중간 브레이크 타임(쉬는시간)**이 다 합치면 하루 총 몇 시간인가요? 평일과 주말의 휴게시간이 다른가요?\n*(예: "점심 1시간 + 저녁 30분 + 브레이크 1시간 = 총 2시간 30분 휴게" 처럼 말씀해 주세요)*`;
+      } else if (userText.includes('휴게') || userText.includes('점심') || userText.includes('저녁') || userText.includes('브레이크') || userText.includes('쉬는시간')) {
+        replyText = `확인했습니다! (식사시간 및 브레이크타임 합산 차감 적용) 💡\n\n5️⃣ **다섯 번째 질문 (야간근로 22시~06시 포함 여부)**: 밤 10시(22:00)부터 다음날 아침 6시(06:00) 사이에 일하는 **야간근로 시간**이 포함되어 있나요?\n*(5인 이상 사업장은 야간근로 시 1.5배 가산수당이 의무 적용됩니다)*`;
+      } else if (userText.includes('야간') || userText.includes('밤') || userText.includes('새벽') || userText.includes('22시') || userText.includes('없음') || userText.includes('없어')) {
+        replyText = `네! 야간근로 조건 확인했습니다! 💡\n\n6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 매장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 유급휴일로 처리되어 휴일근로수당에서 차감되며, 나와서 일하시는 경우 1.5배 휴일근로수당이 적용됩니다)*`;
       } else if (userText.includes('명절') || userText.includes('공휴일') || userText.includes('대체') || userText.includes('쉬') || userText.includes('일해') || userText.includes('나와')) {
         const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
-        replyText = `확인했습니다! (**${restsOnHolidays ? '공휴일/대체공휴일 휴무 - 휴일근로 수당 차감 반영' : '공휴일/대체공휴일 근무 - 1.5배 휴일근로수당 적용'}**) 💡\n\n5️⃣ **다섯 번째 질문 (입사일 & 연차 산정)**: 근로자분의 **입사일(또는 재직 기간이 1년 미만인지, 1년 이상인지)**은 어떻게 되시나요?\n*(근로기준법 제60조에 따라 1년 미만은 월 1일[최대 11일], 1년 이상은 연 15일 유급연차가 산정됩니다)*`;
+        replyText = `확인했습니다! (**${restsOnHolidays ? '공휴일/대체공휴일 휴무 - 휴일근로 수당 차감 반영' : '공휴일/대체공휴일 근무 - 1.5배 휴일근로수당 적용'}**) 💡\n\n7️⃣ **일곱 번째 질문 (입사일 & 연차 산정)**: 근로자분의 **입사일(또는 재직 기간이 1년 미만인지, 1년 이상인지)**은 어떻게 되시나요?\n*(근로기준법 제60조에 따라 1년 미만은 월 1일[최대 11일], 1년 이상은 연 15일 유급연차가 산정됩니다)*`;
       } else if (userText.includes('입사') || userText.includes('년') || userText.includes('개월') || userText.includes('신규') || userText.includes('미만') || userText.includes('이상')) {
-        replyText = `네! 입사일 및 재직기간 조건 확인했습니다! 💡\n\n6️⃣ **마지막 질문**: 식대(월 20만원)처럼 **세금을 안 내도 되는 수당(비과세)**을 넣어서 세금을 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
+        replyText = `네! 입사일 및 재직기간 조건 확인했습니다! 💡\n\n8️⃣ **마지막 질문 (비과세 절세 수당 반영)**: 식대(월 20만원), 자가운전보조금(월 20만원) 등 **세금을 안 내도 되는 비과세 수당**을 넣어서 4대보험료와 소득세를 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
       } else if (userText.includes('5인') || userText.includes('시급') || userText.includes('원') || userText.includes('주 5일') || userText.includes('주 6일') || userText.includes('시간') || userText.includes('월급') || userText.includes('10~22') || userText.includes('식대') || userText.includes('네') || userText.includes('응') || userText.includes('아니')) {
         const is5Over = !userText.includes('5인 미만') && !userText.includes('5인미만');
         const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
@@ -220,7 +224,7 @@ export default function Home() {
 
         let dailyWorkHours = 9.5;
         let breakHours = 2.5;
-        let isDifferentScheduleByDay = userText.includes('/') || userText.includes('토') || userText.includes('주 6일');
+        let isDifferentScheduleByDay = userText.includes('/') || userText.includes('토') || userText.includes('주 6일') || userText.includes('주말');
         
         const timeMatch = userText.match(/(\d{1,2})\s*~\s*(\d{1,2})/);
         if (timeMatch) {
