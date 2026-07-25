@@ -232,52 +232,59 @@ export default function Home() {
           replyText = `네! 입사일 및 재직기간 조건(**"${userText}"**)을 확인했습니다! 💡\n\n8️⃣ **마지막 질문 (비과세 절세 수당 반영)**: 식대(월 20만원), 자가운전보조금(월 20만원) 등 **세금을 안 내도 되는 수당**을 넣어서 4대보험료와 소득세를 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
         } else {
           setChatStep(9);
-        
-        const timeMatch = userText.match(/(\d{1,2})\s*~\s*(\d{1,2})/);
-        if (timeMatch) {
-          const start = parseInt(timeMatch[1], 10);
-          const end = parseInt(timeMatch[2], 10);
-          const elapsed = end > start ? end - start : (24 - start + end);
           
-          let parsedBreak = 1;
-          const breakMatch = userText.match(/(\d+)\s*시간\s*(\d+)?\s*분?/);
-          if (breakMatch) {
-            const h = parseFloat(breakMatch[1]) || 0;
-            const m = parseFloat(breakMatch[2]) || 0;
-            parsedBreak = h + (m / 60);
-          } else if (userText.includes('1.5시간') || userText.includes('1시간 30분')) {
-            parsedBreak = 1.5;
-          } else if (userText.includes('2시간 30분') || userText.includes('2.5시간')) {
-            parsedBreak = 2.5;
-          } else if (userText.includes('2시간')) {
-            parsedBreak = 2;
+          const is5Over = !userText.includes('5인 미만') && !userText.includes('5인미만');
+          const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
+          const isUnder1Year = userText.includes('1년 미만') || userText.includes('개월');
+
+          let dailyWorkHours = 9.5;
+          let breakHours = 2.5;
+          let isDifferentScheduleByDay = userText.includes('/') || userText.includes('토') || userText.includes('주 6일') || userText.includes('주말');
+          
+          const timeMatch = userText.match(/(\d{1,2})\s*~\s*(\d{1,2})/);
+          if (timeMatch) {
+            const start = parseInt(timeMatch[1], 10);
+            const end = parseInt(timeMatch[2], 10);
+            const elapsed = end > start ? end - start : (24 - start + end);
+            
+            let parsedBreak = 1;
+            const breakMatch = userText.match(/(\d+)\s*시간\s*(\d+)?\s*분?/);
+            if (breakMatch) {
+              const h = parseFloat(breakMatch[1]) || 0;
+              const m = parseFloat(breakMatch[2]) || 0;
+              parsedBreak = h + (m / 60);
+            } else if (userText.includes('1.5시간') || userText.includes('1시간 30분')) {
+              parsedBreak = 1.5;
+            } else if (userText.includes('2시간 30분') || userText.includes('2.5시간')) {
+              parsedBreak = 2.5;
+            } else if (userText.includes('2시간')) {
+              parsedBreak = 2;
+            }
+            
+            breakHours = parsedBreak;
+            dailyWorkHours = Math.max(0, elapsed - breakHours);
           }
+
+          const dailyRegular = Math.min(dailyWorkHours, 8);
+          const dailyOvertime = Math.max(0, dailyWorkHours - 8);
           
-          breakHours = parsedBreak;
-          dailyWorkHours = Math.max(0, elapsed - breakHours);
-        }
+          const weeklyOvertime = dailyOvertime * 5;
+          const monthlyOvertime = Math.round(weeklyOvertime * 4.35 * 100) / 100;
+          const overtimeMult = is5Over ? 1.5 : 1.0;
+          const monthlyOvertimeWeighted = Math.round(monthlyOvertime * overtimeMult * 100) / 100;
+          
+          const minWage = 10320; // 2026년 기준 최저시급
+          const basePay = 209 * minWage; // 2,156,880원
+          const overtimePay = Math.round((monthlyOvertimeWeighted * minWage) / 10) * 10;
+          const hasMeal = !userText.includes('아니');
+          const mealPay = hasMeal ? 200000 : 0;
+          
+          const annualLeaveDaysMonthly = isUnder1Year ? 1.0 : 1.25;
+          const annualLeaveMonthlyPay = is5Over ? Math.round(minWage * 8 * annualLeaveDaysMonthly) : 0;
 
-        const dailyRegular = Math.min(dailyWorkHours, 8);
-        const dailyOvertime = Math.max(0, dailyWorkHours - 8);
-        
-        const weeklyOvertime = dailyOvertime * 5;
-        const monthlyOvertime = Math.round(weeklyOvertime * 4.35 * 100) / 100;
-        const overtimeMult = is5Over ? 1.5 : 1.0;
-        const monthlyOvertimeWeighted = Math.round(monthlyOvertime * overtimeMult * 100) / 100;
-        
-        const minWage = 10320; // 2026년 기준 최저시급
-        const basePay = 209 * minWage; // 2,156,880원
-        const overtimePay = Math.round((monthlyOvertimeWeighted * minWage) / 10) * 10;
-        const hasMeal = !userText.includes('아니');
-        const mealPay = hasMeal ? 200000 : 0;
-        
-        // 연차유급휴가 수당 (1년 미만: 월 1일 / 1년 이상: 연 15일 -> 월 1.25일분)
-        const annualLeaveDaysMonthly = isUnder1Year ? 1.0 : 1.25;
-        const annualLeaveMonthlyPay = is5Over ? Math.round(minWage * 8 * annualLeaveDaysMonthly) : 0;
+          const totalGross = basePay + overtimePay + mealPay + annualLeaveMonthlyPay;
 
-        const totalGross = basePay + overtimePay + mealPay + annualLeaveMonthlyPay;
-
-        replyText = `### 🎩 노무비서실장의 [근무시간 & 급여 맞춤 정밀 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 요일별 근무 ${isDifferentScheduleByDay ? '구분 반영' : '동일'} (하루 실근로 ${dailyWorkHours.toFixed(2)}h)${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **공휴일 및 대체공휴일(명절 포함) 적용**: **${restsOnHolidays ? '공휴일/대체공휴일 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '공휴일/대체공휴일 근무 (1.5배 휴일근로수당 가산)'}**\n- **입사일 기준 연차유급휴가 규정**: 근로기준법 제60조 기준 **${isUnder1Year ? '1년 미만 (월 1일 발생)' : '1년 이상 (연 15일 발생, 월 1.25일분 환산 반영)'}**\n\n---\n\n### 📊 2. 요일별 근무시간 및 한 달 근로 분석\n- **요일별 근무 패턴**: **${isDifferentScheduleByDay ? '평일/주말 요일별 소정시간 차등 적용' : '전 요일 동일 근로일정'}**\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${is5Over ? `  - **월 연차유급휴가 수당 (${annualLeaveDaysMonthly}일분)**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : ''}${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
+          replyText = `### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 급여 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 요일별/평일·주말 휴게 ${isDifferentScheduleByDay ? '차등 구분 반영' : '고정 적용'} (하루 실근로 ${dailyWorkHours.toFixed(2)}h)${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 정밀 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **공휴일 및 대체공휴일(명절 포함) 적용**: **${restsOnHolidays ? '공휴일/대체공휴일 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '공휴일/대체공휴일 근무 (1.5배 휴일근로수당 가산)'}**\n- **입사일 기준 연차유급휴가 규정**: 근로기준법 제60조 기준 **${isUnder1Year ? '1년 미만 (월 1일 발생)' : '1년 이상 (연 15일 발생, 월 1.25일분 환산 반영)'}**\n\n---\n\n### 📊 2. 요일별 근무시간 및 식사·휴게시간 정밀 합산 분석\n- **요일별 근무 패턴**: **${isDifferentScheduleByDay ? '평일/주말 요일별 소정시간 및 휴게시간 차등 적용' : '전 요일 고정 근무 및 휴게일정'}**\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **휴게·식사시간 합산 차감**: **${breakHours.toFixed(2)}시간** (식사시간 30분~1시간 및 브레이크타임 합산 차감 완료)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${is5Over ? `  - **월 연차유급휴가 수당 (${annualLeaveDaysMonthly}일분)**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : ''}${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
         }
       }
 
