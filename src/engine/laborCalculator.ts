@@ -29,6 +29,12 @@ export const CONSTANTS = {
 
   /** 2026년 대한민국 법정 최저시급 (원) */
   MINIMUM_HOURLY_WAGE_2026: 10030,
+
+  /** 국민연금 매년 7월 개정 기준소득월액 하한액 (원) */
+  NATIONAL_PENSION_MIN_BASE: 390000,
+
+  /** 국민연금 매년 7월 개정 기준소득월액 상한액 (원) */
+  NATIONAL_PENSION_MAX_BASE: 6370000,
 };
 
 // ----------------------------------------------------------------------
@@ -374,6 +380,10 @@ export class TaxExemptSalaryCalculator {
 
     const totalTaxExemptAmount = mealExempt + drivingExempt + childcareExempt + researchExempt;
     const netTaxableAmount = Math.max(0, reportedSalary - totalTaxExemptAmount);
+
+    // 국민연금 매년 7월 개정 기준소득월액 상·하한액 조정 (하한 39만원 ~ 상한 637만원)
+    const pensionBaseAmount = Math.min(CONSTANTS.NATIONAL_PENSION_MAX_BASE, Math.max(CONSTANTS.NATIONAL_PENSION_MIN_BASE, netTaxableAmount));
+    const pensionWorkerMonthly = Math.round(pensionBaseAmount * 0.0475); // 4.75% 요율
 
     // 비과세 적용에 따른 월 4대보험 및 소득세 절감 추정액 (국민연금 4.75% 포함 합산 요율 적용)
     const taxSavingsEstimate = Math.round(totalTaxExemptAmount * 0.1875);
