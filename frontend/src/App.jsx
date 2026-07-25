@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import AuthModal from './components/AuthModal.jsx';
+import FloatingContactButton from './components/FloatingContactButton.jsx';
 
 import Home from './pages/Home.jsx';
 import WorkerHub from './pages/WorkerHub.jsx';
@@ -112,6 +113,7 @@ function App() {
       </Routes>
       <Footer />
       <AuthModal />
+      <FloatingContactButton />
     </AuthProvider>
   );
 }

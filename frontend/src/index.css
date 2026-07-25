@@ -934,6 +934,41 @@ input, textarea {
   background: rgba(56, 189, 248, 0.1);
 }
 
+.navbar-link-highlight {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(239, 68, 68, 0.22)) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  font-weight: 700 !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+  animation: pulseHighlight 2.5s infinite;
+}
+
+.navbar-link-highlight:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(239, 68, 68, 0.4)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
+  transform: translateY(-1px);
+}
+
+.navbar-mobile-link-highlight {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2)) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  font-weight: 700 !important;
+}
+
+@keyframes pulseHighlight {
+  0% {
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+  }
+}
+
 .navbar-auth {
   display: flex;
   align-items: center;
@@ -1679,4 +1714,105 @@ input, textarea {
   color: #fca5a5;
   line-height: 1.6;
 }
+
+/* Floating Quick Labor Contact Button */
+.floating-contact-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  border-radius: 50px;
+  padding: 2px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4), 0 0 15px rgba(239, 68, 68, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.floating-contact-btn:hover {
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 15px 30px -5px rgba(245, 158, 11, 0.6), 0 0 25px rgba(239, 68, 68, 0.5);
+}
+
+.floating-contact-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  z-index: -1;
+  animation: floatingPulse 2s infinite;
+  opacity: 0.7;
+}
+
+@keyframes floatingPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.12, 1.25);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.floating-contact-content {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: #0b0f19;
+  padding: 0.75rem 1.35rem;
+  border-radius: 48px;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.floating-contact-icon {
+  color: #f59e0b;
+  transition: transform 0.2s ease;
+}
+
+.floating-contact-btn:hover .floating-contact-icon {
+  transform: rotate(-10deg) scale(1.1);
+}
+
+.floating-contact-text {
+  background: linear-gradient(135deg, #ffffff 40%, #fde68a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.floating-contact-sparkle {
+  color: #f59e0b;
+  animation: sparkleRotate 3s linear infinite;
+}
+
+@keyframes sparkleRotate {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@media (max-width: 768px) {
+  .floating-contact-btn {
+    bottom: 1.5rem;
+    right: 1.2rem;
+  }
+  .floating-contact-content {
+    padding: 0.65rem 1.1rem;
+    font-size: 0.88rem;
+  }
+}
+
 

@@ -14,7 +14,7 @@ const NAV_LINKS = [
   { to: '/employer/ai-consultant', label: 'AI컨설턴트' },
   { to: '/worker', label: '근로자' },
   { to: '/employer', label: '사업주' },
-  { to: '/contact', label: '노무상담요청' },
+  { to: '/contact', label: '노무상담요청', highlight: true },
 ];
 
 const getDisplayName = (user) => {
@@ -42,7 +42,9 @@ function Navbar() {
             <NavLink
               key={link.to}
               to={link.to}
-              className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
+              className={({ isActive }) => 
+                `navbar-link ${link.highlight ? 'navbar-link-highlight' : ''} ${isActive ? 'active' : ''}`
+              }
             >
               {link.label}
             </NavLink>
@@ -84,7 +86,7 @@ function Navbar() {
             <Link
               key={link.to}
               to={link.to}
-              className={`navbar-mobile-link ${location.pathname === link.to ? 'active' : ''}`}
+              className={`navbar-mobile-link ${link.highlight ? 'navbar-mobile-link-highlight' : ''} ${location.pathname === link.to ? 'active' : ''}`}
               onClick={() => setMobileOpen(false)}
             >
               {link.label}
