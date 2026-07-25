@@ -31,10 +31,10 @@ export const CONSTANTS = {
   MINIMUM_HOURLY_WAGE_2026: 10030,
 
   /** 국민연금 매년 7월 개정 기준소득월액 하한액 (원) */
-  NATIONAL_PENSION_MIN_BASE: 390000,
+  NATIONAL_PENSION_MIN_BASE: 400000,
 
   /** 국민연금 매년 7월 개정 기준소득월액 상한액 (원) */
-  NATIONAL_PENSION_MAX_BASE: 6370000,
+  NATIONAL_PENSION_MAX_BASE: 6590000,
 };
 
 // ----------------------------------------------------------------------
