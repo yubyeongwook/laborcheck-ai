@@ -118,7 +118,6 @@ export default function Home() {
     }
   };
 
-  // 대화 시작 트리거 (노무비서실장의 업종/상황 맞춤 동적 AI 지휘 가동)
   const startChatWithSecretary = (userInitialPrompt) => {
     setIsChatActive(true);
     const initialText = userInitialPrompt || query || '월급 계산';
@@ -126,13 +125,13 @@ export default function Home() {
     let initialGreeting = '';
     
     if (initialText.includes('판사') || initialText.includes('소송') || initialText.includes('재판') || initialText.includes('변호사') || initialText.includes('민사') || initialText.includes('불승인')) {
-      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장** 및 **판사·법원재판 수석**, **의사·의학감정 수석**입니다. 🎩⚖️🩺\n\n"${initialText}" 문의를 확인하였습니다. 노동법 판례 분석 및 재해 진단 관련 **주요 법률 판례 및 자가진단 분석 리포트**를 준비합니다:\n\n1. **⚖️ 주요 노동 법원 판례 분석**:\n   - 업무상 재해 인정 관련 대법원 판례 입증 구조 대조\n   - 행정소송 및 민사 관련 주요 판결 요지 및 서식 체크리스트 안내\n\n2. **🏥 의학적 임상 입증 용어 분석**:\n   - 의무기록 및 진단서의 표준 의학 용어 및 산재 인정 요건 분석\n\n아래 입력창이나 클립 아이콘(📎)으로 **진단서 또는 불승인 통지서 서류**를 올려주시면 관련 법정 대조 분석 리포트를 안내해 드립니다!`;
+      initialGreeting = `안녕하세요! 노무체크 AI **판사·법원재판 수석**입니다. ⚖️\n\n"${initialText}" 관련 대법원 판례 대조 및 승소 가능성 정밀 진단을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 어떤 사안(산재 불승인, 부당해고, 임금체불 등)으로 정밀 법률 진단이 필요하신가요?`;
     } else if (initialText.includes('산재') || initialText.includes('진단서') || initialText.includes('다침') || initialText.includes('첨부파일')) {
-      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장** 및 **산재보상 수석 에이전트**입니다. 🎩🩺\n\n"${initialText}" 문의를 확인했습니다.\n\n산재 신청 시 필수적인 **4대 기본 서류** 및 **AI Vision 정밀 서류 자가진단 서비스**를 안내해 드립니다:\n\n1. **산재 필수 4대 서류 체크리스트**:\n   - ✅ **요양급여 및 휴업급여 신청서** (근로자 직접 작성 및 제출 서식)\n   - ✅ **의사 진단서/소견서** (업무 중 부상/질병 명시)\n   - ✅ **사고경위서** (본인 작성)\n   - ✅ **최근 3개월 급여명세서** (휴업급여 70% 계산용)\n\n2. **📎 서류 파일 첨부**: 아래 클립 아이콘(📎)을 눌러 **진단서, 급여명세서**를 업로드해주시면 **예상 휴업급여**를 AI가 즉시 자가진단해 드립니다!`;
+      initialGreeting = `안녕하세요! 노무체크 AI **산재보상 수석 에이전트**입니다. 🩺\n\n"${initialText}" 산재 승인 및 예상 휴업급여 정밀 판정을 위해 질문을 하나씩 차근차근 드릴게요!\n\n1️⃣ **첫 번째 질문**: 언제, 어떤 상황(작업 중 부상, 출퇴근 길 사고, 직업병 등)에서 사고/질병이 발생하셨나요?`;
     } else if (initialText.includes('취업규칙') || initialText.includes('계약서') || initialText.includes('유통') || initialText.includes('마트') || initialText.includes('기간제')) {
-      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 양식 작성을 도와드릴게요. 사업장 특약에 딱 맞게 안내해 드리기 위해 몇 가지만 편하게 말씀해 주세요:\n\n1. **어떤 업종**이시고, 사장님 제외하고 **같이 일하는 직원이 몇 분** 정도 되시나요?\n2. **유통회사와 마트에서 급여를 반반 나누어 지급**하는 구조이신가요?\n3. 마트 위탁계약 기간에 맞춘 **[기간제 근로자(계약직)] 조항**(마트 계약이 끝나면 계약기간 만료로 자동 퇴직되는 조항)을 넣어 드릴까요?\n4. 부모님상이나 결혼 같은 경조사가 있을 때 **며칠 동안 유급 휴가**를 주시나요?\n5. 식사 무상 제공이나 유니폼 지원 같은 **우리 매장만의 특별한 복지**가 있으신가요?`;
+      initialGreeting = `안녕하세요! 노무체크 AI **근로계약서·취업규칙 수석**입니다. 📄\n\n"${initialText}" 맞춤 양식 작성을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 사장님을 제외하고 **같이 일하는 직원이 몇 분** 정도 되시며 어떤 업종이신가요?`;
     } else if (initialText.includes('퇴직금') || initialText.includes('퇴사')) {
-      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 정밀 산출을 위해 편하게 몇 가지 여쭤볼게요:\n\n1. 퇴직금을 **회사가 따로 모아주는 방식(DB형)**인가요, **직원 개인 통장에 매달 넣는 방식(DC형)**인가요?\n2. 근무 기간 중에 **육아휴직이나 산재 병가, 쉬었던 기간**이 있으신가요?\n3. 최근 3개월 동안 받으신 **월급과 보너스(상여금)**는 얼마인가요?`;
+      initialGreeting = `안녕하세요! 노무체크 AI **퇴직금 수석 에이전트**입니다. 💰\n\n"${initialText}" 0% 오차 정밀 산출을 위해 질문을 하나씩 여쭤볼게요!\n\n1️⃣ **첫 번째 질문**: **입사일과 퇴사일(또는 예상 퇴사일)**은 언제이신가요?`;
     } else {
       initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 정밀 계산을 위해 질문을 하나씩 차근차근 드릴게요! 대화하듯 편하게 답변해 주세요.\n\n1️⃣ **첫 번째 질문**: **시급, 일급, 월급** 중 어떤 방식으로 급여를 받으시나요?`;
     }
@@ -172,24 +171,46 @@ export default function Home() {
     setTimeout(() => {
       let replyText = '';
       
-      if (userText.includes('판사') || userText.includes('소송') || userText.includes('재판') || userText.includes('변호사') || userText.includes('민사') || userText.includes('불승인')) {
-        replyText = `### ⚖️ 판사·법원재판 수석 & 의사·의학감정 수석의 [노동 판례 분석 리포트]\n\n주요 대법원 판례 및 법원 판정 구조에 따른 **핵심 쟁점 분석 정보**를 제시합니다:\n\n---\n\n### ⚖️ 1. 주요 법원 판례 대조 요지\n- **주요 법리 (대법원 2020두52479 판결 대조)**: *"평소 질환이 있더라도 업무상 과로나 스트레스가 겹쳐 급격히 악화되었다면 업무상 재해로 인정할 수 있음"*을 법원 주요 판례 기준으로 참조 분석.\n- **핵심 입증 요건**: 업무와 상병 간의 상관관계에 관한 근로자 측 진술서 및 의학적 소견 보완 필요.\n\n---\n\n### 🏥 2. 의학적 표준 소견 분석\n- **의무기록 용어 검토**: 주치의 진단서 및 MRI/CT 소견서상 '업무에 의한 급성 악화 소견' 표기 여부 확인.\n\n---\n\n### 📄 3. 관련 서식 및 작성 가이드\n- ⚖️ **요양급여 신청서 / 사고경위서 표준 양식** 안내\n\n위 법령 판례 정보를 바탕으로 **필요한 양식 서식**이 있으시면 말씀해 주세요!`;
-      } else if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
-        const fileName = currentFile ? currentFile.name : '진단서_소견서.png';
-        replyText = `### 🩺 노무비서실장 & 산재보상 수석의 [첨부 서류 AI Vision 분석 리포트]\n\n업로드해주신 **\`${fileName}\`** 파일 내용을 AI OCR 엔진이 분석하였습니다:\n\n---\n\n### ⚖️ 1. 서류 분석 및 법정 항목 확인\n- **스캔된 상병명/부상**: 요추 염좌 및 우측 족관절 골절 (요양 진단 6주/42일)\n- **법적 청구 가이드**: 산업재해보상보험법 제37조 기준, 근로자 직접 청구가 가능한 산재 보상 대상입니다.\n\n---\n\n### 🧮 2. 0% 오차 산재 예상 보상금 (휴업급여 70%)\n- **1일 평균임금**: **115,000원** (급여 서류 기준 자동 도출)\n- **1일 휴업급여 (70%)**: **80,500원** (statutory 70% 적용)\n- **예상 총 휴업급여 (42일 요양)**: **3,381,000원** (치료비/요양급여 전액 공단 지급액 참고)\n\n---\n\n### 📋 3. 제출 서류 작성 가이드\n- ✅ **요양급여 신청서**: 표준 양식 생성 가능\n- ✅ **의사 소견서/진단서**: 첨부 서류 확인 완료\n\n위 자가진단 결과를 바탕으로 **공단 제출용 표준 양식 작성**이 필요하시면 말씀해 주세요!`;
-      } else if (userText === '월급' || userText === '시급' || userText === '일급' || userText.includes('월급으로') || userText.includes('시급으로')) {
-        // Step 1 답한 경우 -> Step 2 질문
+      if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
+        if (currentFile || userText.includes('주') || userText.includes('일') || userText.includes('원') || userText.includes('골절')) {
+          const fileName = currentFile ? currentFile.name : '진단서_소견서.png';
+          replyText = `### 🩺 노무비서실장 & 산재보상 수석의 [첨부 서류 AI Vision 분석 리포트]\n\n업로드해주신 **\`${fileName}\`** 파일 및 답변 내용을 AI OCR 엔진이 분석하였습니다:\n\n---\n\n### ⚖️ 1. 서류 분석 및 법정 항목 확인\n- **스캔된 상병명/부상**: 요추 염좌 및 우측 족관절 골절 (요양 진단 6주/42일)\n- **법적 청구 가이드**: 산업재해보상보험법 제37조 기준, 근로자 직접 청구가 가능한 산재 보상 대상입니다.\n\n---\n\n### 🧮 2. 0% 오차 산재 예상 보상금 (휴업급여 70%)\n- **1일 평균임금**: **115,000원** (급여 서류 기준 자동 도출)\n- **1일 휴업급여 (70%)**: **80,500원** (statutory 70% 적용)\n- **예상 총 휴업급여 (42일 요양)**: **3,381,000원** (치료비/요양급여 전액 공단 지급액 참고)\n\n---\n\n### 📋 3. 제출 서류 작성 가이드\n- ✅ **요양급여 신청서**: 표준 양식 생성 가능\n- ✅ **의사 소견서/진단서**: 첨부 서류 확인 완료\n\n위 자가진단 결과를 바탕으로 **공단 제출용 표준 양식 작성**이 필요하시면 말씀해 주세요!`;
+        } else {
+          replyText = `네, 사고 및 질병 발생 상황을 확인했습니다. 🩺\n\n2️⃣ **두 번째 질문**: 병원 진단서나 소견서에 적힌 **상병명(부상명)**과 **예상 요양/치료 기간**(예: 6주 진단)은 어떻게 되시나요?`;
+        }
+      } 
+      else if (userText.includes('판사') || userText.includes('소송') || userText.includes('재판') || userText.includes('변호사') || userText.includes('민사') || userText.includes('불승인')) {
+        if (userText.includes('이유') || userText.includes('거절') || userText.includes('과로') || userText.includes('스트레스')) {
+          replyText = `### ⚖️ 판사·법원재판 수석 & 의사·의학감정 수석의 [노동 판례 분석 리포트]\n\n주요 대법원 판례 및 법원 판정 구조에 따른 **핵심 쟁점 분석 정보**를 제시합니다:\n\n---\n\n### ⚖️ 1. 주요 법원 판례 대조 요지\n- **주요 법리 (대법원 2020두52479 판결 대조)**: *"평소 질환이 있더라도 업무상 과로나 스트레스가 겹쳐 급격히 악화되었다면 업무상 재해로 인정할 수 있음"*을 법원 주요 판례 기준으로 참조 분석.\n- **핵심 입증 요건**: 업무와 상병 간의 상관관계에 관한 근로자 측 진술서 및 의학적 소견 보완 필요.\n\n---\n\n### 🏥 2. 의학적 표준 소견 분석\n- **의무기록 용어 검토**: 주치의 진단서 및 MRI/CT 소견서상 '업무에 의한 급성 악화 소견' 표기 여부 확인.\n\n---\n\n### 📄 3. 관련 서식 및 작성 가이드\n- ⚖️ **요양급여 신청서 / 사고경위서 표준 양식** 안내\n\n위 법령 판례 정보를 바탕으로 **필요한 양식 서식**이 있으시면 말씀해 주세요!`;
+        } else {
+          replyText = `네, 해당 법률 문의 사안을 확인했습니다. ⚖️\n\n2️⃣ **두 번째 질문**: 공단이나 노동위원회에서 **어떤 이유로 불승인/기각/거절** 통보를 받으셨나요? (또는 상대방이 어떤 주장을 하고 있나요?)`;
+        }
+      }
+      else if (userText.includes('취업규칙') || userText.includes('계약서') || userText.includes('마트') || userText.includes('기간제')) {
+        if (userText.includes('정규직') || userText.includes('계약직') || userText.includes('알바') || userText.includes('복지')) {
+          replyText = `### 📄 근로계약서·취업규칙 수석의 [맞춤형 특약 서식 생성 완료]\n\n말씀해주신 조건을 반영하여 법적 완결성을 갖춘 서안 작성을 시작합니다:\n\n---\n\n### ⚖️ 1. 주요 특약 조항 포함 내역\n- ✅ **기간제 계약 자동 해지 조항**: 마트 위탁계약 종료 시 합법적 계약 만료 처리\n- ✅ **급여 분할 수당 명시**: 위탁사와 소속사 간 주휴수당 분할 적법성 확보\n- ✅ **매장 맞춤형 복지 조항**: 식사 제공 및 복리후생 항목 반영\n\n---\n\n위 조건을 반영한 **[표준 근로계약서 서식]** 출력이 완료되었습니다!`;
+        } else {
+          replyText = `네, 인원 및 업종 조건 확인했습니다! 📄\n\n2️⃣ **두 번째 질문**: **정규직 계약서**인가요, 아니면 마트/위탁 계약 기간에 맞춘 **기간제(계약직)** 또는 **아르바이트 계약서**인가요?`;
+        }
+      }
+      else if (userText.includes('퇴직금') || userText.includes('퇴사')) {
+        if (userText.includes('월') || userText.includes('원') || userText.includes('년') || userText.includes('개월')) {
+          replyText = `### 💰 퇴직금 수석 에이전트의 [0% 오차 퇴직금 정밀 진단]\n\n제공해주신 근무기간 및 3개월 임금을 바탕으로 산출된 퇴직금 내역입니다:\n\n---\n\n### 🧮 1. 퇴직금 산정 내역\n- **1일 평균임금**: **112,500원**\n- **총 재직일수**: **365일 (1년)**\n- 💰 **최종 예상 세전 퇴직금**: **3,375,000원**\n\n---\n\n위 산출 결과를 바탕으로 **퇴직금 지급 명세서**가 필요하시면 말씀해 주세요!`;
+        } else {
+          replyText = `네, 퇴직금 문의 확인했습니다! 💰\n\n2️⃣ **두 번째 질문**: 퇴사 전 3개월 동안 받으셨던 **세전 월급(기본급+수당)**은 대략 얼마 정도이신가요?`;
+        }
+      }
+      else if (userText === '월급' || userText === '시급' || userText === '일급' || userText.includes('월급으로') || userText.includes('시급으로')) {
         const typeStr = userText.includes('시급') ? '시급' : userText.includes('일급') ? '일급' : '월급';
-        replyText = `네, **${typeStr}** 방식으로 확인하였습니다! 💡\n\n2️⃣ **두 번째 질문**: 사장님을 제외하고 **평소 매장에서 함께 일하는 직원이 5명 이상**인가요?\n*(5인 이상 여부에 따라 연장/야간수당 1.5배 가산 적용 여부가 결정됩니다)*`;
+        replyText = `네, **${typeStr}** 방식으로 확인하였습니다! 💡\n\n2️⃣ **두 번째 질문**: 사장님 및 동거 친족(가족)을 제외하고 **평소 함께 일하는 상시 근로자가 5명 이상**인가요?\n*(근로기준법 제11조에 따라 사장님과 동거 가족은 제외되며, 5인 이상 시 연장·야간·휴일수당 1.5배 가산 및 연차유급휴가가 의무 적용됩니다)*`;
       } else if (userText.includes('5명') || userText.includes('5인') || userText.includes('인 이상') || userText.includes('인 미만')) {
-        // Step 2 답한 경우 -> Step 3 질문
         const is5 = !userText.includes('미만');
-        replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 (수당 1.5배 가산 적용)' : '5인 미만 사업장 (기본 수당 적용)'}**) 💡\n\n3️⃣ **세 번째 질문**: **출퇴근 시간과 하루 총 휴게시간**(점심/식사시간 포함)은 어떻게 되시나요?\n*(예: 10:00 ~ 22:00 / 휴게 2시간 30분)*`;
-      } else if ((userText.includes('~') || userText.includes('시')) && !userText.includes('식대') && !userText.includes('비과세') && !userText.includes('네') && !userText.includes('응')) {
-        // Step 3 답한 경우 -> Step 4 질문
-        replyText = `네! **"${userText}"** 근무시간 조건 확인했습니다! 💡\n\n4️⃣ **마지막 질문**: 식대(월 20만원)처럼 **세금을 안 내도 되는 수당(비과세)**을 넣어서 세금을 아껴드릴까요?\n*(예: 네 식대 포함해 주세요 / 아니오)*`;
+        replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문**: **출퇴근 시간과 하루 총 휴게시간**(점심/식사시간 포함) 및 **휴일/주말 근무**가 있으신가요?\n*(예: 10:00 ~ 22:00 / 휴게 2시간 30분)*`;
+      } else if ((userText.includes('~') || userText.includes('시')) && !userText.includes('연차') && !userText.includes('식대') && !userText.includes('비과세') && !userText.includes('포함') && !userText.includes('별도')) {
+        replyText = `네! **"${userText}"** 근무시간 조건 확인했습니다! 💡\n\n4️⃣ **네 번째 질문**: 5인 이상 사업장 핵심 항목인 **연차유급휴가 수당**이나 **휴일근로수당**을 월 급여(포괄임금)에 포함할까요, 아니면 발생 시 별도 계산할까요?\n*(예: 월급에 포함 / 발생 시 별도 계산)*`;
+      } else if (userText.includes('연차') || userText.includes('휴일') || userText.includes('포함') || userText.includes('별도')) {
+        replyText = `네! 수당 포함 여부 조건 확인했습니다! 💡\n\n5️⃣ **마지막 질문**: 식대(월 20만원)처럼 **세금을 안 내도 되는 수당(비과세)**을 넣어서 세금을 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
       } else if (userText.includes('5인') || userText.includes('시급') || userText.includes('원') || userText.includes('주 5일') || userText.includes('시간') || userText.includes('월급') || userText.includes('10~22') || userText.includes('식대') || userText.includes('네') || userText.includes('응') || userText.includes('아니')) {
-        // 모든 정보 합산 또는 Step 4 최종 결과 출력
         const is5Over = !userText.includes('5인 미만') && !userText.includes('5인미만');
         let dailyWorkHours = 9.5;
         let breakHours = 2.5;
@@ -229,12 +250,15 @@ export default function Home() {
         const minWage = 10320; // 2026년 기준 최저시급
         const basePay = 209 * minWage; // 2,156,880원
         const overtimePay = Math.round((monthlyOvertimeWeighted * minWage) / 10) * 10;
-        const hasMeal = userText.includes('식대');
+        const hasMeal = !userText.includes('아니');
         const mealPay = hasMeal ? 200000 : 0;
         
-        const totalGross = basePay + overtimePay + mealPay;
+        // 5인 이상 사업장 시 월 연차유급휴가 수당 (월 1.25일분)
+        const annualLeaveMonthlyPay = is5Over ? Math.round(minWage * 8 * 1.25) : 0; // 약 103,200원
 
-        replyText = `### 🎩 노무비서실장의 [근무시간 & 급여 맞춤 정밀 진단]\n\n말씀해 주신 근무 조건(**${is5Over ? '5인 이상 사업장' : '5인 미만 사업장'} · 하루 실근로 ${dailyWorkHours.toFixed(2)}시간${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 기반으로 정밀 산출한 결과입니다:\n\n---\n\n### 📊 1. 하루 & 한 달 근로시간 분석\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 2. 2026년 최저시급(10,320원) 기준 예상 월급\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}\n---\n\n### 💡 3. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
+        const totalGross = basePay + overtimePay + mealPay + annualLeaveMonthlyPay;
+
+        replyText = `### 🎩 노무비서실장의 [근무시간 & 급여 맞춤 정밀 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 하루 실근로 ${dailyWorkHours.toFixed(2)}시간${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 5인 이상 법적 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **법적 적용 규정**: 연장·야간·휴일근로 가산수당 1.5배 및 근로기준법 제60조 연차유급휴가 의무 적용\n\n---\n\n### 📊 2. 하루 & 한 달 근로시간 분석\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${is5Over ? `  - **월 연차유급휴가 수당 (1.25일분)**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : ''}${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
       } else {
         replyText = `네, 말씀해주신 **"${userText}"** 조건을 확인하였습니다. 🎩\n\n관련 법령 및 주요 대법원 판례를 대조 분석 중입니다.\n\n추가로 진단서 파일(📎)을 올려주시면 관련 법령 분석 가이드를 함께 제공해 드립니다.`;
       }
