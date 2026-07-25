@@ -384,7 +384,32 @@ export default function Home() {
     const totalDeductions = nationalPension + healthInsurance + longtermCare + employmentInsurance + incomeTax + localIncomeTax;
     const netPayCalc = totalGross - totalDeductions;
 
-    setLatestCalcResult({
+    // 💡 추후 근로계약서 작성 시 근무요일 및 주휴일 자동 입력을 위한 연동 데이터 생성
+    let activeWorkDaysList = [];
+    let workDaysTextCalculated = '';
+    let restDayCalculated = '매주 일요일 (유급주휴일)';
+
+    if (scheduleType === 'fixed') {
+      activeWorkDaysList = fixedDays;
+      workDaysTextCalculated = fixedDays.length > 0 ? `${fixedDays.join(', ')}요일 (주 ${fixedDays.length}일)` : '월, 화, 수, 목, 금 (주 5일)';
+      const offDays = ['월', '화', '수', '목', '금', '토', '일'].filter(d => !fixedDays.includes(d));
+      if (!fixedDays.includes('일')) {
+        restDayCalculated = '매주 일요일 (유급주휴일)';
+      } else {
+        restDayCalculated = offDays.length > 0 ? `매주 ${offDays[0]}요일 (유급주휴일)` : '매주 일요일 (유급주휴일)';
+      }
+    } else {
+      activeWorkDaysList = Object.keys(daySchedules).filter(d => daySchedules[d].active);
+      workDaysTextCalculated = activeWorkDaysList.length > 0 ? `${activeWorkDaysList.join(', ')}요일 (주 ${activeWorkDaysList.length}일 변동근무)` : '주 5일 변동근무';
+      const offDays = ['월', '화', '수', '목', '금', '토', '일'].filter(d => !activeWorkDaysList.includes(d));
+      if (!activeWorkDaysList.includes('일')) {
+        restDayCalculated = '매주 일요일 (유급주휴일)';
+      } else {
+        restDayCalculated = offDays.length > 0 ? `매주 ${offDays[0]}요일 (유급주휴일)` : '매주 일요일 (유급주휴일)';
+      }
+    }
+
+    const calcResultObj = {
       employeeName: '신청 근로자',
       payPeriod: `${new Date().getFullYear()}년 ${String(new Date().getMonth() + 1).padStart(2, '0')}월 (01일~말일)`,
       payDate: `${new Date().getFullYear()}년 ${String(new Date().getMonth() + 1).padStart(2, '0')}월 25일`,
@@ -411,6 +436,11 @@ export default function Home() {
       totalDeduction: totalDeductions,
       netPay: netPayCalc,
 
+      // 📄 근로계약서 자동입력 100% 연동 속성
+      workDaysList: activeWorkDaysList,
+      workDaysText: workDaysTextCalculated,
+      weeklyRestDay: restDayCalculated,
+
       // 요약바 및 리포트 전달용 속성
       totalGross,
       basePay: actualBasePay,
@@ -420,7 +450,19 @@ export default function Home() {
       dailyWorkHours,
       monthlyOvertime,
       is5Over
-    });
+    };
+
+    setLatestCalcResult(calcResultObj);
+
+    // 💡 근로계약서 생성기 및 시스템 전역 자동연동용 로컬스토리지 저장
+    try {
+      localStorage.setItem('laborcheck_contract_data', JSON.stringify({
+        ...calcResultObj,
+        contractDate: new Date().toISOString().split('T')[0]
+      }));
+    } catch (e) {
+      console.warn('localStorage sync notice:', e);
+    }
 
     const updatePrefix = updatedStepInfo ? `✅ **[${updatedStepInfo}단계 조건 수정 반영 완료]**\n수정하신 조건만 쏙 반영하여 **이후 질의 반복 없이 즉시 0% 오차 최종 계산 결과를 재산출**하였습니다:\n\n---\n\n` : '';
 
