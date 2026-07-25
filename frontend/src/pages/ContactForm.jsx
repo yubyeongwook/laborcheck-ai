@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Mail, Send, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '../context/AuthContext.jsx';
+import { supabase, useAuth } from '../context/AuthContext.jsx';
 
 function ContactForm() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('aigoid1203@gmail.com');
+  const { user } = useAuth();
+  const [name, setName] = useState(user?.user_metadata?.full_name || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -86,11 +87,11 @@ function ContactForm() {
             )}
             <div>
               <label className="form-label">이름 *</label>
-              <input type="text" className="text-input" value={name} onChange={(e) => setName(e.target.value)} required />
+              <input type="text" className="text-input" placeholder="성함 또는 닉네임을 입력하세요" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div>
               <label className="form-label">이메일 *</label>
-              <input type="email" className="text-input" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <input type="email" className="text-input" placeholder="답변 받으실 이메일 주소를 입력하세요 (예: name@example.com)" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div>
               <label className="form-label">연락처 (선택)</label>
