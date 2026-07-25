@@ -240,10 +240,13 @@ export default function Home() {
     const monthlyOvertimeWeighted = Math.round(monthlyOvertime * overtimeMult * 100) / 100;
     
     const minWage = 10320; // 2026년 기준 최저시급
-    const basePay = 209 * minWage; // 2,156,880원
+    const basePayFull = 209 * minWage; // 2,156,880원 (주 40시간 기본 209시간 총액)
     const overtimePay = Math.round((monthlyOvertimeWeighted * minWage) / 10) * 10;
     const hasMeal = !allText.includes('식대 아니') && !allText.includes('식대 미포함');
     const mealPay = hasMeal ? 200000 : 0;
+    
+    // 비과세 식대 분할 방식 체크 (사용자가 기본급 차감 또는 총액 유지를 선택할 수 있도록 설계)
+    const isDeductFromBase = allText.includes('기본급에서') || allText.includes('기본급 차감') || allText.includes('빼고') || allText.includes('분할') || allText.includes('포함해서 세팅');
     
     // 연차 사용 일수 및 수당 급여 포함 여부 정밀 파악
     const isNoAnnualLeave = allText.includes('연차적용없') || allText.includes('연차 안') || allText.includes('연차 미포함') || allText.includes('미포함') || allText.includes('휴가로 사용') || allText.includes('적용없');
@@ -259,7 +262,9 @@ export default function Home() {
     const unusedLeaveDays = Math.max(0, totalLeaveDays - usedLeaveDays);
     const annualLeaveMonthlyPay = (includeAnnualLeavePay && is5Over) ? Math.round((minWage * 8 * (unusedLeaveDays / 12))) : 0;
 
-    const totalGross = basePay + overtimePay + mealPay + annualLeaveMonthlyPay;
+    // 기본급 및 총액 산정 (기본급 차감 방식 vs 총액 추가 방식)
+    const actualBasePay = (isDeductFromBase && hasMeal) ? (basePayFull - mealPay) : basePayFull;
+    const totalGross = actualBasePay + overtimePay + mealPay + annualLeaveMonthlyPay;
 
     // 4대보험 & 세금 정밀 산출
     const taxableTotal = totalGross - mealPay;
@@ -280,7 +285,7 @@ export default function Home() {
       companyName: '노무체크 검증 사업장',
       hourlyRate: minWage,
       baseHours: 209,
-      baseSalary: basePay,
+      baseSalary: actualBasePay,
       overtimeHours: Math.round(monthlyOvertime * 100) / 100,
       overtimeAllowance: overtimePay,
       holidayHours: 0,
@@ -302,7 +307,7 @@ export default function Home() {
 
       // 요약바 및 리포트 전달용 속성
       totalGross,
-      basePay,
+      basePay: actualBasePay,
       overtimePay,
       mealPay,
       annualLeaveMonthlyPay,
@@ -313,7 +318,7 @@ export default function Home() {
 
     const updatePrefix = updatedStepInfo ? `✅ **[${updatedStepInfo}단계 조건 수정 반영 완료]**\n수정하신 조건만 쏙 반영하여 **이후 질의 반복 없이 즉시 0% 오차 최종 계산 결과를 재산출**하였습니다:\n\n---\n\n` : '';
 
-    const replyText = `${updatePrefix}### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 급여 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 월~금 9시~18시 (하루 실근로 ${dailyWorkHours.toFixed(2)}h, 휴게 ${breakHours.toFixed(2)}h 차감)${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 정밀 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **${is5Over ? '5인 이상 판정' : '5인 미만 판정'}**\n- **공휴일 및 대체공휴일(명절 포함) 적용**: **${restsOnHolidays ? '공휴일/대체공휴일 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '공휴일/대체공휴일 근무 (1.5배 휴일근로수당 가산)'}**\n- **연차유급휴가 수당 적용 여부**: **${includeAnnualLeavePay ? `총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용 (잔여 미사용 ${unusedLeaveDays}일분 수당 월급 포함 정산)` : '연차 수당 급여 미포함 (휴가로 사용 전제 / 수당 미적용 요청 반영)'}**\n\n---\n\n### 📊 2. 근무시간 및 식사·휴게시간 정밀 합산 분석\n- **근무 시간 (9시~18시)**: 총 9시간 중 식사/휴게시간 **${breakHours.toFixed(2)}시간 차감** = **하루 실제 일하는 시간 ${dailyWorkHours.toFixed(2)}시간**\n- **주 5일(월~금) 소정근로시간**: **주 40시간** (기본 8h × 5일 = 연장근로 0시간!)\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **0.00시간** (8시간 초과분 없음)\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급 (${includeAnnualLeavePay ? '미사용 연차수당 정산 포함' : '연차수당 미포함 [휴가사용전제]'})\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (0시간)**: 0원\n${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : '  - 📅 **연차유급휴가 수당**: **0원** (연차 수당 미포함 요청 반영)\n'}\n---\n\n### 💡 4. 비과세 절세 혜택 & 급여명세서\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 **[근로기준법 제48조 법정 급여명세서 보기/출력]** 버튼을 누르시면 위 계산 결과(기본급 ${basePay.toLocaleString()}원 + 식대 ${mealPay.toLocaleString()}원, 연장/연차 0원)가 정확히 반영된 **정식 임금명세서**가 출력됩니다!`;
+    const replyText = `${updatePrefix}### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 급여 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 월~금 9시~18시 (하루 실근로 ${dailyWorkHours.toFixed(2)}h, 휴게 ${breakHours.toFixed(2)}h 차감)${hasMeal ? (isDeductFromBase ? ' · 기본급 차감 비과세 식대 분할 적용' : ' · 식대 비과세 적용') : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 및 최저임금법(제6조) 식대 분할 적법성 안내\n- 💡 **"비과세 식대(20만원)는 기본급에서 빼고 세팅해도 되나요?"** ➔ **네, 100% 합법적이며 표준적인 절세 방법입니다!**\n- 2024년부터 최저임금 산정 시 식대 등 복리후생비가 100% 최저임금에 포함됩니다. 따라서 **총 약정 월급(2,156,880원)에서 식대 20만원을 비과세로 떼어내어 기본급 1,956,880원 + 식대 200,000원으로 작성하셔도 최저임금법 위반이 절대 아닙니다!**\n- 이렇게 작성하시면 사장님과 근로자 모두 **매월 약 35,000원의 4대보험료 및 소득세를 합법 절세**하게 됩니다.\n\n---\n\n### 📊 2. 근무시간 및 식사·휴게시간 정밀 합산 분석\n- **근무 시간 (9시~18시)**: 총 9시간 중 식사/휴게시간 **${breakHours.toFixed(2)}시간 차감** = **하루 실제 일하는 시간 ${dailyWorkHours.toFixed(2)}시간**\n- **주 5일(월~금) 소정근로시간**: **주 40시간** (기본 8h × 5일 = 연장근로 0시간!)\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **0.00시간** (8시간 초과분 없음)\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 2가지 월급 세팅 방식 비교 (${includeAnnualLeavePay ? '미사용 연차수당 정산 포함' : '연차수당 미포함 [휴가사용전제]'})\n\n#### A. 💡 [추천] 기본급 차감 절세형 세팅 방식 (총 약정액 유지 + 세금 절감)\n- 💰 **세전 월급 총액**: **${(basePayFull + overtimePay + annualLeaveMonthlyPay).toLocaleString()}원**\n  - **기본급 (209시간분 중 식대 차감)**: **${(basePayFull - mealPay).toLocaleString()}원**\n  - **비과세 식대 수당**: **200,000원**\n  - **연장근로수당 / 연차수당**: 0원\n  - 혜택: 과세 대상 소득이 195만원대로 낮아져 4대보험료 절감!\n\n#### B. ➕ 기본급 10,320원 풀적용 + 식대 별도 추가 방식\n- 💰 **세전 월급 총액**: **${(basePayFull + mealPay + overtimePay + annualLeaveMonthlyPay).toLocaleString()}원**\n  - **기본급 (월 209시간분 전액)**: **${basePayFull.toLocaleString()}원**\n  - **비과세 식대 수당 (별도 지급)**: **200,000원**\n\n---\n\n### 💡 4. 급여명세서 출력 안내\n- 아래 **[근로기준법 제48조 법정 급여명세서 보기/출력]** 버튼을 누르시면 세팅하신 조건에 따라 즉시 정식 임금명세서가 출력됩니다!`;
 
     setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
     setIsCalculatedOnce(true);
