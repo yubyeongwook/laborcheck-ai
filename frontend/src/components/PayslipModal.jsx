@@ -4,9 +4,7 @@ import { Printer, Download, X, CheckCircle, ShieldCheck } from 'lucide-react';
 /**
  * 근로기준법 제48조 규격 정식 법정 급여명세서 컴포넌트
  */
-export default function PayslipModal({ data, onClose }) {
-  if (!data) return null;
-
+export default function PayslipModal({ data = {}, onClose }) {
   const handlePrint = () => {
     window.print();
   };
