@@ -46,6 +46,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// 프론트엔드 정적 번들 자산 (JS, CSS) 우선 서빙
+const path = require('path');
+const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
+app.use(express.static(frontendDistPath));
+
 // Gemini API 설정
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey || apiKey === 'your_gemini_api_key_here') {
