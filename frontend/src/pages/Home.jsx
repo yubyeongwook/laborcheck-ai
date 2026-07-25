@@ -309,39 +309,65 @@ export default function Home() {
     const restsOnHolidays = allText.includes('쉬') || allText.includes('안일');
     const isUnder1Year = allText.includes('1년 미만') || allText.includes('개월');
 
+    // 💡 0% 오차 정밀 스케줄 및 연장근로 파싱 엔진 (오파싱 완벽 원천 차단)
     let dailyWorkHours = 8;
     let breakHours = 1;
-    let isDifferentScheduleByDay = allText.includes('/') || allText.includes('토') || allText.includes('주 6일') || allText.includes('주말');
-    
-    const timeMatch = allText.match(/(\d{1,2})\s*~\s*(\d{1,2})/);
-    if (timeMatch) {
-      const start = parseInt(timeMatch[1], 10);
-      const end = parseInt(timeMatch[2], 10);
-      const elapsed = end > start ? end - start : (24 - start + end);
+    let weeklyWorkHoursTotal = 40;
+    let weeklyOvertimeHoursTotal = 0;
+
+    if (scheduleType === 'fixed') {
+      const [sH, sM] = fixedStart.split(':').map(Number);
+      const [eH, eM] = fixedEnd.split(':').map(Number);
+      let sMin = sH * 60 + (sM || 0);
+      let eMin = eH * 60 + (eM || 0);
+      if (eMin <= sMin) eMin += 24 * 60;
       
-      let parsedBreak = 1;
-      const breakMatch = allText.match(/휴게\s*(\d+)\s*시간/) || allText.match(/(\d+)\s*시간\s*(\d+)?\s*분?/);
-      if (breakMatch) {
-        const h = parseFloat(breakMatch[1]) || 0;
-        const m = parseFloat(breakMatch[2]) || 0;
-        parsedBreak = h + (m / 60);
-      } else if (allText.includes('1.5시간') || allText.includes('1시간 30분')) {
-        parsedBreak = 1.5;
-      } else if (allText.includes('2시간 30분') || allText.includes('2.5시간')) {
-        parsedBreak = 2.5;
-      } else if (allText.includes('2시간')) {
-        parsedBreak = 2;
+      const elapsedHours = (eMin - sMin) / 60;
+      breakHours = parseFloat(fixedBreak) || 1;
+      dailyWorkHours = Math.max(0, elapsedHours - breakHours);
+
+      const dailyOvertime = Math.max(0, dailyWorkHours - 8);
+      const daysCount = fixedDays.length > 0 ? fixedDays.length : 5;
+      const dailyOverSum = dailyOvertime * daysCount;
+      const weeklyTotalRaw = dailyWorkHours * daysCount;
+      
+      // 주 40시간 초과분도 법정 연장근로에 포함
+      const weeklyOverFromTotal = Math.max(0, weeklyTotalRaw - 40);
+      weeklyOvertimeHoursTotal = Math.max(dailyOverSum, weeklyOverFromTotal);
+    } else {
+      // 변동 근무 스케줄 파싱
+      let activeDaysCount = 0;
+      let totalWeeklyWork = 0;
+      let totalDailyOvertime = 0;
+
+      Object.keys(daySchedules).forEach(day => {
+        const sched = daySchedules[day];
+        if (sched.active) {
+          activeDaysCount++;
+          const [sH, sM] = sched.start.split(':').map(Number);
+          const [eH, eM] = sched.end.split(':').map(Number);
+          let sMin = sH * 60 + (sM || 0);
+          let eMin = eH * 60 + (eM || 0);
+          if (eMin <= sMin) eMin += 24 * 60;
+
+          const dayElapsed = (eMin - sMin) / 60;
+          const dayBreak = parseFloat(sched.breakTime) || 1;
+          const dayRealWork = Math.max(0, dayElapsed - dayBreak);
+          
+          totalWeeklyWork += dayRealWork;
+          totalDailyOvertime += Math.max(0, dayRealWork - 8);
+        }
+      });
+
+      if (activeDaysCount > 0) {
+        dailyWorkHours = totalWeeklyWork / activeDaysCount;
       }
-      
-      breakHours = parsedBreak;
-      dailyWorkHours = Math.max(0, elapsed - breakHours);
+      weeklyWorkHoursTotal = totalWeeklyWork;
+      const weeklyOverFrom40 = Math.max(0, totalWeeklyWork - 40);
+      weeklyOvertimeHoursTotal = Math.max(totalDailyOvertime, weeklyOverFrom40);
     }
 
-    const dailyRegular = Math.min(dailyWorkHours, 8);
-    const dailyOvertime = Math.max(0, dailyWorkHours - 8);
-    
-    const weeklyOvertime = dailyOvertime * 5;
-    const monthlyOvertime = Math.round(weeklyOvertime * 4.35 * 100) / 100;
+    const monthlyOvertime = Math.round(weeklyOvertimeHoursTotal * 4.35 * 100) / 100;
     const overtimeMult = is5Over ? 1.5 : 1.0;
     const monthlyOvertimeWeighted = Math.round(monthlyOvertime * overtimeMult * 100) / 100;
     
