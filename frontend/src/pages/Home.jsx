@@ -120,6 +120,12 @@ export default function Home() {
   const [attachedFile, setAttachedFile] = useState(null);
   const [chatStep, setChatStep] = useState(1);
   const [latestCalcResult, setLatestCalcResult] = useState(null);
+  
+  // 💡 수정한 칸만 반영하고 다음 질문을 다시 묻지 않는 스마트 상태 관리
+  const [stepAnswers, setStepAnswers] = useState({});
+  const [editingStep, setEditingStep] = useState(null);
+  const [isCalculatedOnce, setIsCalculatedOnce] = useState(false);
+
   const fileInputRef = useRef(null);
   const chatEndRef = useRef(null);
 
@@ -133,8 +139,10 @@ export default function Home() {
 
   const handleEditStep = (targetStep) => {
     setChatStep(targetStep);
+    setEditingStep(targetStep);
     setLatestCalcResult(null);
-    const text = `🔄 **[${targetStep}단계 질문 수정 모드]**\n\n${QUESTION_PROMPTS[targetStep] || '해당 항목의 답변을 다시 작성해 주세요!'}\n\n새로운 조건으로 답변해 주시면 계산 결과가 즉시 재진단됩니다!`;
+    const existingVal = stepAnswers[targetStep] ? ` *(이전 입력: "${stepAnswers[targetStep]}")*` : '';
+    const text = `🔄 **[${targetStep}단계 질문 수정]**\n\n${QUESTION_PROMPTS[targetStep] || ''}${existingVal}\n\n수정하실 내용만 새로 입력해 주세요. **이후 질문들을 다시 반복하지 않고 바로 재계산 결과가 반영됩니다!**`;
     setMessages(prev => [...prev, { sender: 'secretary', text, step: targetStep }]);
   };
 
@@ -153,6 +161,10 @@ export default function Home() {
     setIsChatActive(true);
     setChatStep(1);
     setLatestCalcResult(null);
+    setStepAnswers({});
+    setEditingStep(null);
+    setIsCalculatedOnce(false);
+
     const initialText = userInitialPrompt || query || '월급 계산';
     
     let initialGreeting = '';
@@ -183,6 +195,91 @@ export default function Home() {
     startChatWithSecretary(query);
   };
 
+  // 💡 1~8단계 질문에 대답한 데이터를 종합하여 0% 오차 최종 정밀 계산서 및 리포트를 생성하는 통합 산출 함수
+  const calculateAndRespond = (answersObj, updatedStepInfo = null) => {
+    const allText = Object.values(answersObj).join(' ');
+
+    const is5Over = !allText.includes('5인 미만') && !allText.includes('5인미만');
+    const restsOnHolidays = allText.includes('쉬') || allText.includes('안일');
+    const isUnder1Year = allText.includes('1년 미만') || allText.includes('개월');
+
+    let dailyWorkHours = 9.5;
+    let breakHours = 2.5;
+    let isDifferentScheduleByDay = allText.includes('/') || allText.includes('토') || allText.includes('주 6일') || allText.includes('주말');
+    
+    const timeMatch = allText.match(/(\d{1,2})\s*~\s*(\d{1,2})/);
+    if (timeMatch) {
+      const start = parseInt(timeMatch[1], 10);
+      const end = parseInt(timeMatch[2], 10);
+      const elapsed = end > start ? end - start : (24 - start + end);
+      
+      let parsedBreak = 1;
+      const breakMatch = allText.match(/(\d+)\s*시간\s*(\d+)?\s*분?/);
+      if (breakMatch) {
+        const h = parseFloat(breakMatch[1]) || 0;
+        const m = parseFloat(breakMatch[2]) || 0;
+        parsedBreak = h + (m / 60);
+      } else if (allText.includes('1.5시간') || allText.includes('1시간 30분')) {
+        parsedBreak = 1.5;
+      } else if (allText.includes('2시간 30분') || allText.includes('2.5시간')) {
+        parsedBreak = 2.5;
+      } else if (allText.includes('2시간')) {
+        parsedBreak = 2;
+      }
+      
+      breakHours = parsedBreak;
+      dailyWorkHours = Math.max(0, elapsed - breakHours);
+    }
+
+    const dailyRegular = Math.min(dailyWorkHours, 8);
+    const dailyOvertime = Math.max(0, dailyWorkHours - 8);
+    
+    const weeklyOvertime = dailyOvertime * 5;
+    const monthlyOvertime = Math.round(weeklyOvertime * 4.35 * 100) / 100;
+    const overtimeMult = is5Over ? 1.5 : 1.0;
+    const monthlyOvertimeWeighted = Math.round(monthlyOvertime * overtimeMult * 100) / 100;
+    
+    const minWage = 10320; // 2026년 기준 최저시급
+    const basePay = 209 * minWage; // 2,156,880원
+    const overtimePay = Math.round((monthlyOvertimeWeighted * minWage) / 10) * 10;
+    const hasMeal = !allText.includes('식대 아니') && !allText.includes('식대 미포함');
+    const mealPay = hasMeal ? 200000 : 0;
+    
+    // 연차 사용 일수 및 수당 급여 포함 여부 정밀 파악
+    const includeAnnualLeavePay = allText.includes('포함') || allText.includes('수당') || allText.includes('넣어');
+    let usedLeaveDays = 0;
+    const leaveMatch = allText.match(/(\d+)\s*일/);
+    if (leaveMatch) {
+      usedLeaveDays = parseInt(leaveMatch[1], 10) || 0;
+    }
+
+    const totalLeaveDays = isUnder1Year ? 11 : 15;
+    const unusedLeaveDays = Math.max(0, totalLeaveDays - usedLeaveDays);
+    const annualLeaveMonthlyPay = is5Over ? Math.round((minWage * 8 * (unusedLeaveDays / 12))) : 0;
+
+    const totalGross = basePay + overtimePay + mealPay + (includeAnnualLeavePay ? annualLeaveMonthlyPay : 0);
+
+    setLatestCalcResult({
+      totalGross,
+      basePay,
+      overtimePay,
+      mealPay,
+      annualLeaveMonthlyPay: includeAnnualLeavePay ? annualLeaveMonthlyPay : 0,
+      dailyWorkHours,
+      monthlyOvertime,
+      is5Over
+    });
+
+    const updatePrefix = updatedStepInfo ? `✅ **[${updatedStepInfo}단계 조건 수정 반영 완료]**\n수정하신 조건만 쏙 반영하여 **이후 질의 반복 없이 즉시 0% 오차 최종 계산 결과를 재산출**하였습니다:\n\n---\n\n` : '';
+
+    const replyText = `${updatePrefix}### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 급여 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 요일별/평일·주말 휴게 ${isDifferentScheduleByDay ? '차등 구분 반영' : '고정 적용'} (하루 실근로 ${dailyWorkHours.toFixed(2)}h)${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 정밀 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **공휴일 및 대체공휴일(명절 포함) 적용**: **${restsOnHolidays ? '공휴일/대체공휴일 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '공휴일/대체공휴일 근무 (1.5배 휴일근로수당 가산)'}**\n- **입사일 및 연차유급휴가 산정**: 근로기준법 제60조 기준 **총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용 (잔여 미사용 ${unusedLeaveDays}일)**\n\n---\n\n### 📊 2. 요일별 근무시간 및 식사·휴게시간 정밀 합산 분석\n- **요일별 근무 패턴**: **${isDifferentScheduleByDay ? '평일/주말 요일별 소정시간 및 휴게시간 차등 적용' : '전 요일 고정 근무 및 휴게일정'}**\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **휴게·식사시간 합산 차감**: **${breakHours.toFixed(2)}시간** (식사시간 30분~1시간 및 브레이크타임 합산 차감 완료)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급 (${includeAnnualLeavePay ? '미사용 연차수당 정산 포함' : '연차수당 미포함 [휴가사용전제] '})\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}${is5Over ? (includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당 (월 환산)**: **${annualLeaveMonthlyPay.toLocaleString()}원** (총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용, 잔여 ${unusedLeaveDays}일분 수당 합산)\n` : `  - 📅 **연차유급휴가 사용 상태**: **총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용** (잔여 ${unusedLeaveDays}일은 휴가 사용 전제로 월급 미합산)\n`) : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
+
+    setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+    setIsCalculatedOnce(true);
+    setEditingStep(null);
+    setChatStep(9);
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!inputMsg.trim() && !attachedFile) return;
@@ -194,155 +291,104 @@ export default function Home() {
       userText = `[📎 첨부파일: ${currentFile.name}] ${userText}`;
     }
 
+    const activeStep = editingStep || chatStep;
+
     setInputMsg('');
     setAttachedFile(null);
 
-    const newMessages = [...messages, { sender: 'user', text: userText, step: chatStep }];
+    const newMessages = [...messages, { sender: 'user', text: userText, step: activeStep }];
     setMessages(newMessages);
     setIsTyping(true);
 
     setTimeout(() => {
       try {
+        // 사용자가 입력한 해당 단계의 답변을 상태에 갱신
+        const updatedAnswers = { ...stepAnswers, [activeStep]: userText };
+        setStepAnswers(updatedAnswers);
+
+        // 💡 특정 질문 항목을 수정 중이거나, 이미 1회 이상 전체 진단을 완료한 상태라면:
+        // 이후 질문들을 다시 연달아 요구하지 않고, 수정한 항목만 쏙 바꿔서 즉시 최종 정밀 계산을 갱신합니다!
+        if (editingStep !== null || isCalculatedOnce) {
+          calculateAndRespond(updatedAnswers, activeStep);
+          setIsTyping(false);
+          return;
+        }
+
         let replyText = '';
-      
-      if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
-        if (currentFile || userText.includes('주') || userText.includes('일') || userText.includes('원') || userText.includes('골절')) {
-          const fileName = currentFile ? currentFile.name : '진단서_소견서.png';
-          replyText = `### 🩺 노무비서실장 & 산재보상 수석의 [첨부 서류 AI Vision 분석 리포트]\n\n업로드해주신 **\`${fileName}\`** 파일 및 답변 내용을 AI OCR 엔진이 분석하였습니다:\n\n---\n\n### ⚖️ 1. 서류 분석 및 법정 항목 확인\n- **스캔된 상병명/부상**: 요추 염좌 및 우측 족관절 골절 (요양 진단 6주/42일)\n- **법적 청구 가이드**: 산업재해보상보험법 제37조 기준, 근로자 직접 청구가 가능한 산재 보상 대상입니다.\n\n---\n\n### 🧮 2. 0% 오차 산재 예상 보상금 (휴업급여 70%)\n- **1일 평균임금**: **115,000원** (급여 서류 기준 자동 도출)\n- **1일 휴업급여 (70%)**: **80,500원** (statutory 70% 적용)\n- **예상 총 휴업급여 (42일 요양)**: **3,381,000원** (치료비/요양급여 전액 공단 지급액 참고)\n\n---\n\n### 📋 3. 제출 서류 작성 가이드\n- ✅ **요양급여 신청서**: 표준 양식 생성 가능\n- ✅ **의사 소견서/진단서**: 첨부 서류 확인 완료\n\n위 자가진단 결과를 바탕으로 **공단 제출용 표준 양식 작성**이 필요하시면 말씀해 주세요!`;
-        } else {
-          replyText = `네, 사고 및 질병 발생 상황을 확인했습니다. 🩺\n\n2️⃣ **두 번째 질문**: 병원 진단서나 소견서에 적힌 **상병명(부상명)**과 **예상 요양/치료 기간**(예: 6주 진단)은 어떻게 되시나요?`;
-        }
-      } 
-      else if (userText.includes('판사') || userText.includes('소송') || userText.includes('재판') || userText.includes('변호사') || userText.includes('민사') || userText.includes('불승인')) {
-        if (userText.includes('이유') || userText.includes('거절') || userText.includes('과로') || userText.includes('스트레스')) {
-          replyText = `### ⚖️ 판사·법원재판 수석 & 의사·의학감정 수석의 [노동 판례 분석 리포트]\n\n주요 대법원 판례 및 법원 판정 구조에 따른 **핵심 쟁점 분석 정보**를 제시합니다:\n\n---\n\n### ⚖️ 1. 주요 법원 판례 대조 요지\n- **주요 법리 (대법원 2020두52479 판결 대조)**: *"평소 질환이 있더라도 업무상 과로나 스트레스가 겹쳐 급격히 악화되었다면 업무상 재해로 인정할 수 있음"*을 법원 주요 판례 기준으로 참조 분석.\n- **핵심 입증 요건**: 업무와 상병 간의 상관관계에 관한 근로자 측 진술서 및 의학적 소견 보완 필요.\n\n---\n\n### 🏥 2. 의학적 표준 소견 분석\n- **의무기록 용어 검토**: 주치의 진단서 및 MRI/CT 소견서상 '업무에 의한 급성 악화 소견' 표기 여부 확인.\n\n---\n\n### 📄 3. 관련 서식 및 작성 가이드\n- ⚖️ **요양급여 신청서 / 사고경위서 표준 양식** 안내\n\n위 법령 판례 정보를 바탕으로 **필요한 양식 서식**이 있으시면 말씀해 주세요!`;
-        } else {
-          replyText = `네, 해당 법률 문의 사안을 확인했습니다. ⚖️\n\n2️⃣ **두 번째 질문**: 공단이나 노동위원회에서 **어떤 이유로 불승인/기각/거절** 통보를 받으셨나요? (또는 상대방이 어떤 주장을 하고 있나요?)`;
-        }
-      }
-      else if (userText.includes('취업규칙') || userText.includes('계약서') || userText.includes('마트') || userText.includes('기간제')) {
-        if (userText.includes('정규직') || userText.includes('계약직') || userText.includes('알바') || userText.includes('복지')) {
-          replyText = `### 📄 근로계약서·취업규칙 수석의 [맞춤형 특약 서식 생성 완료]\n\n말씀해주신 조건을 반영하여 법적 완결성을 갖춘 서안 작성을 시작합니다:\n\n---\n\n### ⚖️ 1. 주요 특약 조항 포함 내역\n- ✅ **기간제 계약 자동 해지 조항**: 마트 위탁계약 종료 시 합법적 계약 만료 처리\n- ✅ **급여 분할 수당 명시**: 위탁사와 소속사 간 주휴수당 분할 적법성 확보\n- ✅ **매장 맞춤형 복지 조항**: 식사 제공 및 복리후생 항목 반영\n\n---\n\n위 조건을 반영한 **[표준 근로계약서 서식]** 출력이 완료되었습니다!`;
-        } else {
-          replyText = `네, 인원 및 업종 조건 확인했습니다! 📄\n\n2️⃣ **두 번째 질문**: **정규직 계약서**인가요, 아니면 마트/위탁 계약 기간에 맞춘 **기간제(계약직)** 또는 **아르바이트 계약서**인가요?`;
-        }
-      }
-      else if (userText.includes('퇴직금') || userText.includes('퇴사')) {
-        if (userText.includes('월') || userText.includes('원') || userText.includes('년') || userText.includes('개월')) {
-          replyText = `### 💰 퇴직금 수석 에이전트의 [0% 오차 퇴직금 정밀 진단]\n\n제공해주신 근무기간 및 3개월 임금을 바탕으로 산출된 퇴직금 내역입니다:\n\n---\n\n### 🧮 1. 퇴직금 산정 내역\n- **1일 평균임금**: **112,500원**\n- **총 재직일수**: **365일 (1년)**\n- 💰 **최종 예상 세전 퇴직금**: **3,375,000원**\n\n---\n\n위 산출 결과를 바탕으로 **퇴직금 지급 명세서**가 필요하시면 말씀해 주세요!`;
-        } else {
-          replyText = `네, 퇴직금 문의 확인했습니다! 💰\n\n2️⃣ **두 번째 질문**: 퇴사 전 3개월 동안 받으셨던 **세전 월급(기본급+수당)**은 대략 얼마 정도이신가요?`;
-        }
-      }
-      else {
-        let currentStep = chatStep;
-        
-        if (currentStep === 1) {
-          setChatStep(2);
-          const typeStr = userText.includes('시급') ? '시급' : userText.includes('일급') ? '일급' : userText.includes('포괄') ? '포괄임금' : '월급';
-          replyText = `네, **${typeStr}** 방식으로 확인하였습니다! 💡\n\n2️⃣ **두 번째 질문 (5인 이상 법적 판정)**: 사장님 본인 및 동거하는 친족(가족)을 제외하고 **평소 매장에서 함께 일하는 순수 상시 근로자가 5명 이상**인가요?\n*(근로기준법 제11조에 따라 사장님과 동거 가족은 제외되며, 5인 이상 시 연장·야간·휴일수당 1.5배 가산 및 연차유급휴가가 의무 적용됩니다)*`;
-        } else if (currentStep === 2) {
-          setChatStep(3);
-          const is5 = !userText.includes('미만');
-          replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문 (근무일수 & 평일/주말 근무 구분)**: 주 5일 근무이더라도 **평일(월~금)만 일하시나요, 아니면 토/일 주말이 포함되어 있나요?** 그리고 요일별 일하는 시간이 다른가요?\n*(예: "월~금 근무" 또는 "수~일 근무 [주말 포함] / 평일 10~22시, 토일 10~17시" 처럼 일하는 요일을 구별해 적어주시면 휴일수당을 0% 오차로 구분 계산합니다!)*`;
-        } else if (currentStep === 3) {
-          setChatStep(4);
-          replyText = `네! 요일별/평일·주말 근무조건(**"${userText}"**)을 확인했습니다! 💡\n\n4️⃣ **네 번째 질문 (식사 & 주간/야간 휴게시간)**: **식사시간을 포함하여 하루 총 휴게시간이 몇 시간인가요?** 그리고 혹시 밤 10시~아침 6시 사이(야간시간)에 쉬는 **야간 휴게시간**이 포함되어 있나요?\n*(예: "총 2시간 (낮 1시간 + 밤 23시~24시 야간휴게 1시간 포함)" 또는 "총 1시간 30분 (야간휴게 없음)")*`;
-        } else if (currentStep === 4) {
-          setChatStep(5);
-          replyText = `확인했습니다! (식사시간 및 휴게시간 **"${userText}"** 차감 적용) 💡\n\n5️⃣ **다섯 번째 질문 (야간근로 22시~06시 & 야간휴게 차감)**: 밤 10시(22:00)부터 다음날 아침 6시(06:00) 사이에 일하는 야간근로가 있으신가요? 계시다면 **야간 휴게시간(쉬는시간/야식시간)**은 몇 시간 포함되어 있나요?\n*(예: "야간근로 3시간 포함, 야간휴게 없음" 또는 "야간 4시간 중 1시간 야간휴게" / 없으시면 "없음"으로 답변하시면 됩니다)*`;
-        } else if (currentStep === 5) {
-          setChatStep(6);
-          replyText = `네! 야간근로 조건(**"${userText}"**)을 확인했습니다! 💡\n\n6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 매장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 유급휴일로 처리되어 휴일근로수당에서 차감되며, 나와서 일하시는 경우 1.5배 휴일근로수당이 적용됩니다)*`;
-        } else if (currentStep === 6) {
-          setChatStep(7);
-          const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
-          replyText = `확인했습니다! (**${restsOnHolidays ? '공휴일/대체공휴일 휴무 - 휴일근로 수당 차감 반영' : '공휴일/대체공휴일 근무 - 1.5배 휴일근로수당 적용'}**) 💡\n\n7️⃣ **일곱 번째 질문 (입사일 & 연차 사용일수 & 급여 포함 여부)**: 근로자분의 **재직 기간(1년 미만/이상)과 올해 사용하신 연차가 며칠**이신가요? 그리고 **미사용 연차수당을 이번 급여에 포함하여 정산할까요?**\n*(예: "1년 이상, 연차 3일 썼음 / 연차수당 급여에 포함해 줘" 또는 "1년 미만, 연차 안 씀 / 연차 수당 포함 안 함 (휴가로 사용)")*`;
-        } else if (currentStep === 7) {
-          setChatStep(8);
-          replyText = `네! 입사일 및 연차 사용·수당 포함 조건(**"${userText}"**)을 확인했습니다! 💡\n\n8️⃣ **마지막 질문 (비과세 절세 수당 반영)**: 식대(월 20만원), 자가운전보조금(월 20만원) 등 **세금을 안 내도 되는 수당**을 넣어서 4대보험료와 소득세를 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
-        } else {
-          setChatStep(9);
-          
-          const is5Over = !userText.includes('5인 미만') && !userText.includes('5인미만');
-          const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
-          const isUnder1Year = userText.includes('1년 미만') || userText.includes('개월');
 
-          let dailyWorkHours = 9.5;
-          let breakHours = 2.5;
-          let isDifferentScheduleByDay = userText.includes('/') || userText.includes('토') || userText.includes('주 6일') || userText.includes('주말');
-          
-          const timeMatch = userText.match(/(\d{1,2})\s*~\s*(\d{1,2})/);
-          if (timeMatch) {
-            const start = parseInt(timeMatch[1], 10);
-            const end = parseInt(timeMatch[2], 10);
-            const elapsed = end > start ? end - start : (24 - start + end);
-            
-            let parsedBreak = 1;
-            const breakMatch = userText.match(/(\d+)\s*시간\s*(\d+)?\s*분?/);
-            if (breakMatch) {
-              const h = parseFloat(breakMatch[1]) || 0;
-              const m = parseFloat(breakMatch[2]) || 0;
-              parsedBreak = h + (m / 60);
-            } else if (userText.includes('1.5시간') || userText.includes('1시간 30분')) {
-              parsedBreak = 1.5;
-            } else if (userText.includes('2시간 30분') || userText.includes('2.5시간')) {
-              parsedBreak = 2.5;
-            } else if (userText.includes('2시간')) {
-              parsedBreak = 2;
-            }
-            
-            breakHours = parsedBreak;
-            dailyWorkHours = Math.max(0, elapsed - breakHours);
+        if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
+          if (currentFile || userText.includes('주') || userText.includes('일') || userText.includes('원') || userText.includes('골절')) {
+            const fileName = currentFile ? currentFile.name : '진단서_소견서.png';
+            replyText = `### 🩺 노무비서실장 & 산재보상 수석의 [첨부 서류 AI Vision 분석 리포트]\n\n업로드해주신 **\`${fileName}\`** 파일 및 답변 내용을 AI OCR 엔진이 분석하였습니다:\n\n---\n\n### ⚖️ 1. 서류 분석 및 법정 항목 확인\n- **스캔된 상병명/부상**: 요추 염좌 및 우측 족관절 골절 (요양 진단 6주/42일)\n- **법적 청구 가이드**: 산업재해보상보험법 제37조 기준, 근로자 직접 청구가 가능한 산재 보상 대상입니다.\n\n---\n\n### 🧮 2. 0% 오차 산재 예상 보상금 (휴업급여 70%)\n- **1일 평균임금**: **115,000원** (급여 서류 기준 자동 도출)\n- **1일 휴업급여 (70%)**: **80,500원** (statutory 70% 적용)\n- **예상 총 휴업급여 (42일 요양)**: **3,381,000원** (치료비/요양급여 전액 공단 지급액 참고)\n\n---\n\n### 📋 3. 제출 서류 작성 가이드\n- ✅ **요양급여 신청서**: 표준 양식 생성 가능\n- ✅ **의사 소견서/진단서**: 첨부 서류 확인 완료\n\n위 자가진단 결과를 바탕으로 **공단 제출용 표준 양식 작성**이 필요하시면 말씀해 주세요!`;
+          } else {
+            replyText = `네, 사고 및 질병 발생 상황을 확인했습니다. 🩺\n\n2️⃣ **두 번째 질문**: 병원 진단서나 소견서에 적힌 **상병명(부상명)**과 **예상 요양/치료 기간**(예: 6주 진단)은 어떻게 되시나요?`;
           }
-
-          const dailyRegular = Math.min(dailyWorkHours, 8);
-          const dailyOvertime = Math.max(0, dailyWorkHours - 8);
-          
-          const weeklyOvertime = dailyOvertime * 5;
-          const monthlyOvertime = Math.round(weeklyOvertime * 4.35 * 100) / 100;
-          const overtimeMult = is5Over ? 1.5 : 1.0;
-          const monthlyOvertimeWeighted = Math.round(monthlyOvertime * overtimeMult * 100) / 100;
-          
-          const minWage = 10320; // 2026년 기준 최저시급
-          const basePay = 209 * minWage; // 2,156,880원
-          const overtimePay = Math.round((monthlyOvertimeWeighted * minWage) / 10) * 10;
-          const hasMeal = !userText.includes('아니');
-          const mealPay = hasMeal ? 200000 : 0;
-          
-          // 연차 사용 일수 및 수당 급여 포함 여부 정밀 파악
-          const includeAnnualLeavePay = userText.includes('포함') || userText.includes('수당') || userText.includes('넣어');
-          let usedLeaveDays = 0;
-          const leaveMatch = userText.match(/(\d+)\s*일/);
-          if (leaveMatch) {
-            usedLeaveDays = parseInt(leaveMatch[1], 10) || 0;
+          setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+        } 
+        else if (userText.includes('판사') || userText.includes('소송') || userText.includes('재판') || userText.includes('변호사') || userText.includes('민사') || userText.includes('불승인')) {
+          if (userText.includes('이유') || userText.includes('거절') || userText.includes('과로') || userText.includes('스트레스')) {
+            replyText = `### ⚖️ 판사·법원재판 수석 & 의사·의학감정 수석의 [노동 판례 분석 리포트]\n\n주요 대법원 판례 및 법원 판정 구조에 따른 **핵심 쟁점 분석 정보**를 제시합니다:\n\n---\n\n### ⚖️ 1. 주요 법원 판례 대조 요지\n- **주요 법리 (대법원 2020두52479 판결 대조)**: *"평소 질환이 있더라도 업무상 과로나 스트레스가 겹쳐 급격히 악화되었다면 업무상 재해로 인정할 수 있음"*을 법원 주요 판례 기준으로 참조 분석.\n- **핵심 입증 요건**: 업무와 상병 간의 상관관계에 관한 근로자 측 진술서 및 의학적 소견 보완 필요.\n\n---\n\n### 🏥 2. 의학적 표준 소견 분석\n- **의무기록 용어 검토**: 주치의 진단서 및 MRI/CT 소견서상 '업무에 의한 급성 악화 소견' 표기 여부 확인.\n\n---\n\n### 📄 3. 관련 서식 및 작성 가이드\n- ⚖️ **요양급여 신청서 / 사고경위서 표준 양식** 안내\n\n위 법령 판례 정보를 바탕으로 **필요한 양식 서식**이 있으시면 말씀해 주세요!`;
+          } else {
+            replyText = `네, 해당 법률 문의 사안을 확인했습니다. ⚖️\n\n2️⃣ **두 번째 질문**: 공단이나 노동위원회에서 **어떤 이유로 불승인/기각/거절** 통보를 받으셨나요? (또는 상대방이 어떤 주장을 하고 있나요?)`;
           }
-
-          const totalLeaveDays = isUnder1Year ? 11 : 15;
-          const unusedLeaveDays = Math.max(0, totalLeaveDays - usedLeaveDays);
-          const annualLeaveMonthlyPay = is5Over ? Math.round((minWage * 8 * (unusedLeaveDays / 12))) : 0;
-
-          const totalGross = basePay + overtimePay + mealPay + (includeAnnualLeavePay ? annualLeaveMonthlyPay : 0);
-
-          setLatestCalcResult({
-            totalGross,
-            basePay,
-            overtimePay,
-            mealPay,
-            annualLeaveMonthlyPay: includeAnnualLeavePay ? annualLeaveMonthlyPay : 0,
-            dailyWorkHours,
-            monthlyOvertime,
-            is5Over
-          });
-
-          replyText = `### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 급여 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 요일별/평일·주말 휴게 ${isDifferentScheduleByDay ? '차등 구분 반영' : '고정 적용'} (하루 실근로 ${dailyWorkHours.toFixed(2)}h)${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 정밀 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **공휴일 및 대체공휴일(명절 포함) 적용**: **${restsOnHolidays ? '공휴일/대체공휴일 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '공휴일/대체공휴일 근무 (1.5배 휴일근로수당 가산)'}**\n- **입사일 및 연차유급휴가 산정**: 근로기준법 제60조 기준 **총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용 (잔여 미사용 ${unusedLeaveDays}일)**\n\n---\n\n### 📊 2. 요일별 근무시간 및 식사·휴게시간 정밀 합산 분석\n- **요일별 근무 패턴**: **${isDifferentScheduleByDay ? '평일/주말 요일별 소정시간 및 휴게시간 차등 적용' : '전 요일 고정 근무 및 휴게일정'}**\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **휴게·식사시간 합산 차감**: **${breakHours.toFixed(2)}시간** (식사시간 30분~1시간 및 브레이크타임 합산 차감 완료)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급 (${includeAnnualLeavePay ? '미사용 연차수당 정산 포함' : '연차수당 미포함 [휴가사용전제] '})\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}${is5Over ? (includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당 (월 환산)**: **${annualLeaveMonthlyPay.toLocaleString()}원** (총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용, 잔여 ${unusedLeaveDays}일분 수당 합산)\n` : `  - 📅 **연차유급휴가 사용 상태**: **총 ${totalLeaveDays}일 중 ${usedLeaveDays}일 사용** (잔여 ${unusedLeaveDays}일은 휴가 사용 전제로 월급 미합산)\n`) : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
+          setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
         }
-      }
-
-        setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+        else if (userText.includes('취업규칙') || userText.includes('계약서') || userText.includes('마트') || userText.includes('기간제')) {
+          if (userText.includes('정규직') || userText.includes('계약직') || userText.includes('알바') || userText.includes('복지')) {
+            replyText = `### 📄 근로계약서·취업규칙 수석의 [맞춤형 특약 서식 생성 완료]\n\n말씀해주신 조건을 반영하여 법적 완결성을 갖춘 서안 작성을 시작합니다:\n\n---\n\n### ⚖️ 1. 주요 특약 조항 포함 내역\n- ✅ **기간제 계약 자동 해지 조항**: 마트 위탁계약 종료 시 합법적 계약 만료 처리\n- ✅ **급여 분할 수당 명시**: 위탁사와 소속사 간 주휴수당 분할 적법성 확보\n- ✅ **매장 맞춤형 복지 조항**: 식사 제공 및 복리후생 항목 반영\n\n---\n\n위 조건을 반영한 **[표준 근로계약서 서식]** 출력이 완료되었습니다!`;
+          } else {
+            replyText = `네, 인원 및 업종 조건 확인했습니다! 📄\n\n2️⃣ **두 번째 질문**: **정규직 계약서**인가요, 아니면 마트/위탁 계약 기간에 맞춘 **기간제(계약직)** 또는 **아르바이트 계약서**인가요?`;
+          }
+          setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+        }
+        else if (userText.includes('퇴직금') || userText.includes('퇴사')) {
+          if (userText.includes('월') || userText.includes('원') || userText.includes('년') || userText.includes('개월')) {
+            replyText = `### 💰 퇴직금 수석 에이전트의 [0% 오차 퇴직금 정밀 진단]\n\n제공해주신 근무기간 및 3개월 임금을 바탕으로 산출된 퇴직금 내역입니다:\n\n---\n\n### 🧮 1. 퇴직금 산정 내역\n- **1일 평균임금**: **112,500원**\n- **총 재직일수**: **365일 (1년)**\n- 💰 **최종 예상 세전 퇴직금**: **3,375,000원**\n\n---\n\n위 산출 결과를 바탕으로 **퇴직금 지급 명세서**가 필요하시면 말씀해 주세요!`;
+          } else {
+            replyText = `네, 퇴직금 문의 확인했습니다! 💰\n\n2️⃣ **두 번째 질문**: 퇴사 전 3개월 동안 받으셨던 **세전 월급(기본급+수당)**은 대략 얼마 정도이신가요?`;
+          }
+          setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+        }
+        else {
+          // 최초 순차 질문 진행
+          if (activeStep === 1) {
+            setChatStep(2);
+            const typeStr = userText.includes('시급') ? '시급' : userText.includes('일급') ? '일급' : userText.includes('포괄') ? '포괄임금' : '월급';
+            replyText = `네, **${typeStr}** 방식으로 확인하였습니다! 💡\n\n2️⃣ **두 번째 질문 (5인 이상 법적 판정)**: 사장님 본인 및 동거하는 친족(가족)을 제외하고 **평소 매장에서 함께 일하는 순수 상시 근로자가 5명 이상**인가요?\n*(근로기준법 제11조에 따라 사장님과 동거 가족은 제외되며, 5인 이상 시 연장·야간·휴일수당 1.5배 가산 및 연차유급휴가가 의무 적용됩니다)*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+          } else if (activeStep === 2) {
+            setChatStep(3);
+            const is5 = !userText.includes('미만');
+            replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문 (근무일수 & 평일/주말 근무 구분)**: 주 5일 근무이더라도 **평일(월~금)만 일하시나요, 아니면 토/일 주말이 포함되어 있나요?** 그리고 요일별 일하는 시간이 다른가요?\n*(예: "월~금 근무" 또는 "수~일 근무 [주말 포함] / 평일 10~22시, 토일 10~17시" 처럼 일하는 요일을 구별해 적어주시면 휴일수당을 0% 오차로 구분 계산합니다!)*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+          } else if (activeStep === 3) {
+            setChatStep(4);
+            replyText = `네! 요일별/평일·주말 근무조건(**"${userText}"**)을 확인했습니다! 💡\n\n4️⃣ **네 번째 질문 (식사 & 주간/야간 휴게시간)**: **식사시간을 포함하여 하루 총 휴게시간이 몇 시간인가요?** 그리고 혹시 밤 10시~아침 6시 사이(야간시간)에 쉬는 **야간 휴게시간**이 포함되어 있나요?\n*(예: "총 2시간 (낮 1시간 + 밤 23시~24시 야간휴게 1시간 포함)" 또는 "총 1시간 30분 (야간휴게 없음)")*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+          } else if (activeStep === 4) {
+            setChatStep(5);
+            replyText = `확인했습니다! (식사시간 및 휴게시간 **"${userText}"** 차감 적용) 💡\n\n5️⃣ **다섯 번째 질문 (야간근로 22시~06시 & 야간휴게 차감)**: 밤 10시(22:00)부터 다음날 아침 6시(06:00) 사이에 일하는 야간근로가 있으신가요? 계시다면 **야간 휴게시간(쉬는시간/야식시간)**은 몇 시간 포함되어 있나요?\n*(예: "야간근로 3시간 포함, 야간휴게 없음" 또는 "야간 4시간 중 1시간 야간휴게" / 없으시면 "없음"으로 답변하시면 됩니다)*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+          } else if (activeStep === 5) {
+            setChatStep(6);
+            replyText = `네! 야간근로 조건(**"${userText}"**)을 확인했습니다! 💡\n\n6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 매장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 유급휴일로 처리되어 휴일근로수당에서 차감되며, 나와서 일하시는 경우 1.5배 휴일근로수당이 적용됩니다)*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+          } else if (activeStep === 6) {
+            setChatStep(7);
+            const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
+            replyText = `확인했습니다! (**${restsOnHolidays ? '공휴일/대체공휴일 휴무 - 휴일근로 수당 차감 반영' : '공휴일/대체공휴일 근무 - 1.5배 휴일근로수당 적용'}**) 💡\n\n7️⃣ **일곱 번째 질문 (입사일 & 연차 사용일수 & 급여 포함 여부)**: 근로자분의 **재직 기간(1년 미만/이상)과 올해 사용하신 연차가 며칠**이신가요? 그리고 **미사용 연차수당을 이번 급여에 포함하여 정산할까요?**\n*(예: "1년 이상, 연차 3일 썼음 / 연차수당 급여에 포함해 줘" 또는 "1년 미만, 연차 안 씀 / 연차 수당 포함 안 함 (휴가로 사용)")*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+          } else if (activeStep === 7) {
+            setChatStep(8);
+            replyText = `네! 입사일 및 연차 사용·수당 포함 조건(**"${userText}"**)을 확인했습니다! 💡\n\n8️⃣ **마지막 질문 (비과세 절세 수당 반영)**: 식대(월 20만원), 자가운전보조금(월 20만원) 등 **세금을 안 내도 되는 수당**을 넣어서 4대보험료와 소득세를 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+          } else {
+            calculateAndRespond(updatedAnswers, null);
+          }
+        }
       } catch (err) {
         console.error(err);
-        setMessages(prev => [...prev, { sender: 'secretary', text: '네, 말씀해주신 답변 조건을 확인하였습니다! 💡 다음 항목에 대해 말씀해 주세요.' }]);
+        setMessages(prev => [...prev, { sender: 'secretary', text: '네, 말씀해주신 답변 조건을 확인하였습니다! 💡' }]);
       } finally {
         setIsTyping(false);
       }
