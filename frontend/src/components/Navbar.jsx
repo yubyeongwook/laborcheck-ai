@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { to: '/employer/ai-consultant', label: 'AI컨설턴트' },
   { to: '/worker', label: '근로자' },
   { to: '/employer', label: '사업주' },
+  { to: '/contact', label: '노무상담요청' },
 ];
 
 const getDisplayName = (user) => {
