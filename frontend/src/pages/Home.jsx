@@ -510,33 +510,18 @@ export default function Home() {
             replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문 (근무일수 & 평일/주말 근무 구분)**: 주 5일 근무이더라도 **평일(월~금)만 일하시나요, 아니면 토/일 주말이 포함되어 있나요?** 그리고 요일별 일하는 시간이 다른가요?\n*(예: "월~금 근무" 또는 "수~일 근무 [주말 포함] / 평일 10~22시, 토일 10~17시" 처럼 일하는 요일을 구별해 적어주시면 휴일수당을 0% 오차로 구분 계산합니다!)*`;
             setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
           } else if (activeStep === 3) {
-            setChatStep(4);
-            // 💡 작성한 근무시간 텍스트 분석 (야간시간 22~06시 포함 여부 자동 감지)
-            const hasNightTime = userText.includes('22') || userText.includes('23') || userText.includes('24') || userText.includes('01') || userText.includes('02') || userText.includes('03') || userText.includes('04') || userText.includes('05') || userText.includes('야간') || userText.includes('새벽') || userText.includes('밤');
-
-            if (hasNightTime) {
-              replyText = `네! 작성해주신 근무일수 및 근무시간(**"${userText}"**)을 AI 엔진이 분석하였습니다! 💡\n\n🔍 **[야간근로 자동 감지]**: 밤 10시(22:00) 이후 근무시간이 포함된 것으로 확인되었습니다!\n\n4️⃣ **네 번째 질문 (식사 & 야간 휴게시간 분리)**: 낮 식사시간을 포함한 **하루 총 휴게시간이 몇 시간**인가요? 혹시 밤 10시 이후 쉬었던 **야간 휴게시간(수면/야식시간)**도 따로 포함되어 있나요?\n*(예: "총 2시간 (낮 식사 1h + 야간휴게 1h)" 또는 "총 1시간 (야간휴게 없음)")*`;
-            } else {
-              replyText = `네! 요일별/평일·주말 근무시간(**"${userText}"**)을 확인했습니다! 💡\n\n4️⃣ **네 번째 질문 (식사 & 주간 휴게시간)**: **식사시간을 포함하여 하루 총 휴게시간이 몇 시간인가요?**\n*(예: "총 1시간 (점심시간 1h)" 또는 "총 1시간 30분")*`;
-            }
-            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
-          } else if (activeStep === 4) {
-            // 3~4단계 답변 기록 파악
-            const allPrev = (stepAnswers[3] || '') + ' ' + userText;
-            const hasNightTime = allPrev.includes('22') || allPrev.includes('23') || allPrev.includes('24') || allPrev.includes('01') || allPrev.includes('02') || allPrev.includes('03') || allPrev.includes('야간') || allPrev.includes('새벽') || allPrev.includes('밤');
-
-            if (hasNightTime) {
-              setChatStep(5);
-              replyText = `확인했습니다! (휴게시간 **"${userText}"** 차감 적용) 💡\n\n5️⃣ **다섯 번째 질문 (야간근로 22시~06시 정밀 확인)**: 밤 10시(22:00)부터 아침 6시 사이 야간시간 중 일하는 시간에서 **야간 휴게시간 차감 후 실제 일하는 야간근로시간**이 몇 시간 정도 되시나요?\n*(예: "야간 3시간 포함, 야간휴게 없음" 또는 "야간 4시간 중 1시간 야간휴게")*`;
-            } else {
-              // 주간 근로만 있는 경우 5단계(야간근로 0시간 자동 설정) 안내 후 6단계(공휴일) 질문으로 진행!
-              setChatStep(6);
-              replyText = `확인했습니다! (휴게시간 **"${userText}"** 차감 적용) 💡\n\n🔍 **[AI 지능형 판정]**: 작성해 주신 근무시간 분석 결과 **밤 10시 이후 야간근로는 없는 것(0시간)**으로 자동 판정되었습니다! ☀️\n\n6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 매장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 유급휴일로 처리되어 휴일근로수당에서 차감되며, 나와서 일하시는 경우 1.5배 휴일근로수당이 적용됩니다)*`;
-            }
-            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
-          } else if (activeStep === 5) {
+            // 💡 3단계 스케줄러 폼에서 근무시간, 휴게시간, 야간근로 조건이 이미 모두 선택/완료되었습니다!
+            // 따라서 중복되는 4번(휴게시간), 5번(야간근로) 질문을 자동 건너뛰고(스킵), 곧바로 6번(공휴일) 질문으로 점프합니다!
             setChatStep(6);
-            replyText = `네! 야간근로 상세 조건(**"${userText}"**)을 확인했습니다! 💡\n\n6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 매장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 유급휴일로 처리되어 휴일근로수당에서 차감되며, 나와서 일하시는 경우 1.5배 휴일근로수당이 적용됩니다)*`;
+            
+            setStepAnswers(prev => ({
+              ...prev,
+              [3]: userText,
+              [4]: '스케줄러 내 휴게시간 자동 반영 완료',
+              [5]: '스케줄러 내 야간근로 자동 반영 완료'
+            }));
+
+            replyText = `네! 설정해주신 근무일수 및 출퇴근/휴게/야간 스케줄(**"${userText}"**)이 0% 오차로 정밀 반영되었습니다! 💡\n\n🔍 **[스마트 질문 스킵]**: 근무시간 내 휴게시간 및 야간근로 조건이 3단계에서 이미 완벽 세팅되었으므로 **중복되는 4번·5번 질문은 자동으로 건너뜁니다!** ⚡\n\n6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 매장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 유급휴일로 처리되며, 나와서 일하시는 경우 1.5배 휴일근로수당이 적용됩니다)*`;
             setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
           } else if (activeStep === 6) {
             setChatStep(7);
