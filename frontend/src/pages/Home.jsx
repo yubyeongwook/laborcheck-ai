@@ -97,6 +97,7 @@ export default function Home() {
   const [showPayslipModal, setShowPayslipModal] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
   const [chatStep, setChatStep] = useState(1);
+  const [latestCalcResult, setLatestCalcResult] = useState(null);
   const fileInputRef = useRef(null);
   const chatEndRef = useRef(null);
 
@@ -122,6 +123,7 @@ export default function Home() {
   const startChatWithSecretary = (userInitialPrompt) => {
     setIsChatActive(true);
     setChatStep(1);
+    setLatestCalcResult(null);
     const initialText = userInitialPrompt || query || '월급 계산';
     
     let initialGreeting = '';
@@ -283,6 +285,17 @@ export default function Home() {
           const annualLeaveMonthlyPay = is5Over ? Math.round(minWage * 8 * annualLeaveDaysMonthly) : 0;
 
           const totalGross = basePay + overtimePay + mealPay + annualLeaveMonthlyPay;
+
+          setLatestCalcResult({
+            totalGross,
+            basePay,
+            overtimePay,
+            mealPay,
+            annualLeaveMonthlyPay,
+            dailyWorkHours,
+            monthlyOvertime,
+            is5Over
+          });
 
           replyText = `### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 급여 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 요일별/평일·주말 휴게 ${isDifferentScheduleByDay ? '차등 구분 반영' : '고정 적용'} (하루 실근로 ${dailyWorkHours.toFixed(2)}h)${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 정밀 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **공휴일 및 대체공휴일(명절 포함) 적용**: **${restsOnHolidays ? '공휴일/대체공휴일 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '공휴일/대체공휴일 근무 (1.5배 휴일근로수당 가산)'}**\n- **입사일 기준 연차유급휴가 규정**: 근로기준법 제60조 기준 **${isUnder1Year ? '1년 미만 (월 1일 발생)' : '1년 이상 (연 15일 발생, 월 1.25일분 환산 반영)'}**\n\n---\n\n### 📊 2. 요일별 근무시간 및 식사·휴게시간 정밀 합산 분석\n- **요일별 근무 패턴**: **${isDifferentScheduleByDay ? '평일/주말 요일별 소정시간 및 휴게시간 차등 적용' : '전 요일 고정 근무 및 휴게일정'}**\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **휴게·식사시간 합산 차감**: **${breakHours.toFixed(2)}시간** (식사시간 30분~1시간 및 브레이크타임 합산 차감 완료)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${is5Over ? `  - **월 연차유급휴가 수당 (${annualLeaveDaysMonthly}일분)**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : ''}${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
         }
@@ -560,7 +573,72 @@ export default function Home() {
                   전송 <Send size={16} />
                 </button>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+              {/* 📊 실시간 진단 경과값 상시 하단 표시 바 */}
+              {latestCalcResult && (
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(99, 102, 241, 0.15))',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  borderRadius: '14px',
+                  padding: '0.75rem 1.1rem',
+                  marginBottom: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.6rem',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <span style={{
+                      background: 'linear-gradient(135deg, #38bdf8, #6366f1)',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: '0.78rem',
+                      padding: '0.25rem 0.65rem',
+                      borderRadius: '8px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}>
+                      📊 실시간 계산 경과값
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.98rem', color: '#ffffff', fontWeight: 800 }}>
+                        예상 세전 월급 <span style={{ color: '#38bdf8' }}>{latestCalcResult.totalGross.toLocaleString()}원</span>
+                      </span>
+                      <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+                        (기본급 {latestCalcResult.basePay.toLocaleString()}원 + 연장수당 {latestCalcResult.overtimePay.toLocaleString()}원{latestCalcResult.mealPay ? ' + 식대 20만' : ''})
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPayslipModal(true)}
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.45rem 0.9rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
+                      transition: 'transform 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    📄 법정 급여명세서 상세/출력
+                  </button>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                   💡 📎 버튼으로 산재 진단서, 급여명세서를 올리시면 AI가 승인 확률과 휴업급여를 즉시 진단 및 산출해 드립니다.
                 </span>
