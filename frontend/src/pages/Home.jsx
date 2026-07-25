@@ -5,6 +5,7 @@ import {
   HeartPulse, PiggyBank, ArrowRight, Search, Users, Sparkles, Mail, Crown,
   Send, Bot, RefreshCw, CheckCircle2, MessageSquare, X
 } from 'lucide-react';
+import PayslipModal from '../components/PayslipModal';
 
 const SMART_QUICK_PROMPTS = [
   '💬 2026년 내 월급·주휴수당 209시간 정밀 계산해 줘',
@@ -29,6 +30,7 @@ export default function Home() {
   const [messages, setMessages] = useState([]);
   const [inputMsg, setInputMsg] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showPayslipModal, setShowPayslipModal] = useState(false);
   const chatEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -298,7 +300,7 @@ export default function Home() {
 
             {/* 챗봇 입력창 */}
             <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', background: '#1e293b', borderTop: '1px solid rgba(56, 189, 248, 0.2)' }}>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.5rem' }}>
                 <input
                   type="text"
                   value={inputMsg}
@@ -321,9 +323,27 @@ export default function Home() {
                   전송 <Send size={16} />
                 </button>
               </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPayslipModal(true)}
+                  style={{
+                    background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)',
+                    color: '#38bdf8', borderRadius: '8px', padding: '0.4rem 0.8rem', fontSize: '0.8rem',
+                    fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem'
+                  }}
+                >
+                  📄 근로기준법 제48조 법정 급여명세서 보기/출력
+                </button>
+              </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* 📄 법정 급여명세서 인쇄/PDF 팝업 */}
+      {showPayslipModal && (
+        <PayslipModal onClose={() => setShowPayslipModal(false)} />
       )}
 
       {/* 🏛️ 5대 전담 수석 에이전트 조직 안내 */}
