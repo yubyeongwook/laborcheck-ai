@@ -88,6 +88,28 @@ function FormattedMessage({ text }) {
   );
 }
 
+const STEP_NAV_ITEMS = [
+  { step: 1, label: '1.급여방식' },
+  { step: 2, label: '2.5인여부' },
+  { step: 3, label: '3.근무일수' },
+  { step: 4, label: '4.휴게시간' },
+  { step: 5, label: '5.야간근로' },
+  { step: 6, label: '6.공휴일' },
+  { step: 7, label: '7.연차사용' },
+  { step: 8, label: '8.비과세' },
+];
+
+const QUESTION_PROMPTS = {
+  1: '1️⃣ **첫 번째 질문 (급여 지급 방식)**: **시급, 일급, 월급, 포괄임금** 중 어떤 방식으로 급여를 받으시나요?',
+  2: '2️⃣ **두 번째 질문 (5인 이상 법적 판정)**: 사장님 본인 및 동거 친족을 제외하고 **함께 일하는 상시 근로자가 5명 이상**인가요?',
+  3: '3️⃣ **세 번째 질문 (근무일수 & 평일/주말 구분)**: 주 5일 근무이더라도 **평일(월~금)만 일하시나요, 아니면 토/일 주말이 포함되어 있나요?** 요일별 시간이 다른가요?',
+  4: '4️⃣ **네 번째 질문 (식사 & 주간/야간 휴게시간)**: **식사시간을 포함하여 하루 총 휴게시간이 몇 시간인가요?**',
+  5: '5️⃣ **다섯 번째 질문 (야간근로 22시~06시)**: 밤 10시부터 다음날 아침 6시 사이에 일하는 야간근로가 있으신가요?',
+  6: '6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일에 매장이 쉬나요, 나와서 일하시나요?**',
+  7: '7️⃣ **일곱 번째 질문 (입사일 & 연차 사용일수 & 급여 포함 여부)**: 재직 기간(1년 미만/이상)과 **사용하신 연차가 며칠**이신가요? **미사용 연차수당을 이번 급여에 포함할까요?**',
+  8: '8️⃣ **마지막 질문 (비과세 절세 수당 반영)**: **식대(월 20만원)** 등 세금을 안 내는 비과세 수당을 적용하여 절세해 드릴까요?'
+};
+
 export default function Home() {
   const [query, setQuery] = useState('');
   const [isChatActive, setIsChatActive] = useState(false);
@@ -108,6 +130,13 @@ export default function Home() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  const handleEditStep = (targetStep) => {
+    setChatStep(targetStep);
+    setLatestCalcResult(null);
+    const text = `🔄 **[${targetStep}단계 질문 수정 모드]**\n\n${QUESTION_PROMPTS[targetStep] || '해당 항목의 답변을 다시 작성해 주세요!'}\n\n새로운 조건으로 답변해 주시면 계산 결과가 즉시 재진단됩니다!`;
+    setMessages(prev => [...prev, { sender: 'secretary', text, step: targetStep }]);
+  };
 
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
@@ -168,7 +197,7 @@ export default function Home() {
     setInputMsg('');
     setAttachedFile(null);
 
-    const newMessages = [...messages, { sender: 'user', text: userText }];
+    const newMessages = [...messages, { sender: 'user', text: userText, step: chatStep }];
     setMessages(newMessages);
     setIsTyping(true);
 
@@ -476,6 +505,55 @@ export default function Home() {
               </button>
             </div>
 
+            {/* 🎯 8단계 질문 진행 현황 및 자유 선택 수정 바 */}
+            <div style={{
+              padding: '0.6rem 1.2rem', background: '#0b0f19', borderBottom: '1px solid rgba(56, 189, 248, 0.15)',
+              display: 'flex', alignItems: 'center', gap: '0.45rem', overflowX: 'auto'
+            }}>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, whiteSpace: 'nowrap', marginRight: '0.2rem' }}>
+                ✏️ 질문 수정:
+              </span>
+              {STEP_NAV_ITEMS.map((item) => {
+                const isActiveStep = chatStep === item.step;
+                const isPassedStep = chatStep > item.step;
+                return (
+                  <button
+                    key={item.step}
+                    type="button"
+                    onClick={() => handleEditStep(item.step)}
+                    title={`${item.step}단계 질문 클릭 시 즉시 답변 수정 가능`}
+                    style={{
+                      padding: '0.25rem 0.65rem',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      border: isActiveStep ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
+                      background: isActiveStep
+                        ? 'linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(99, 102, 241, 0.3))'
+                        : isPassedStep
+                        ? 'rgba(56, 189, 248, 0.15)'
+                        : 'rgba(255,255,255,0.03)',
+                      color: isActiveStep ? '#ffffff' : isPassedStep ? '#38bdf8' : '#94a3b8',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.2rem',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActiveStep) e.currentTarget.style.borderColor = '#38bdf8';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActiveStep) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* 챗봇 대화 내용 출력 영역 */}
             <div style={{
               flex: 1, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem'
@@ -506,7 +584,37 @@ export default function Home() {
                     border: msg.sender === 'user' ? 'none' : '1px solid rgba(56, 189, 248, 0.15)',
                     boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                   }}>
-                    {msg.sender === 'user' ? msg.text : <FormattedMessage text={msg.text} />}
+                    {msg.sender === 'user' ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <div>{msg.text}</div>
+                        {msg.step && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleEditStep(msg.step)}
+                              style={{
+                                background: 'rgba(0,0,0,0.3)',
+                                border: '1px solid rgba(255,255,255,0.35)',
+                                color: '#ffffff',
+                                borderRadius: '8px',
+                                padding: '0.2rem 0.55rem',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem'
+                              }}
+                              title={`${msg.step}단계 답변 수정하기`}
+                            >
+                              ✏️ 이 답변 수정하기
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <FormattedMessage text={msg.text} />
+                    )}
                   </div>
                 </div>
               ))}
