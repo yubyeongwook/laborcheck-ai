@@ -202,31 +202,35 @@ export default function Home() {
           replyText = `네, 퇴직금 문의 확인했습니다! 💰\n\n2️⃣ **두 번째 질문**: 퇴사 전 3개월 동안 받으셨던 **세전 월급(기본급+수당)**은 대략 얼마 정도이신가요?`;
         }
       }
-      else if (userText === '월급' || userText === '시급' || userText === '일급' || userText.includes('월급으로') || userText.includes('시급으로') || userText.includes('포괄임금')) {
-        const typeStr = userText.includes('시급') ? '시급' : userText.includes('일급') ? '일급' : userText.includes('포괄') ? '포괄임금' : '월급';
-        replyText = `네, **${typeStr}** 방식으로 확인하였습니다! 💡\n\n2️⃣ **두 번째 질문 (5인 이상 법적 판정)**: 사장님 본인 및 동거하는 친족(가족)을 제외하고 **평소 매장에서 함께 일하는 순수 상시 근로자가 5명 이상**인가요?\n*(근로기준법 제11조에 따라 사장님과 동거 가족은 제외되며, 5인 이상 시 연장·야간·휴일수당 1.5배 가산 및 연차유급휴가가 의무 적용됩니다)*`;
-      } else if (userText.includes('5명') || userText.includes('5인') || userText.includes('인 이상') || userText.includes('인 미만')) {
-        const is5 = !userText.includes('미만');
-        replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문 (근무일수 & 평일/주말 근무 구분)**: 주 5일 근무이더라도 **평일(월~금)만 일하시나요, 아니면 토/일 주말이 포함되어 있나요?** 그리고 요일별 일하는 시간이 다른가요?\n*(예: "월~금 근무" 또는 "수~일 근무 [주말 포함] / 평일 10~22시, 토일 10~17시" 처럼 일하는 요일을 구별해 적어주시면 휴일수당을 0% 오차로 구분 계산합니다!)*`;
-      } else if (userText.includes('휴게') || userText.includes('점심') || userText.includes('저녁') || userText.includes('아침') || userText.includes('브레이크') || userText.includes('쉬는시간') || (userText.includes('시간') && !userText.includes('~')) || userText.includes('분')) {
-        replyText = `확인했습니다! (식사시간 및 하루 총 휴게시간 ${userText} 차감 적용) 💡\n\n5️⃣ **다섯 번째 질문 (야간근로 22시~06시 포함 여부)**: 밤 10시(22:00)부터 다음날 아침 6시(06:00) 사이에 일하는 **야간근로 시간**이 포함되어 있나요?\n*(5인 이상 사업장은 야간근로 시 1.5배 가산수당이 의무 적용됩니다)*`;
-      } else if ((userText.includes('~') || userText.includes('출퇴근') || userText.includes('월') || userText.includes('토') || userText.includes('일')) && !userText.includes('명절') && !userText.includes('쉬') && !userText.includes('야간') && !userText.includes('입사일') && !userText.includes('식대') && !userText.includes('비과세')) {
-        replyText = `네! 요일별/평일·주말 근무조건(**"${userText}"**)을 확인했습니다! 💡\n\n4️⃣ **네 번째 질문**: **식사시간을 포함하여 하루 총 휴게시간이 어떻게 되시나요?**\n*(예: "점심 1시간 + 브레이크 1시간 = 총 2시간" 또는 "1시간 30분")*`;
-      } else if (userText.includes('야간') || userText.includes('밤') || userText.includes('새벽') || userText.includes('22시') || userText.includes('없음') || userText.includes('없어')) {
-        replyText = `네! 야간근로 조건 확인했습니다! 💡\n\n6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 매장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 유급휴일로 처리되어 휴일근로수당에서 차감되며, 나와서 일하시는 경우 1.5배 휴일근로수당이 적용됩니다)*`;
-      } else if (userText.includes('명절') || userText.includes('공휴일') || userText.includes('대체') || userText.includes('쉬') || userText.includes('일해') || userText.includes('나와')) {
-        const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
-        replyText = `확인했습니다! (**${restsOnHolidays ? '공휴일/대체공휴일 휴무 - 휴일근로 수당 차감 반영' : '공휴일/대체공휴일 근무 - 1.5배 휴일근로수당 적용'}**) 💡\n\n7️⃣ **일곱 번째 질문 (입사일 & 연차 산정)**: 근로자분의 **입사일(또는 재직 기간이 1년 미만인지, 1년 이상인지)**은 어떻게 되시나요?\n*(근로기준법 제60조에 따라 1년 미만은 월 1일[최대 11일], 1년 이상은 연 15일 유급연차가 산정됩니다)*`;
-      } else if (userText.includes('입사') || userText.includes('년') || userText.includes('개월') || userText.includes('신규') || userText.includes('미만') || userText.includes('이상')) {
-        replyText = `네! 입사일 및 재직기간 조건 확인했습니다! 💡\n\n8️⃣ **마지막 질문 (비과세 절세 수당 반영)**: 식대(월 20만원), 자가운전보조금(월 20만원) 등 **세금을 안 내도 되는 비과세 수당**을 넣어서 4대보험료와 소득세를 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
-      } else if (userText.includes('5인') || userText.includes('시급') || userText.includes('원') || userText.includes('주 5일') || userText.includes('주 6일') || userText.includes('시간') || userText.includes('월급') || userText.includes('10~22') || userText.includes('식대') || userText.includes('네') || userText.includes('응') || userText.includes('아니')) {
-        const is5Over = !userText.includes('5인 미만') && !userText.includes('5인미만');
-        const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
-        const isUnder1Year = userText.includes('1년 미만') || userText.includes('개월');
-
-        let dailyWorkHours = 9.5;
-        let breakHours = 2.5;
-        let isDifferentScheduleByDay = userText.includes('/') || userText.includes('토') || userText.includes('주 6일') || userText.includes('주말');
+      else {
+        let currentStep = chatStep;
+        
+        if (currentStep === 1) {
+          setChatStep(2);
+          const typeStr = userText.includes('시급') ? '시급' : userText.includes('일급') ? '일급' : userText.includes('포괄') ? '포괄임금' : '월급';
+          replyText = `네, **${typeStr}** 방식으로 확인하였습니다! 💡\n\n2️⃣ **두 번째 질문 (5인 이상 법적 판정)**: 사장님 본인 및 동거하는 친족(가족)을 제외하고 **평소 매장에서 함께 일하는 순수 상시 근로자가 5명 이상**인가요?\n*(근로기준법 제11조에 따라 사장님과 동거 가족은 제외되며, 5인 이상 시 연장·야간·휴일수당 1.5배 가산 및 연차유급휴가가 의무 적용됩니다)*`;
+        } else if (currentStep === 2) {
+          setChatStep(3);
+          const is5 = !userText.includes('미만');
+          replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문 (근무일수 & 평일/주말 근무 구분)**: 주 5일 근무이더라도 **평일(월~금)만 일하시나요, 아니면 토/일 주말이 포함되어 있나요?** 그리고 요일별 일하는 시간이 다른가요?\n*(예: "월~금 근무" 또는 "수~일 근무 [주말 포함] / 평일 10~22시, 토일 10~17시" 처럼 일하는 요일을 구별해 적어주시면 휴일수당을 0% 오차로 구분 계산합니다!)*`;
+        } else if (currentStep === 3) {
+          setChatStep(4);
+          replyText = `네! 요일별/평일·주말 근무조건(**"${userText}"**)을 확인했습니다! 💡\n\n4️⃣ **네 번째 질문**: **식사시간을 포함하여 하루 총 휴게시간이 어떻게 되시나요?**\n*(예: "점심 1시간 + 브레이크 1시간 = 총 2시간" 또는 "1시간 30분")*`;
+        } else if (currentStep === 4) {
+          setChatStep(5);
+          replyText = `확인했습니다! (식사시간 및 하루 총 휴게시간 **"${userText}"** 차감 적용) 💡\n\n5️⃣ **다섯 번째 질문 (야간근로 22시~06시 포함 여부)**: 밤 10시(22:00)부터 다음날 아침 6시(06:00) 사이에 일하는 **야간근로 시간**이 포함되어 있나요?\n*(5인 이상 사업장은 야간근로 시 1.5배 가산수당이 의무 적용됩니다)*`;
+        } else if (currentStep === 5) {
+          setChatStep(6);
+          replyText = `네! 야간근로 조건(**"${userText}"**)을 확인했습니다! 💡\n\n6️⃣ **여섯 번째 질문 (공휴일·대체공휴일 근로 여부)**: 설날·추석 등 **공휴일이나 대체공휴일(연 약 15일)**에 매장이 쉬나요, 아니면 나와서 일하시나요?\n*(쉬시는 경우 유급휴일로 처리되어 휴일근로수당에서 차감되며, 나와서 일하시는 경우 1.5배 휴일근로수당이 적용됩니다)*`;
+        } else if (currentStep === 6) {
+          setChatStep(7);
+          const restsOnHolidays = userText.includes('쉬') || userText.includes('안일');
+          replyText = `확인했습니다! (**${restsOnHolidays ? '공휴일/대체공휴일 휴무 - 휴일근로 수당 차감 반영' : '공휴일/대체공휴일 근무 - 1.5배 휴일근로수당 적용'}**) 💡\n\n7️⃣ **일곱 번째 질문 (입사일 & 연차 산정)**: 근로자분의 **입사일(또는 재직 기간이 1년 미만인지, 1년 이상인지)**은 어떻게 되시나요?\n*(근로기준법 제60조에 따라 1년 미만은 월 1일[최대 11일], 1년 이상은 연 15일 유급연차가 산정됩니다)*`;
+        } else if (currentStep === 7) {
+          setChatStep(8);
+          replyText = `네! 입사일 및 재직기간 조건(**"${userText}"**)을 확인했습니다! 💡\n\n8️⃣ **마지막 질문 (비과세 절세 수당 반영)**: 식대(월 20만원), 자가운전보조금(월 20만원) 등 **세금을 안 내도 되는 수당**을 넣어서 4대보험료와 소득세를 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
+        } else {
+          setChatStep(9);
         
         const timeMatch = userText.match(/(\d{1,2})\s*~\s*(\d{1,2})/);
         if (timeMatch) {
@@ -273,8 +277,7 @@ export default function Home() {
         const totalGross = basePay + overtimePay + mealPay + annualLeaveMonthlyPay;
 
         replyText = `### 🎩 노무비서실장의 [근무시간 & 급여 맞춤 정밀 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 요일별 근무 ${isDifferentScheduleByDay ? '구분 반영' : '동일'} (하루 실근로 ${dailyWorkHours.toFixed(2)}h)${hasMeal ? ' · 식대 비과세 적용' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 제11조 및 공휴일·연차 규정 체크\n- **상시 근로자 인원 수 산정**: 사장님 및 동거 친족(가족) 제외 후 **5인 이상 판정**\n- **공휴일 및 대체공휴일(명절 포함) 적용**: **${restsOnHolidays ? '공휴일/대체공휴일 휴무 (유급휴일 보정 완료, 휴일근로수당 차감)' : '공휴일/대체공휴일 근무 (1.5배 휴일근로수당 가산)'}**\n- **입사일 기준 연차유급휴가 규정**: 근로기준법 제60조 기준 **${isUnder1Year ? '1년 미만 (월 1일 발생)' : '1년 이상 (연 15일 발생, 월 1.25일분 환산 반영)'}**\n\n---\n\n### 📊 2. 요일별 근무시간 및 한 달 근로 분석\n- **요일별 근무 패턴**: **${isDifferentScheduleByDay ? '평일/주말 요일별 소정시간 차등 적용' : '전 요일 동일 근로일정'}**\n- **하루 실제 일하는 시간**: **${dailyWorkHours.toFixed(2)}시간** (기본 소정근로 ${dailyRegular.toFixed(2)}h + 연장근로 ${dailyOvertime.toFixed(2)}h)\n- **주 5일 근무 기준 한 달 총근로시간**: **${(174 + monthlyOvertime).toFixed(2)}시간**\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간** (${is5Over ? '5인 이상 1.5배 가산 반영 시 ' + monthlyOvertimeWeighted.toFixed(2) + '시간 상당' : '1.0배 적용'})\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 예상 월급\n- 💰 **예상 세전 월급 총액**: **${totalGross.toLocaleString()}원**${hasMeal ? ' (식대 비과세 20만원 포함)' : ''}\n  - **기본급 (월 209시간분)**: ${basePay.toLocaleString()}원\n  - **연장근로수당 (할증 ${monthlyOvertimeWeighted.toFixed(2)}시간분)**: ${overtimePay.toLocaleString()}원\n${is5Over ? `  - **월 연차유급휴가 수당 (${annualLeaveDaysMonthly}일분)**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : ''}${hasMeal ? `  - **비과세 식대 수당**: ${mealPay.toLocaleString()}원\n` : ''}\n---\n\n### 💡 4. 비과세 절세 혜택 안내\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 [근로기준법 제48조 법정 급여명세서 보기/출력] 버튼을 누르시면 이 계산 결과 그대로 명세서가 자동 생성됩니다!`;
-      } else {
-        replyText = `네, 말씀해주신 **"${userText}"** 조건을 확인하였습니다. 🎩\n\n관련 법령 및 주요 대법원 판례를 대조 분석 중입니다.\n\n추가로 진단서 파일(📎)을 올려주시면 관련 법령 분석 가이드를 함께 제공해 드립니다.`;
+        }
       }
 
       setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
