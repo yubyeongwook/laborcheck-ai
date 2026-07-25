@@ -170,13 +170,45 @@ export default function Home() {
   const [editingStep, setEditingStep] = useState(null);
   const [isCalculatedOnce, setIsCalculatedOnce] = useState(false);
 
-  // 🕒 3단계 근무시간 세분화 스마트 입력 폼 state
-  const [workDaysWeek, setWorkDaysWeek] = useState('주 5일');
-  const [weekdayStart, setWeekdayStart] = useState('09:00');
-  const [weekdayEnd, setWeekdayEnd] = useState('18:00');
-  const [hasWeekendWork, setHasWeekendWork] = useState(false);
-  const [weekendStart, setWeekendStart] = useState('09:00');
-  const [weekendEnd, setWeekendEnd] = useState('15:00');
+  // 🕒 3단계 근무시간 세분화 스마트 입력 폼 state (고정 vs 요일별 변동)
+  const [scheduleType, setScheduleType] = useState('fixed'); // 'fixed' | 'flexible'
+  
+  // 고정 근무용 state
+  const [fixedDays, setFixedDays] = useState(['월', '화', '수', '목', '금']);
+  const [fixedStart, setFixedStart] = useState('09:00');
+  const [fixedEnd, setFixedEnd] = useState('18:00');
+  const [fixedBreak, setFixedBreak] = useState('1.0');
+  const [fixedNightBreak, setFixedNightBreak] = useState('0.0');
+
+  // 요일별 변동 근무용 state
+  const [daySchedules, setDaySchedules] = useState({
+    월: { active: true, start: '09:00', end: '18:00', breakTime: '1.0', nightBreak: '0.0' },
+    화: { active: true, start: '09:00', end: '18:00', breakTime: '1.0', nightBreak: '0.0' },
+    수: { active: true, start: '09:00', end: '18:00', breakTime: '1.0', nightBreak: '0.0' },
+    목: { active: true, start: '09:00', end: '18:00', breakTime: '1.0', nightBreak: '0.0' },
+    금: { active: true, start: '09:00', end: '18:00', breakTime: '1.0', nightBreak: '0.0' },
+    토: { active: false, start: '09:00', end: '15:00', breakTime: '0.5', nightBreak: '0.0' },
+    일: { active: false, start: '09:00', end: '15:00', breakTime: '0.5', nightBreak: '0.0' },
+  });
+
+  // 🌙 야간 근로시간 (22시~06시) 실시간 자동 도출 함수
+  const calculateNightHours = (startStr, endStr) => {
+    if (!startStr || !endStr) return 0;
+    const [sH, sM] = startStr.split(':').map(Number);
+    const [eH, eM] = endStr.split(':').map(Number);
+    let startMin = sH * 60 + (sM || 0);
+    let endMin = eH * 60 + (eM || 0);
+    if (endMin <= startMin) endMin += 24 * 60;
+
+    let nightMin = 0;
+    for (let m = startMin; m < endMin; m++) {
+      const clockM = m % (24 * 60);
+      if (clockM >= 22 * 60 || clockM < 6 * 60) {
+        nightMin++;
+      }
+    }
+    return Math.round((nightMin / 60) * 10) / 10;
+  };
 
   const fileInputRef = useRef(null);
   const chatEndRef = useRef(null);
@@ -830,115 +862,284 @@ export default function Home() {
               </div>
             )}
 
-            {/* 🕒 3단계 전용: 세부 근무일수 & 출퇴근 시간 정밀 세팅 입력 폼 */}
+            {/* 🕒 3단계 전용: 고정 vs 요일별 변동 근무 스케줄러 스마트 입력 폼 */}
             {isChatActive && (editingStep || chatStep) === 3 && (
               <div style={{
                 padding: '1.1rem 1.25rem',
                 background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98))',
                 borderTop: '2px solid #38bdf8',
+                maxHeight: '400px',
+                overflowY: 'auto',
                 boxShadow: '0 -10px 25px rgba(0, 0, 0, 0.4)'
               }}>
-                <div style={{ color: '#38bdf8', marginBottom: '0.75rem', fontSize: '0.9rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Clock size={18} color="#38bdf8" /> 3단계 세부 설정: 주 몇 일 근로 & 평일/주말 출퇴근 시간 정밀 입력
+                <div style={{ color: '#38bdf8', marginBottom: '0.75rem', fontSize: '0.9rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Clock size={18} color="#38bdf8" /> 3단계 세부 설정: 고정 / 요일별 변동 근무 스케줄러
+                  </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                  {/* 주 근로일수 선택 */}
+                {/* 📌 탭 스위처 (고정근무 vs 요일별 변동근무) */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.9rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setScheduleType('fixed')}
+                    style={{
+                      flex: 1, padding: '0.55rem', borderRadius: '8px',
+                      background: scheduleType === 'fixed' ? 'linear-gradient(135deg, #0284c7, #38bdf8)' : '#0f172a',
+                      color: '#ffffff', border: scheduleType === 'fixed' ? 'none' : '1px solid #334155',
+                      fontWeight: 800, cursor: 'pointer', fontSize: '0.82rem'
+                    }}
+                  >
+                    📌 고정 근무 (매일 일정)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScheduleType('flexible')}
+                    style={{
+                      flex: 1, padding: '0.55rem', borderRadius: '8px',
+                      background: scheduleType === 'flexible' ? 'linear-gradient(135deg, #d97706, #f59e0b)' : '#0f172a',
+                      color: '#ffffff', border: scheduleType === 'flexible' ? 'none' : '1px solid #334155',
+                      fontWeight: 800, cursor: 'pointer', fontSize: '0.82rem'
+                    }}
+                  >
+                    🔀 요일별 변동 근무 (요일마다 시간/휴게 다름)
+                  </button>
+                </div>
+
+                {/* A. 📌 고정 근무 입력 모드 */}
+                {scheduleType === 'fixed' && (
                   <div>
-                    <label style={{ fontSize: '0.76rem', color: '#94a3b8', display: 'block', marginBottom: '0.3rem', fontWeight: 700 }}>📅 주 근로일수</label>
-                    <select
-                      value={workDaysWeek}
-                      onChange={(e) => setWorkDaysWeek(e.target.value)}
-                      style={{ width: '100%', padding: '0.5rem 0.7rem', borderRadius: '8px', background: '#0f172a', color: '#ffffff', border: '1px solid rgba(56, 189, 248, 0.35)', outline: 'none', fontSize: '0.85rem' }}
-                    >
-                      <option value="주 5일">주 5일 근무 (월~금)</option>
-                      <option value="주 6일">주 6일 근무 (월~토)</option>
-                      <option value="주 4일">주 4일 근무</option>
-                      <option value="주 3일">주 3일 근무</option>
-                      <option value="주 2일">주 2일 근무 (파트타임)</option>
-                    </select>
-                  </div>
-
-                  {/* 주말 근무 여부 토글 */}
-                  <div>
-                    <label style={{ fontSize: '0.76rem', color: '#94a3b8', display: 'block', marginBottom: '0.3rem', fontWeight: 700 }}>📆 주말(토/일) 근무 구분</label>
-                    <button
-                      type="button"
-                      onClick={() => setHasWeekendWork(!hasWeekendWork)}
-                      style={{
-                        width: '100%', padding: '0.5rem 0.7rem', borderRadius: '8px',
-                        background: hasWeekendWork ? 'rgba(245, 158, 11, 0.25)' : 'rgba(56, 189, 248, 0.12)',
-                        color: hasWeekendWork ? '#f59e0b' : '#38bdf8',
-                        border: `1px solid ${hasWeekendWork ? '#f59e0b' : 'rgba(56, 189, 248, 0.4)'}`,
-                        fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem'
-                      }}
-                    >
-                      {hasWeekendWork ? '⚠️ 주말 근무 포함 (시간 다름)' : '✅ 주말 휴무 (평일 동일)'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* 평일 출퇴근 시간 */}
-                <div style={{ background: '#0f172a', padding: '0.65rem 0.85rem', borderRadius: '10px', marginBottom: '0.75rem', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <div style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 700, marginBottom: '0.35rem' }}>
-                    🏢 평일 출퇴근 시간 선택
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input
-                      type="time"
-                      value={weekdayStart}
-                      onChange={(e) => setWeekdayStart(e.target.value)}
-                      style={{ flex: 1, padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                    <span style={{ color: '#94a3b8', fontWeight: 700 }}>~</span>
-                    <input
-                      type="time"
-                      value={weekdayEnd}
-                      onChange={(e) => setWeekdayEnd(e.target.value)}
-                      style={{ flex: 1, padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                </div>
-
-                {/* 주말 출퇴근 시간 (주말 근무 체크 시) */}
-                {hasWeekendWork && (
-                  <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '0.65rem 0.85rem', borderRadius: '10px', marginBottom: '0.75rem', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                    <div style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 700, marginBottom: '0.35rem' }}>
-                      🏖️ 주말(토/일) 별도 출퇴근 시간
+                    {/* 요일 선택 */}
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <label style={{ fontSize: '0.76rem', color: '#94a3b8', display: 'block', marginBottom: '0.3rem', fontWeight: 700 }}>📅 근무 요일 선택</label>
+                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                        {['월', '화', '수', '목', '금', '토', '일'].map((day) => {
+                          const isSel = fixedDays.includes(day);
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => {
+                                setFixedDays(prev => isSel ? prev.filter(d => d !== day) : [...prev, day]);
+                              }}
+                              style={{
+                                flex: 1, padding: '0.4rem 0', borderRadius: '6px',
+                                background: isSel ? 'rgba(56, 189, 248, 0.25)' : '#0f172a',
+                                color: isSel ? '#38bdf8' : '#64748b',
+                                border: `1px solid ${isSel ? '#38bdf8' : '#334155'}`,
+                                fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer'
+                              }}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <input
-                        type="time"
-                        value={weekendStart}
-                        onChange={(e) => setWeekendStart(e.target.value)}
-                        style={{ flex: 1, padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', outline: 'none', fontSize: '0.85rem' }}
-                      />
-                      <span style={{ color: '#94a3b8', fontWeight: 700 }}>~</span>
-                      <input
-                        type="time"
-                        value={weekendEnd}
-                        onChange={(e) => setWeekendEnd(e.target.value)}
-                        style={{ flex: 1, padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', outline: 'none', fontSize: '0.85rem' }}
-                      />
+
+                    {/* 출퇴근 시간 및 휴게시간 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginBottom: '0.75rem' }}>
+                      <div style={{ background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <label style={{ fontSize: '0.74rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 700 }}>⏰ 출퇴근 시간</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <input
+                            type="time"
+                            value={fixedStart}
+                            onChange={(e) => setFixedStart(e.target.value)}
+                            style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.8rem' }}
+                          />
+                          <span style={{ color: '#94a3b8' }}>~</span>
+                          <input
+                            type="time"
+                            value={fixedEnd}
+                            onChange={(e) => setFixedEnd(e.target.value)}
+                            style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.8rem' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <label style={{ fontSize: '0.74rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 700 }}>☕ 주간 휴게시간 (식사포함)</label>
+                        <select
+                          value={fixedBreak}
+                          onChange={(e) => setFixedBreak(e.target.value)}
+                          style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.8rem' }}
+                        >
+                          <option value="1.0">1시간 (기본)</option>
+                          <option value="1.5">1.5시간</option>
+                          <option value="2.0">2시간</option>
+                          <option value="0.5">30분 (0.5시간)</option>
+                          <option value="0.0">휴게시간 없음 (0시간)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* 🌙 야간 근로시간 실시간 감지 배지 및 야간 휴게 설정 */}
+                    {calculateNightHours(fixedStart, fixedEnd) > 0 && (
+                      <div style={{ background: 'rgba(245, 158, 11, 0.12)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.4)', marginBottom: '0.75rem' }}>
+                        <div style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 800, marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          🌙 야간근로 (22:00~06:00) {calculateNightHours(fixedStart, fixedEnd)}시간 자동 감지됨!
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>야간 휴게시간(야식/수면):</span>
+                          <select
+                            value={fixedNightBreak}
+                            onChange={(e) => setFixedNightBreak(e.target.value)}
+                            style={{ flex: 1, padding: '0.3rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #f59e0b', fontSize: '0.78rem' }}
+                          >
+                            <option value="0.0">야간휴게 없음 (전액 1.5배 인정)</option>
+                            <option value="0.5">30분 차감</option>
+                            <option value="1.0">1시간 차감</option>
+                            <option value="1.5">1.5시간 차감</option>
+                            <option value="2.0">2시간 차감</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* B. 🔀 요일별 변동 근무 입력 모드 (핵심 기능!) */}
+                {scheduleType === 'flexible' && (
+                  <div>
+                    <div style={{ fontSize: '0.76rem', color: '#f59e0b', fontWeight: 700, marginBottom: '0.5rem' }}>
+                      💡 요일별로 출퇴근 시간 및 휴게시간이 다른 경우 각각 체크하여 설정하세요:
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                      {['월', '화', '수', '목', '금', '토', '일'].map((day) => {
+                        const sched = daySchedules[day];
+                        const nightH = sched.active ? calculateNightHours(sched.start, sched.end) : 0;
+                        return (
+                          <div
+                            key={day}
+                            style={{
+                              background: sched.active ? '#0f172a' : 'rgba(15, 23, 42, 0.4)',
+                              border: `1px solid ${sched.active ? (nightH > 0 ? '#f59e0b' : 'rgba(56, 189, 248, 0.35)') : '#334155'}`,
+                              borderRadius: '8px',
+                              padding: '0.5rem 0.7rem'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: sched.active ? '0.4rem' : '0' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDaySchedules(prev => ({
+                                    ...prev,
+                                    [day]: { ...prev[day], active: !prev[day].active }
+                                  }));
+                                }}
+                                style={{
+                                  padding: '0.2rem 0.6rem', borderRadius: '4px',
+                                  background: sched.active ? '#0284c7' : '#334155',
+                                  color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
+                                }}
+                              >
+                                {day}요일 {sched.active ? '근무' : '휴무'}
+                              </button>
+
+                              {sched.active && nightH > 0 && (
+                                <span style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: 800, background: 'rgba(245, 158, 11, 0.15)', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                                  🌙 야간 {nightH}h 포함
+                                </span>
+                              )}
+                            </div>
+
+                            {sched.active && (
+                              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.4rem', alignItems: 'center' }}>
+                                {/* 출퇴근 */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                  <input
+                                    type="time"
+                                    value={sched.start}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], start: val } }));
+                                    }}
+                                    style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.76rem' }}
+                                  />
+                                  <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>~</span>
+                                  <input
+                                    type="time"
+                                    value={sched.end}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], end: val } }));
+                                    }}
+                                    style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.76rem' }}
+                                  />
+                                </div>
+
+                                {/* 주간 휴게 */}
+                                <div>
+                                  <select
+                                    value={sched.breakTime}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], breakTime: val } }));
+                                    }}
+                                    style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.74rem' }}
+                                  >
+                                    <option value="1.0">휴게 1h</option>
+                                    <option value="1.5">휴게 1.5h</option>
+                                    <option value="2.0">휴게 2h</option>
+                                    <option value="0.5">휴게 0.5h</option>
+                                    <option value="0.0">휴게 0h</option>
+                                  </select>
+                                </div>
+
+                                {/* 야간 휴게 */}
+                                <div>
+                                  <select
+                                    value={sched.nightBreak}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], nightBreak: val } }));
+                                    }}
+                                    style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: nightH > 0 ? '#f59e0b' : '#fff', border: nightH > 0 ? '1px solid #f59e0b' : '1px solid #334155', fontSize: '0.74rem' }}
+                                  >
+                                    <option value="0.0">야간휴게0h</option>
+                                    <option value="0.5">야간휴게0.5h</option>
+                                    <option value="1.0">야간휴게1h</option>
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
-                {/* 전송 버튼 */}
+                {/* 🚀 적용 버튼 */}
                 <button
                   type="button"
                   onClick={() => {
-                    const timeText = `${workDaysWeek} / 평일 ${weekdayStart}~${weekdayEnd}${hasWeekendWork ? ` / 주말 ${weekendStart}~${weekendEnd}` : ' (주말 휴무)'}`;
-                    handleSendMessage(null, timeText);
+                    let summaryText = '';
+                    if (scheduleType === 'fixed') {
+                      const daysStr = fixedDays.join(',');
+                      const nH = calculateNightHours(fixedStart, fixedEnd);
+                      summaryText = `[고정근무] 주 ${fixedDays.length}일 (${daysStr}) / ${fixedStart}~${fixedEnd} / 주간휴게 ${fixedBreak}시간${nH > 0 ? ` / 야간근로 ${nH}시간 (야간휴게 ${fixedNightBreak}시간 차감)` : ''}`;
+                    } else {
+                      const activeDays = Object.keys(daySchedules).filter(d => daySchedules[d].active);
+                      const detailList = activeDays.map(d => {
+                        const s = daySchedules[d];
+                        const nH = calculateNightHours(s.start, s.end);
+                        return `${d}요일(${s.start}~${s.end}, 휴게${s.breakTime}h${nH > 0 ? `, 야간${nH}h[야간휴게${s.nightBreak}h]` : ''})`;
+                      });
+                      summaryText = `[변동근무] 주 ${activeDays.length}일 (${activeDays.join(',')}) / 세부스케줄: ${detailList.join('; ')}`;
+                    }
+                    handleSendMessage(null, summaryText);
                   }}
                   style={{
                     width: '100%', padding: '0.65rem', borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #0284c7, #38bdf8)', color: '#ffffff',
-                    fontWeight: 800, border: 'none', cursor: 'pointer', fontSize: '0.88rem',
-                    boxShadow: '0 4px 12px rgba(56, 189, 248, 0.35)'
+                    background: scheduleType === 'fixed' ? 'linear-gradient(135deg, #0284c7, #38bdf8)' : 'linear-gradient(135deg, #d97706, #f59e0b)',
+                    color: '#ffffff', fontWeight: 800, border: 'none', cursor: 'pointer', fontSize: '0.88rem',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)'
                   }}
                 >
-                  ✅ 입력한 근무일수 & 출퇴근 시간 정밀 적용하기
+                  ✅ 세팅한 근무 스케줄로 0% 오차 자동 정밀 계산 적용하기
                 </button>
               </div>
             )}
