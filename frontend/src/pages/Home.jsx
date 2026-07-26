@@ -140,15 +140,18 @@ const STEP_CHOICE_OPTIONS = {
     { label: '🌌 야간근로 4시간 포함', value: '야간근로 4시간 포함' }
   ],
   6: [
-    { label: '🚩 공휴일/대체공휴일 모두 휴무 (쉬움)', value: '공휴일 모두 쉬움' },
-    { label: '🏢 공휴일 연간 15일 전일 나와서 근무', value: '공휴일 연간 15일 전일 근무' },
-    { label: '🌗 주요 공휴일 연간 약 7일 근무', value: '공휴일 연간 7일 근무' },
-    { label: '🌕 명절 포함 연간 약 4일 근무', value: '공휴일 연간 4일 근무' }
+    { label: '🏖️ 공휴일전일 휴무 (연 0일 근무 - 유급휴일)', value: '공휴일 모두 휴무 (연 0일 근무)' },
+    { label: '🌕 명절 등 연 4일 나와서 근무', value: '공휴일 연간 4일 근무' },
+    { label: '🌗 주요 국경일 등 연 7일 나와서 근무', value: '공휴일 연간 7일 근무' },
+    { label: '🔥 연 15일 공휴일 전일 나와서 근무', value: '공휴일 연간 15일 전일 근무' }
   ],
   7: [
-    { label: '📅 1년 이상 (연차 수당 미포함 / 휴가 사용)', value: '1년 이상, 연차 수당 미포함 (휴가로 사용)' },
-    { label: '💰 1년 이상 (미사용 연차수당 급여 포함)', value: '1년 이상, 미사용 연차수당 급여 포함' },
-    { label: '🐣 1년 미만 (월 1개 발생 연차)', value: '1년 미만, 연차 0개' }
+    { label: '🌴 1년 이상 (연차 다 씀 - 수당 미포함)', value: '1년 이상, 연차 휴가로 다 사용 (미사용 수당 미포함)' },
+    { label: '💰 1년 이상 - 연차 0일 사용 (15일 전체 수당 정산)', value: '1년 이상, 연차 0일 사용 (남은 15일 수당 급여 포함 정산)' },
+    { label: '💰 1년 이상 - 연차 3일 사용 (남은 12일 수당 정산)', value: '1년 이상, 연차 3일 사용 (남은 12일 수당 급여 포함 정산)' },
+    { label: '💰 1년 이상 - 연차 5일 사용 (남은 10일 수당 정산)', value: '1년 이상, 연차 5일 사용 (남은 10일 수당 급여 포함 정산)' },
+    { label: '🐣 1년 미만 (월 1개 발생 - 미사용 수당 급여 포함)', value: '1년 미만, 미사용 연차수당 급여 포함 정산' },
+    { label: '🐣 1년 미만 (연차 휴가 사용 - 수당 미포함)', value: '1년 미만, 연차 수당 미포함 (휴가 사용)' }
   ],
   8: [
     { label: '🍚 식대 20만원 비과세 분할 (절세형)', value: '식대 20만원 비과세 포함' },
@@ -1439,13 +1442,52 @@ export default function Home() {
                       const nH = calculateNightHours(fixedStart, fixedEnd);
                       summaryText = `[고정근무] 주 ${fixedDays.length}일 (${daysStr}) / ${fixedStart}~${fixedEnd} / 주간휴게 ${fixedBreak}시간${nH > 0 ? ` / 야간근로 ${nH}시간 (야간휴게 ${fixedNightBreak}시간 차감)` : ''}`;
                     } else {
+                      const ALL_WEEKDAYS_ORDER = ['월', '화', '수', '목', '금', '토', '일'];
                       const activeDays = Object.keys(daySchedules).filter(d => daySchedules[d].active);
-                      const detailList = activeDays.map(d => {
-                        const s = daySchedules[d];
+                      
+                      const formatDaysGroupStr = (daysArr) => {
+                        if (daysArr.length === 0) return '';
+                        if (daysArr.length === 1) return `${daysArr[0]}`;
+                        const sorted = [...daysArr].sort((a, b) => ALL_WEEKDAYS_ORDER.indexOf(a) - ALL_WEEKDAYS_ORDER.indexOf(b));
+                        const ranges = [];
+                        let start = sorted[0];
+                        let prev = sorted[0];
+                        for (let i = 1; i < sorted.length; i++) {
+                          const curr = sorted[i];
+                          if (ALL_WEEKDAYS_ORDER.indexOf(curr) === ALL_WEEKDAYS_ORDER.indexOf(prev) + 1) {
+                            prev = curr;
+                          } else {
+                            ranges.push(start === prev ? `${start}` : `${start}~${prev}`);
+                            start = curr;
+                            prev = curr;
+                          }
+                        }
+                        ranges.push(start === prev ? `${start}` : `${start}~${prev}`);
+                        return ranges.join(', ');
+                      };
+
+                      const sortedActive = [...activeDays].sort((a, b) => ALL_WEEKDAYS_ORDER.indexOf(a) - ALL_WEEKDAYS_ORDER.indexOf(b));
+                      const groups = [];
+                      sortedActive.forEach(day => {
+                        const s = daySchedules[day];
                         const nH = calculateNightHours(s.start, s.end);
-                        return `${d}요일(${s.start}~${s.end}, 휴게${s.breakTime}h${nH > 0 ? `, 야간${nH}h[야간휴게${s.nightBreak}h]` : ''})`;
+                        const key = `${s.start}_${s.end}_${s.breakTime}_${nH}_${s.nightBreak}`;
+                        let existing = groups.find(g => g.key === key);
+                        if (!existing) {
+                          existing = { key, days: [], start: s.start, end: s.end, breakTime: s.breakTime, nightH: nH, nightBreak: s.nightBreak };
+                          groups.push(existing);
+                        }
+                        existing.days.push(day);
                       });
-                      summaryText = `[변동근무] 주 ${activeDays.length}일 (${activeDays.join(',')}) / 세부스케줄: ${detailList.join('; ')}`;
+
+                      const detailList = groups.map(g => {
+                        const dayGroupStr = formatDaysGroupStr(g.days);
+                        const nightStr = g.nightH > 0 ? `, 야간 ${g.nightH}h[야간휴게 ${g.nightBreak}h]` : '';
+                        return `${dayGroupStr}요일(${g.start}~${g.end}, 휴게 ${g.breakTime}h${nightStr})`;
+                      });
+
+                      const activeDaysStr = formatDaysGroupStr(sortedActive);
+                      summaryText = `[변동근무] 주 ${activeDays.length}일 (${activeDaysStr}) / 세부스케줄: ${detailList.join('; ')}`;
                     }
                     handleSendMessage(null, summaryText);
                   }}
