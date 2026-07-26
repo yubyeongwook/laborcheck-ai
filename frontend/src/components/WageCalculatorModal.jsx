@@ -726,7 +726,6 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', textAlign: 'right', fontWeight: 700 }}>{calculated.actualBasePay.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', fontWeight: 600 }}>연장근로수당 (1.5배)</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>12.74h</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', textAlign: 'right', fontWeight: 700 }}>{calculated.monthlyOvertimePay.toLocaleString()}</td>
                       </tr>
