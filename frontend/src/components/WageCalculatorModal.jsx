@@ -308,22 +308,6 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                 <Clock size={16} /> 1. 근무 조건 및 수당 파라미터 조절
               </span>
-
-              {/* ⚙️ 엑셀/계약서 맞춤 시간 수치 직접 수정 토글 버튼 */}
-              <button
-                type="button"
-                onClick={() => setIsCustomOverride(!isCustomOverride)}
-                style={{
-                  padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700,
-                  background: isCustomOverride ? 'rgba(236, 72, 153, 0.25)' : 'rgba(56, 189, 248, 0.15)',
-                  color: isCustomOverride ? '#ec4899' : '#38bdf8',
-                  border: `1px solid ${isCustomOverride ? '#ec4899' : '#38bdf8'}`, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: '0.25rem'
-                }}
-              >
-                <Sliders size={13} />
-                {isCustomOverride ? '⚙️ 수치 직접입력 ON' : '⚙️ 시간수치 엑셀맞춤 입력'}
-              </button>
             </div>
 
             {/* 시급 & 5인 이상 조건 */}
@@ -362,47 +346,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* 💡 [수치 직접 수정 모드 ON 시]: 엑셀 표 수치(연장 12.74h, 야간 13.04h, 휴일 20.0h)를 손으로 바로 넣는 특수 패널 */}
-            {isCustomOverride ? (
-              <div style={{ background: 'rgba(236, 72, 153, 0.1)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(236, 72, 153, 0.4)', marginBottom: '0.85rem' }}>
-                <div style={{ fontSize: '0.75rem', color: '#ec4899', fontWeight: 800, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Sparkles size={14} /> 🎯 [엑셀/계약서 서식 시간 수치 100% 직접 매칭 모드]
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', color: '#f472b6', marginBottom: '0.2rem', fontWeight: 700 }}>월 연장근로시간(h)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={overrideOvertimeHours}
-                      onChange={(e) => setOverrideOvertimeHours(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.3rem', background: '#0f172a', border: '1px solid #ec4899', color: '#fff', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700 }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', color: '#f472b6', marginBottom: '0.2rem', fontWeight: 700 }}>월 야간근로시간(h)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={overrideNightHours}
-                      onChange={(e) => setOverrideNightHours(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.3rem', background: '#0f172a', border: '1px solid #ec4899', color: '#fff', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700 }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', color: '#f472b6', marginBottom: '0.2rem', fontWeight: 700 }}>월 휴일근로시간(h)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={overrideHolidayHours}
-                      onChange={(e) => setOverrideHolidayHours(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.3rem', background: '#0f172a', border: '1px solid #ec4899', color: '#fff', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700 }}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', color: '#cbd5e1' }}>
+            </div>Items: 'center', gap: '0.5rem', fontSize: '0.72rem', color: '#cbd5e1' }}>
                   <span>엑셀 연장수당 가산비율:</span>
                   <button
                     type="button"
