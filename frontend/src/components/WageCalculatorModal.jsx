@@ -75,6 +75,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [useTargetGross, setUseTargetGross] = useState(true);
   const [targetGrossSalary, setTargetGrossSalary] = useState(2800000);
 
+  // 국민연금 부과 대상 기준액(신고소득월액/과세표준) 수동 직접 입력 지정
+  const [useCustomPensionBase, setUseCustomPensionBase] = useState(false);
+  const [customPensionBaseAmount, setCustomPensionBaseAmount] = useState(2600000);
+
   // 일괄 적용 실행 함수
   const applyBatchSchedule = () => {
     const bHours = parseFloat(batchBreak.replace('h', '')) || 0;
@@ -172,9 +176,14 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     }
     const totalGross = subTotalGross + extraOvertimeAllowance;
 
-    // 4대보험 & 세금
+    // 4대보험 & 세금 계산
     const taxableTotal = Math.max(0, totalGross - mealPay);
-    const nationalPension = Math.round(taxableTotal * 0.045 / 10) * 10;
+
+    // 국민연금 과세표준(수동 지정 vs 자동 과세소득)
+    const pensionBase = useCustomPensionBase ? customPensionBaseAmount : taxableTotal;
+
+    // 4대보험 부과액 계산 (근로자 부담 요율: 국민연금 4.5%, 건강보험 3.545%, 장기요양 12.95%, 고용 0.9%)
+    const nationalPension = Math.round(pensionBase * 0.045 / 10) * 10;
     const healthInsurance = Math.round(taxableTotal * 0.03545 / 10) * 10;
     const longtermCare = Math.round(healthInsurance * 0.1295 / 10) * 10;
     const employmentInsurance = Math.round(taxableTotal * 0.009 / 10) * 10;
@@ -204,6 +213,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       annualLeaveMonthlyHours: annualLeaveMonthlyHours.toFixed(1),
       annualLeaveMonthlyPay,
       mealPay,
+      pensionBase,
       totalGross,
       totalDeductions,
       extraOvertimeAllowance,
@@ -234,6 +244,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
         totalAnnualLeaveDays,
         usedAnnualLeaveDays,
         mealPay: calculated.mealPay,
+        customPensionBase: useCustomPensionBase ? customPensionBaseAmount : null,
         calculatedResult: calculated
       });
     }
@@ -247,7 +258,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
     }}>
       <div style={{
-        background: '#0f172a', color: '#f8fafc', width: '100%', maxWidth: '1020px',
+        background: '#0f172a', color: '#f8fafc', width: '100%', maxWidth: '1040px',
         maxHeight: '94vh', overflowY: 'auto', borderRadius: '20px', padding: '1.5rem 1.75rem',
         border: '1px solid rgba(56, 189, 248, 0.3)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)'
@@ -531,6 +542,35 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
               </div>
 
+              {/* 국민연금 부과 과세표준 수동 직접지정 옵션 */}
+              <div style={{ background: '#0f172a', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#38bdf8', fontWeight: 800, cursor: 'pointer', marginBottom: '0.25rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={useCustomPensionBase}
+                    onChange={(e) => setUseCustomPensionBase(e.target.checked)}
+                  />
+                  💡 국민연금 부과 과세소득(신고소득월액) 직접 입력
+                </label>
+                {useCustomPensionBase ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>국민연금 적용금액:</span>
+                    <input
+                      type="number"
+                      step="10000"
+                      value={customPensionBaseAmount}
+                      onChange={(e) => setCustomPensionBaseAmount(Number(e.target.value))}
+                      style={{ flex: 1, padding: '0.3rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 900 }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>원</span>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                    * 미체크 시 자동으로 (세전 월급 - 비과세 식대) 과세소득이 국민연금 부과 기준액으로 반영됩니다.
+                  </div>
+                )}
+              </div>
+
               {/* 비과세 식대 및 연차 정밀 설정 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderTop: '1px solid #334155', paddingTop: '0.65rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#e2e8f0', cursor: 'pointer' }}>
@@ -640,8 +680,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 <button
                   type="button"
                   onClick={() => {
-                    const pBase = calculated.totalGross - calculated.mealPay;
-                    alert("📱 [카카오톡 알림톡 전송 완료]\n\n2026년 7월 법정 급여명세서\n-------------------------------\n• 세전 월급: " + calculated.totalGross.toLocaleString() + " 원\n• 실수령액: " + calculated.netPay.toLocaleString() + " 원\n• 국민연금 과세표준: " + pBase.toLocaleString() + " 원\n• 실제 연장근로: " + calculated.netOvertimeHours + " 시간 (" + calculated.monthlyOvertimePay.toLocaleString() + " 원)\n• 실제 야간근로: " + calculated.netNightHours + " 시간 (" + calculated.nightAllowance.toLocaleString() + " 원)\n• 국민연금 공제액: " + calculated.nationalPension.toLocaleString() + " 원\n\n카카오톡으로 급여명세서 발송이 성공적으로 완료되었습니다!");
+                    alert("📱 [카카오톡 알림톡 전송 완료]\n\n2026년 7월 법정 급여명세서\n-------------------------------\n• 세전 월급: " + calculated.totalGross.toLocaleString() + " 원\n• 실수령액: " + calculated.netPay.toLocaleString() + " 원\n• 국민연금 과세표준: " + calculated.pensionBase.toLocaleString() + " 원\n• 실제 연장근로: " + calculated.netOvertimeHours + " 시간 (" + calculated.monthlyOvertimePay.toLocaleString() + " 원)\n• 실제 야간근로: " + calculated.netNightHours + " 시간 (" + calculated.nightAllowance.toLocaleString() + " 원)\n• 국민연금 공제액: " + calculated.nationalPension.toLocaleString() + " 원\n\n카카오톡으로 급여명세서 발송이 성공적으로 완료되었습니다!");
                   }}
                   style={{
                     background: '#FEE500',
@@ -760,8 +799,12 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     <tbody>
                       <tr style={{ background: '#f0f9ff' }}>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 700, color: '#0369a1', fontSize: '0.6rem' }}>💡 국민연금 부과 과세소득</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', color: '#0369a1', fontSize: '0.6rem' }}>과세 기준</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', fontWeight: 800, color: '#0369a1', fontSize: '0.63rem' }}>{(calculated.totalGross - calculated.mealPay).toLocaleString()} 원</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', color: '#0369a1', fontSize: '0.6rem' }}>
+                          {useCustomPensionBase ? '수동지정' : '과세소득'}
+                        </td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', fontWeight: 800, color: '#0369a1', fontSize: '0.63rem' }}>
+                          {calculated.pensionBase.toLocaleString()} 원
+                        </td>
                       </tr>
                       <tr>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>국민연금 (근로자 부담)</td>
@@ -821,8 +864,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
               <button
                 type="button"
                 onClick={() => {
-                  const pBase = calculated.totalGross - calculated.mealPay;
-                  alert("📱 [카카오톡 알림톡 전송 완료]\n\n2026년 7월 법정 급여명세서\n-------------------------------\n• 세전 월급: " + calculated.totalGross.toLocaleString() + " 원\n• 실수령액: " + calculated.netPay.toLocaleString() + " 원\n• 국민연금 과세표준: " + pBase.toLocaleString() + " 원\n• 실제 연장근로: " + calculated.netOvertimeHours + " 시간 (" + calculated.monthlyOvertimePay.toLocaleString() + " 원)\n• 실제 야간근로: " + calculated.netNightHours + " 시간 (" + calculated.nightAllowance.toLocaleString() + " 원)\n• 국민연금 공제액: " + calculated.nationalPension.toLocaleString() + " 원\n\n카카오톡으로 급여명세서 발송이 성공적으로 완료되었습니다!");
+                  alert("📱 [카카오톡 알림톡 전송 완료]\n\n2026년 7월 법정 급여명세서\n-------------------------------\n• 세전 월급: " + calculated.totalGross.toLocaleString() + " 원\n• 실수령액: " + calculated.netPay.toLocaleString() + " 원\n• 국민연금 과세표준: " + calculated.pensionBase.toLocaleString() + " 원\n• 실제 연장근로: " + calculated.netOvertimeHours + " 시간 (" + calculated.monthlyOvertimePay.toLocaleString() + " 원)\n• 실제 야간근로: " + calculated.netNightHours + " 시간 (" + calculated.nightAllowance.toLocaleString() + " 원)\n• 국민연금 공제액: " + calculated.nationalPension.toLocaleString() + " 원\n\n카카오톡으로 급여명세서 발송이 성공적으로 완료되었습니다!");
                 }}
                 style={{
                   padding: '0.55rem 0.7rem', borderRadius: '8px',
