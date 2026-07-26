@@ -28,6 +28,9 @@ export default function PayslipModal({ data = {}, onClose }) {
     holidayAllowance = 0,
     annualLeaveHours = 0,
     annualLeaveAllowance = 0,
+    extraOvertimeHours = 0,
+    extraOvertimeAllowance = 0,
+    extraOvertimePay = 0,
     mealAllowanceTaxExempt = 200000,
     drivingAllowanceTaxExempt = 0,
     totalGrossSalary = 2356880,
@@ -161,6 +164,17 @@ export default function PayslipModal({ data = {}, onClose }) {
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{displayAnnualLeaveHours}h</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{annualLeaveAllowance.toLocaleString()}</td>
                   </tr>
+                  {(extraOvertimeAllowance > 0 || extraOvertimePay > 0) && (
+                    <tr>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', color: '#0369a1', fontWeight: 700 }}>➕ 추가 연장 수당</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontSize: '0.78rem', color: '#0369a1' }}>
+                        {extraOvertimeHours ? `${extraOvertimeHours}h` : '약정차액조정'}
+                      </td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', color: '#0369a1', fontWeight: 700 }}>
+                        {(extraOvertimeAllowance || extraOvertimePay || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  )}
                   <tr style={{ background: '#f8fafc' }}>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', color: '#16a34a' }}>🍚 식대 (비과세)</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>-</td>

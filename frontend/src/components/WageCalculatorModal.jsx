@@ -80,6 +80,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [overrideHolidayHours, setOverrideHolidayHours] = useState(calcData?.holidayHours || 20.0);
   const [overrideOvertimeRate, setOverrideOvertimeRate] = useState(1.0); // 엑셀 포괄 가산비율 (1.0배)
 
+  // 🎯 [사업주 목표 약정 월급 0원 오차 정액 세팅]
+  const [useTargetGross, setUseTargetGross] = useState(calcData?.useTargetGross !== undefined ? calcData.useTargetGross : true);
+  const [targetGrossSalary, setTargetGrossSalary] = useState(calcData?.totalGrossSalary || 2800000);
+
   // 일괄 적용 클릭 이벤트
   const handleApplyBatch = () => {
     setDaySchedules(prev => {
@@ -199,8 +203,13 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       ? Math.round((hourlyRate * 8 * (unusedAnnualLeaveDays / 12)) / 10) * 10
       : 0;
 
-    // 총 지급액 (세전)
-    const totalGross = actualBasePay + monthlyOvertimePay + mealPay + nightAllowance + holidayPayMonthly + annualLeaveMonthlyPay;
+    // 총 지급액 (세전) 및 약정 차액 추가연장수당 편입
+    const subTotalGross = actualBasePay + monthlyOvertimePay + mealPay + nightAllowance + holidayPayMonthly + annualLeaveMonthlyPay;
+    let extraOvertimeAllowance = 0;
+    if (useTargetGross && targetGrossSalary > subTotalGross) {
+      extraOvertimeAllowance = Math.round((targetGrossSalary - subTotalGross) / 10) * 10;
+    }
+    const totalGross = subTotalGross + extraOvertimeAllowance;
 
     // 4대보험 & 세금
     const taxableTotal = Math.max(0, totalGross - mealPay);
@@ -228,6 +237,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       mealPay,
       totalGross,
       totalDeductions,
+      extraOvertimeAllowance,
       netPay,
       nationalPension,
       healthInsurance,
@@ -720,6 +730,31 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   </div>
                 </div>
               )}
+
+              {/* 🎯 사업주 약정 목표 세전 월급 입력 & 추가연장수당 자동편입 패널 */}
+              <div style={{ background: 'rgba(56, 189, 248, 0.08)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.3)', marginTop: '0.5rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700, cursor: 'pointer', marginBottom: '0.3rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={useTargetGross}
+                    onChange={(e) => setUseTargetGross(e.target.checked)}
+                  />
+                  💼 사업주 약정 세전 월급 정액 세팅 (잔액 ➔ 추가연장수당 편입)
+                </label>
+                {useTargetGross && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.3rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>목표 세전 월급:</span>
+                    <input
+                      type="number"
+                      step="10000"
+                      value={targetGrossSalary}
+                      onChange={(e) => setTargetGrossSalary(Number(e.target.value))}
+                      style={{ flex: 1, padding: '0.3rem 0.5rem', background: '#0f172a', border: '1px solid #38bdf8', color: '#fff', borderRadius: '4px', fontSize: '0.82rem', fontWeight: 700 }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>원</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -751,6 +786,12 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
                     <span>연차수당 (미사용 {calculated.unusedAnnualLeaveDays}일분)</span>
                     <span style={{ fontWeight: 700, color: '#a78bfa' }}>{calculated.annualLeaveMonthlyPay.toLocaleString()} 원</span>
+                  </div>
+                )}
+                {calculated.extraOvertimeAllowance > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
+                    <span style={{ color: '#38bdf8', fontWeight: 700 }}>➕ 추가 연장 수당 (약정 잔액)</span>
+                    <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.extraOvertimeAllowance.toLocaleString()} 원</span>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
