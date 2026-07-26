@@ -75,9 +75,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [useTargetGross, setUseTargetGross] = useState(true);
   const [targetGrossSalary, setTargetGrossSalary] = useState(2800000);
 
-  // 국민연금 부과 대상 기준액(신고소득월액/과세표준) 수동 직접 입력 지정
-  const [useCustomPensionBase, setUseCustomPensionBase] = useState(false);
-  const [customPensionBaseAmount, setCustomPensionBaseAmount] = useState(2600000);
+  // 💡 국민연금 부과 대상 소득월액 (적용액) 직접 입력 상태 (기본 260만원)
+  const [pensionBaseInput, setPensionBaseInput] = useState(2600000);
 
   // 일괄 적용 실행 함수
   const applyBatchSchedule = () => {
@@ -176,13 +175,15 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     }
     const totalGross = subTotalGross + extraOvertimeAllowance;
 
-    // 4대보험 & 세금 계산
+    // 4대보험 & 세금 계산 (2026년도 최신 법정 요율)
     const taxableTotal = Math.max(0, totalGross - mealPay);
 
-    // 국민연금 과세표준(수동 지정 vs 자동 과세소득)
-    const pensionBase = useCustomPensionBase ? customPensionBaseAmount : taxableTotal;
+    // 국민연금 과세표준(사용자 직접입력 pensionBaseInput 우선, 없으면 taxableTotal)
+    const pensionBase = (pensionBaseInput !== '' && pensionBaseInput !== null && !isNaN(Number(pensionBaseInput)))
+      ? Number(pensionBaseInput)
+      : taxableTotal;
 
-    // 4대보험 부과액 계산 (근로자 부담 요율: 국민연금 4.5%, 건강보험 3.545%, 장기요양 12.95%, 고용 0.9%)
+    // 2026 4대보험 근로자 부담 요율 (국민연금 4.5%, 건강보험 3.545%, 장기요양 12.95%, 고용 0.9%)
     const nationalPension = Math.round(pensionBase * 0.045 / 10) * 10;
     const healthInsurance = Math.round(taxableTotal * 0.03545 / 10) * 10;
     const longtermCare = Math.round(healthInsurance * 0.1295 / 10) * 10;
@@ -244,7 +245,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
         totalAnnualLeaveDays,
         usedAnnualLeaveDays,
         mealPay: calculated.mealPay,
-        customPensionBase: useCustomPensionBase ? customPensionBaseAmount : null,
+        customPensionBase: pensionBaseInput,
         calculatedResult: calculated
       });
     }
@@ -327,6 +328,27 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       5인 미만
                     </button>
                   </div>
+                </div>
+              </div>
+
+              {/* 💡 국민연금 부과 대상 소득월액 (적용액) 직접 입력 박스 */}
+              <div style={{ background: '#0f172a', padding: '0.65rem 0.8rem', borderRadius: '8px', border: '1px solid #38bdf8' }}>
+                <label style={{ display: 'block', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.3rem' }}>
+                  💡 국민연금 부과 대상 소득월액 (적용액 직접 입력)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <input
+                    type="number"
+                    step="10000"
+                    value={pensionBaseInput}
+                    onChange={(e) => setPensionBaseInput(e.target.value)}
+                    placeholder="예: 2600000"
+                    style={{ flex: 1, padding: '0.4rem 0.6rem', background: '#1e293b', border: '1px solid #0284c7', color: '#38bdf8', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 900 }}
+                  />
+                  <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 800 }}>원</span>
+                </div>
+                <div style={{ fontSize: '0.66rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                  * 수치를 입력하면 우측 명세서의 국민연금 과세소득 및 공제액(4.5%)에 실시간 즉시 반영됩니다.
                 </div>
               </div>
 
@@ -542,35 +564,6 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
               </div>
 
-              {/* 국민연금 부과 과세표준 수동 직접지정 옵션 */}
-              <div style={{ background: '#0f172a', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#38bdf8', fontWeight: 800, cursor: 'pointer', marginBottom: '0.25rem' }}>
-                  <input
-                    type="checkbox"
-                    checked={useCustomPensionBase}
-                    onChange={(e) => setUseCustomPensionBase(e.target.checked)}
-                  />
-                  💡 국민연금 부과 과세소득(신고소득월액) 직접 입력
-                </label>
-                {useCustomPensionBase ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>국민연금 적용금액:</span>
-                    <input
-                      type="number"
-                      step="10000"
-                      value={customPensionBaseAmount}
-                      onChange={(e) => setCustomPensionBaseAmount(Number(e.target.value))}
-                      style={{ flex: 1, padding: '0.3rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 900 }}
-                    />
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>원</span>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                    * 미체크 시 자동으로 (세전 월급 - 비과세 식대) 과세소득이 국민연금 부과 기준액으로 반영됩니다.
-                  </div>
-                )}
-              </div>
-
               {/* 비과세 식대 및 연차 정밀 설정 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderTop: '1px solid #334155', paddingTop: '0.65rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#e2e8f0', cursor: 'pointer' }}>
@@ -673,7 +666,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', borderBottom: '2px solid #0f172a', paddingBottom: '0.4rem' }}>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0f172a', letterSpacing: '0.05em' }}>
-                    임 금 명 세 서
+                    임 금 명 세 서 (2026 최신 법정)
                   </h4>
                   <span style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 600 }}>지급대상기간: 2026년 07월 (01일~말일) | 급여지급일: 2026년 07월 25일</span>
                 </div>
@@ -783,16 +776,16 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   </table>
                 </div>
 
-                {/* 우측: 공제 내역 (4대보험 & 세금) */}
+                {/* 우측: 공제 내역 (2026 최신 4대보험 & 세금) */}
                 <div>
                   <div style={{ background: '#fee2e2', color: '#991b1b', padding: '0.25rem', textAlign: 'center', fontWeight: 800, fontSize: '0.72rem', borderRadius: '4px 4px 0 0', border: '1px solid #fca5a5', borderBottom: 'none' }}>
-                    공 제 내 역 (4대보험 & 세금)
+                    공 제 내 역 (2026 최신 4대보험)
                   </div>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.65rem', border: '1px solid #cbd5e1', background: '#ffffff' }}>
                     <thead>
                       <tr style={{ background: '#f8fafc', color: '#475569' }}>
                         <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center' }}>공제 항목</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center' }}>요율/기준</th>
+                        <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center' }}>2026 요율</th>
                         <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'right' }}>금액 (원)</th>
                       </tr>
                     </thead>
@@ -800,7 +793,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       <tr style={{ background: '#f0f9ff' }}>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 700, color: '#0369a1', fontSize: '0.6rem' }}>💡 국민연금 부과 과세소득</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', color: '#0369a1', fontSize: '0.6rem' }}>
-                          {useCustomPensionBase ? '수동지정' : '과세소득'}
+                          적용 소득월액
                         </td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', fontWeight: 800, color: '#0369a1', fontSize: '0.63rem' }}>
                           {calculated.pensionBase.toLocaleString()} 원
@@ -808,22 +801,22 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       </tr>
                       <tr>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>국민연금 (근로자 부담)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center' }}>4.5%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', fontWeight: 700 }}>4.5%</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{calculated.nationalPension.toLocaleString()}</td>
                       </tr>
                       <tr>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>건강보험</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center' }}>3.545%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', fontWeight: 700 }}>3.545%</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', color: '#dc2626' }}>{calculated.healthInsurance.toLocaleString()}</td>
                       </tr>
                       <tr>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>장기요양보험</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center' }}>12.95%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', fontWeight: 700 }}>12.95%</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', color: '#dc2626' }}>{calculated.longtermCare.toLocaleString()}</td>
                       </tr>
                       <tr>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>고용보험</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center' }}>0.9%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', fontWeight: 700 }}>0.9%</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', color: '#dc2626' }}>{calculated.employmentInsurance.toLocaleString()}</td>
                       </tr>
                       <tr>
