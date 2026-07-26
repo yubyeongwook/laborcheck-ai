@@ -267,7 +267,7 @@ function ReverseSalaryCalculator() {
   const [year, setYear] = useState(String(currentYear));
   const [companySize, setCompanySize] = useState('5인 이상');
   const [salaryType, setSalaryType] = useState('월급');
-  const [grossSalaryInput, setGrossSalaryInput] = useState('2500000');
+  const [grossSalaryInput, setGrossSalaryInput] = useState('2800000');
   const [deductionType, setDeductionType] = useState('4대보험');
 
   // 패턴 1, 2, 3 상태
@@ -298,16 +298,16 @@ function ReverseSalaryCalculator() {
   const [pattern3NightBreakH, setPattern3NightBreakH] = useState('0');
   const [pattern3NightBreakM, setPattern3NightBreakM] = useState('0');
 
-  // 추가 수당 항목
-  const [holidayWorkDays, setHolidayWorkDays] = useState('0');
+  // 추가 수당 항목 (기본 엑셀 포괄 서식 맞춤)
+  const [holidayWorkDays, setHolidayWorkDays] = useState('12');
   const [holidayStart, setHolidayStart] = useState('09:00');
   const [holidayEnd, setHolidayEnd] = useState('18:00');
   const [holidayBreakTime, setHolidayBreakTime] = useState('60');
   const [holidayBreakAuto, setHolidayBreakAuto] = useState(true);
-  const [annualLeaveDays, setAnnualLeaveDays] = useState('0');
+  const [annualLeaveDays, setAnnualLeaveDays] = useState('24');
   const [pensionBasisInput, setPensionBasisInput] = useState('0');
   const [extraWeeklyOvertimeInput, setExtraWeeklyOvertimeInput] = useState('0');
-  const [mealAllowanceInput, setMealAllowanceInput] = useState('0');
+  const [mealAllowanceInput, setMealAllowanceInput] = useState('200000');
   const [carAllowanceInput, setCarAllowanceInput] = useState('0');
   const [childcareAllowanceInput, setChildcareAllowanceInput] = useState('0');
   const [otherNonTaxableInput, setOtherNonTaxableInput] = useState('0');
@@ -1256,6 +1256,10 @@ function ReverseSalaryCalculator() {
 
             {(deductionType === '4대보험' || !deductionType) ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                <div className="result-row" style={{ background: 'rgba(56, 189, 248, 0.08)', padding: '0.35rem 0.5rem', borderRadius: '6px' }}>
+                  <span className="result-row-label" style={{ color: '#38bdf8', fontWeight: 700 }}>💡 국민연금 부과 대상 금액 (과세표준액)</span>
+                  <span className="result-row-value" style={{ color: '#38bdf8', fontWeight: 700 }}>{deductions.taxableBase.toLocaleString()}원</span>
+                </div>
                 <div className="result-row" style={{ alignItems: 'center' }}>
                   <span className="result-row-label" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap' }}>
                     국민연금 ({(rates.pension * 100).toFixed(2)}%)

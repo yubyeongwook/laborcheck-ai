@@ -160,6 +160,7 @@ export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0, nonTaxa
   const netPay = Math.max(totalPay - totalDeductions, 0);
 
   return {
+    pensionTarget,
     nationalPension,
     healthInsurance,
     longTermCare,

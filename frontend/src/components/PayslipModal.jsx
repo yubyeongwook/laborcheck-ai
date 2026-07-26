@@ -193,8 +193,13 @@ export default function PayslipModal({ data = {}, onClose }) {
                   </tr>
                 </thead>
                 <tbody>
+                  <tr style={{ background: '#f8fafc' }}>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', fontSize: '0.78rem', color: '#0369a1', fontWeight: 700 }}>💡 국민연금 부과 대상 금액</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', textAlign: 'center', fontSize: '0.78rem', color: '#0369a1' }}>과세소득 기준</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', textAlign: 'right', fontSize: '0.78rem', color: '#0369a1', fontWeight: 700 }}>{((totalGrossSalary || 0) - (mealAllowanceTaxExempt || 0)).toLocaleString()} 원</td>
+                  </tr>
                   <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>국민연금</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>국민연금 (근로자 부담)</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>4.75%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{nationalPension.toLocaleString()}</td>
                   </tr>

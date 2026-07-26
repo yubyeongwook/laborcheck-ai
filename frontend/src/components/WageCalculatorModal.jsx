@@ -766,6 +766,11 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <span>4대보험 & 세금 공제액</span>
                   <span>- {calculated.totalDeductions.toLocaleString()} 원</span>
                 </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '0.3rem 0.5rem', borderRadius: '4px', marginTop: '0.2rem' }}>
+                  <span>💡 국민연금 부과 대상 금액 (과세표준액)</span>
+                  <span style={{ fontWeight: 700 }}>{(calculated.totalGross - calculated.mealPay).toLocaleString()} 원</span>
+                </div>
               </div>
 
               {/* 실수령액 큰 강조 박스 */}
