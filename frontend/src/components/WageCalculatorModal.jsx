@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, X, RefreshCw, CheckCircle, ShieldCheck, DollarSign, Clock, AlertCircle, Calendar, Sparkles } from 'lucide-react';
+import { Calculator, X, RefreshCw, CheckCircle, ShieldCheck, DollarSign, Clock, AlertCircle, Calendar, Sparkles, Sliders } from 'lucide-react';
 
 const TIME_OPTIONS_24H = (() => {
   const options = [];
@@ -72,6 +72,13 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [includeAnnualLeave, setIncludeAnnualLeave] = useState(calcData?.annualLeaveMonthlyPay > 0);
   const [totalAnnualLeaveDays, setTotalAnnualLeaveDays] = useState(calcData?.totalAnnualLeaveDays || 15);
   const [usedAnnualLeaveDays, setUsedAnnualLeaveDays] = useState(calcData?.usedAnnualLeaveDays || 0);
+
+  // ⚙️ [핵심 추가] 엑셀/계약서 수치 100% 매칭을 위한 시간 수치 직접 지정/수정 모드
+  const [isCustomOverride, setIsCustomOverride] = useState(false);
+  const [overrideOvertimeHours, setOverrideOvertimeHours] = useState(12.74);
+  const [overrideNightHours, setOverrideNightHours] = useState(13.04);
+  const [overrideHolidayHours, setOverrideHolidayHours] = useState(20.0);
+  const [overrideOvertimeRate, setOverrideOvertimeRate] = useState(1.0); // 엑셀 가산비율 (1.0배 또는 1.5배 선택)
 
   // 일괄 적용 클릭 이벤트
   const handleApplyBatch = () => {
@@ -157,8 +164,12 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       computedMonthlyNightHours = Math.round(totalNightSum * 4.35 * 100) / 100;
     }
 
-    const overtimeMult = is5Over ? 1.5 : 1.0;
-    const monthlyOvertimePay = Math.round((computedMonthlyOvertime * hourlyRate * overtimeMult) / 10) * 10;
+    // 💡 수치 직접 지정/수정 모드가 켜진 경우, 사용자가 입력한 시간 수치(엑셀 수치)를 그대로 적용!
+    const finalMonthlyOvertime = isCustomOverride ? overrideOvertimeHours : computedMonthlyOvertime;
+    const finalMonthlyNightHours = isCustomOverride ? overrideNightHours : computedMonthlyNightHours;
+
+    const overtimeMult = isCustomOverride ? overrideOvertimeRate : (is5Over ? 1.5 : 1.0);
+    const monthlyOvertimePay = Math.round((finalMonthlyOvertime * hourlyRate * overtimeMult) / 10) * 10;
 
     // 기본급 (주 40시간 소정근로 기준 209시간 또는 소정근로 비례)
     const baseHoursMonthly = Math.round((computedWeeklyRegularHours + (computedWeeklyRegularHours >= 15 ? 8 : 0)) * 4.35);
@@ -168,12 +179,18 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const mealPay = includeMeal ? 200000 : 0;
     const actualBasePay = includeMeal ? Math.max(0, fullBaseSalary - mealPay) : fullBaseSalary;
 
-    // 야간근로수당 (22시~06시 0.5배 가산)
-    const nightAllowance = is5Over ? Math.round((computedMonthlyNightHours * hourlyRate * 0.5) / 10) * 10 : 0;
+    // 야간근로수당
+    const nightAllowanceMult = isCustomOverride ? 1.0 : (is5Over ? 0.5 : 0);
+    const nightAllowance = Math.round((finalMonthlyNightHours * hourlyRate * nightAllowanceMult) / 10) * 10;
 
-    // 공휴일 수당
-    const singleHolidayPay = computedDailyNetWork * hourlyRate * (is5Over ? 1.5 : 1.0);
-    const holidayPayMonthly = Math.round((singleHolidayPay * holidayDaysYear) / 12 / 10) * 10;
+    // 공휴일/휴일근로 수당
+    let holidayPayMonthly = 0;
+    if (isCustomOverride) {
+      holidayPayMonthly = Math.round((overrideHolidayHours * hourlyRate) / 10) * 10;
+    } else {
+      const singleHolidayPay = computedDailyNetWork * hourlyRate * (is5Over ? 1.5 : 1.0);
+      holidayPayMonthly = Math.round((singleHolidayPay * holidayDaysYear) / 12 / 10) * 10;
+    }
 
     // 연차수당 정밀 산정 (미사용 연차일수 = 전체 연차일수 - 실사용 연차일수)
     const unusedAnnualLeaveDays = Math.max(0, totalAnnualLeaveDays - usedAnnualLeaveDays);
@@ -200,9 +217,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     return {
       baseHoursMonthly,
       actualBasePay,
-      monthlyOvertime: computedMonthlyOvertime,
+      monthlyOvertime: finalMonthlyOvertime,
       monthlyOvertimePay,
-      monthlyNightHours: computedMonthlyNightHours,
+      monthlyNightHours: finalMonthlyNightHours,
       nightAllowance,
       holidayPayMonthly,
       unusedAnnualLeaveDays,
@@ -251,7 +268,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
     }}>
       <div style={{
-        background: '#0f172a', color: '#f8fafc', width: '100%', maxWidth: '980px',
+        background: '#0f172a', color: '#f8fafc', width: '100%', maxWidth: '1000px',
         maxHeight: '94vh', overflowY: 'auto', borderRadius: '20px', padding: '1.5rem 1.75rem',
         border: '1px solid rgba(56, 189, 248, 0.3)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)'
@@ -273,12 +290,30 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
         </div>
 
         {/* 2열 레이아웃: 좌측(입력 조율 패널), 우측(실시간 계산 결과 명세) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.25rem' }}>
           
           {/* 1) 좌측: 입력 컨트롤러 */}
           <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '14px', border: '1px solid #334155' }}>
-            <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Clock size={16} /> 1. 근무 조건 및 수당 파라미터 조절
+            <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <Clock size={16} /> 1. 근무 조건 및 수당 파라미터 조절
+              </span>
+
+              {/* ⚙️ 엑셀/계약서 맞춤 시간 수치 직접 수정 토글 버튼 */}
+              <button
+                type="button"
+                onClick={() => setIsCustomOverride(!isCustomOverride)}
+                style={{
+                  padding: '0.25rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700,
+                  background: isCustomOverride ? 'rgba(236, 72, 153, 0.25)' : 'rgba(56, 189, 248, 0.15)',
+                  color: isCustomOverride ? '#ec4899' : '#38bdf8',
+                  border: `1px solid ${isCustomOverride ? '#ec4899' : '#38bdf8'}`, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '0.25rem'
+                }}
+              >
+                <Sliders size={13} />
+                {isCustomOverride ? '⚙️ 수치 직접입력 ON' : '⚙️ 시간수치 엑셀맞춤 입력'}
+              </button>
             </div>
 
             {/* 시급 & 5인 이상 조건 */}
@@ -319,250 +354,311 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
               </div>
             </div>
 
-            {/* 근무 형태 선택 탭 (고정 vs 변동) */}
-            <div style={{ marginBottom: '0.85rem' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.3rem' }}>
-                근무시간 형태 선택 (고정 vs 변동)
-              </label>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setWorkScheduleType('fixed')}
-                  style={{
-                    flex: 1, padding: '0.4rem', borderRadius: '6px',
-                    background: workScheduleType === 'fixed' ? 'linear-gradient(135deg, #0284c7, #38bdf8)' : '#0f172a',
-                    color: workScheduleType === 'fixed' ? '#ffffff' : '#64748b',
-                    border: '1px solid #334155', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
-                  }}
-                >
-                  📌 고정 근무 (주 N일/N시간)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWorkScheduleType('flexible')}
-                  style={{
-                    flex: 1, padding: '0.4rem', borderRadius: '6px',
-                    background: workScheduleType === 'flexible' ? 'linear-gradient(135deg, #d97706, #f59e0b)' : '#0f172a',
-                    color: workScheduleType === 'flexible' ? '#ffffff' : '#64748b',
-                    border: '1px solid #334155', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
-                  }}
-                >
-                  🔀 요일별 변동 근무 (일괄/개별)
-                </button>
-              </div>
-            </div>
-
-            {/* A. 고정 근무 입력 모드 */}
-            {workScheduleType === 'fixed' && (
-              <div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.85rem' }}>
+            {/* 💡 [수치 직접 수정 모드 ON 시]: 엑셀 표 수치(연장 12.74h, 야간 13.04h, 휴일 20.0h)를 손으로 바로 넣는 특수 패널 */}
+            {isCustomOverride ? (
+              <div style={{ background: 'rgba(236, 72, 153, 0.1)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(236, 72, 153, 0.4)', marginBottom: '0.85rem' }}>
+                <div style={{ fontSize: '0.75rem', color: '#ec4899', fontWeight: 800, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Sparkles size={14} /> 🎯 [엑셀/계약서 서식 시간 수치 100% 직접 매칭 모드]
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.5rem' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 근무일수</label>
-                    <select
-                      value={weeklyDays}
-                      onChange={(e) => setWeeklyDays(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>주 {d}일 근무</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 실근로시간</label>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: '#f472b6', marginBottom: '0.2rem', fontWeight: 700 }}>월 연장근로시간(h)</label>
                     <input
                       type="number"
-                      step="0.5"
-                      value={dailyHours}
-                      onChange={(e) => setDailyHours(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
+                      step="0.01"
+                      value={overrideOvertimeHours}
+                      onChange={(e) => setOverrideOvertimeHours(Number(e.target.value))}
+                      style={{ width: '100%', padding: '0.3rem', background: '#0f172a', border: '1px solid #ec4899', color: '#fff', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700 }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 야간(22~06h)</label>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: '#f472b6', marginBottom: '0.2rem', fontWeight: 700 }}>월 야간근로시간(h)</label>
                     <input
                       type="number"
-                      step="0.5"
-                      value={nightHoursWeekly}
-                      onChange={(e) => setNightHoursWeekly(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
+                      step="0.01"
+                      value={overrideNightHours}
+                      onChange={(e) => setOverrideNightHours(Number(e.target.value))}
+                      style={{ width: '100%', padding: '0.3rem', background: '#0f172a', border: '1px solid #ec4899', color: '#fff', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.7rem', color: '#f472b6', marginBottom: '0.2rem', fontWeight: 700 }}>월 휴일근로시간(h)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={overrideHolidayHours}
+                      onChange={(e) => setOverrideHolidayHours(Number(e.target.value))}
+                      style={{ width: '100%', padding: '0.3rem', background: '#0f172a', border: '1px solid #ec4899', color: '#fff', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 700 }}
                     />
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* B. 요일별 변동 근무 입력 모드 (일괄 적용 & 요일별 개별 시간 입력) */}
-            {workScheduleType === 'flexible' && (
-              <div style={{ background: '#0f172a', padding: '0.65rem', borderRadius: '10px', border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: '0.85rem' }}>
-                <div style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 800, marginBottom: '0.4rem' }}>
-                  ⚡ 일할 요일 선택 ➔ 일괄 적용 & 세부 변경
-                </div>
-
-                {/* 1) 요일 토글 버튼 */}
-                <div style={{ display: 'flex', gap: '0.2rem', marginBottom: '0.4rem' }}>
-                  {['월', '화', '수', '목', '금', '토', '일'].map((day) => {
-                    const isChecked = batchDays.includes(day);
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => {
-                          const nextChecked = !isChecked;
-                          setBatchDays(prev => isChecked ? prev.filter(d => d !== day) : [...prev, day]);
-                          setDaySchedules(prev => ({
-                            ...prev,
-                            [day]: {
-                              ...prev[day],
-                              active: nextChecked,
-                              ...(nextChecked ? { start: batchStart, end: batchEnd, breakTime: batchBreak } : {})
-                            }
-                          }));
-                        }}
-                        style={{
-                          flex: 1, padding: '0.25rem 0', borderRadius: '4px',
-                          background: isChecked ? '#0284c7' : '#1e293b',
-                          color: isChecked ? '#ffffff' : '#64748b',
-                          border: `1px solid ${isChecked ? '#38bdf8' : '#334155'}`,
-                          fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer'
-                        }}
-                      >
-                        {day}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* 2) 출퇴근시각(24시간제) & 일괄 적용 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.3rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                    <select
-                      value={batchStart}
-                      onChange={(e) => setBatchStart(e.target.value)}
-                      style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.74rem' }}
-                    >
-                      {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>~</span>
-                    <select
-                      value={batchEnd}
-                      onChange={(e) => setBatchEnd(e.target.value)}
-                      style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.74rem' }}
-                    >
-                      {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-
-                  <select
-                    value={batchBreak}
-                    onChange={(e) => setBatchBreak(e.target.value)}
-                    style={{ padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.72rem' }}
-                  >
-                    <option value="1.0">휴게 1h</option>
-                    <option value="1.5">휴게 1.5h</option>
-                    <option value="2.0">휴게 2h</option>
-                    <option value="0.5">휴게 0.5h</option>
-                    <option value="0.0">휴게 없음</option>
-                  </select>
-
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.72rem', color: '#cbd5e1' }}>
+                  <span>엑셀 연장수당 가산비율:</span>
                   <button
                     type="button"
-                    onClick={handleApplyBatch}
-                    style={{
-                      padding: '0.3rem 0.5rem', borderRadius: '4px',
-                      background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
-                      color: '#fff', border: 'none', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer'
-                    }}
+                    onClick={() => setOverrideOvertimeRate(1.0)}
+                    style={{ padding: '0.15rem 0.4rem', borderRadius: '4px', background: overrideOvertimeRate === 1.0 ? '#ec4899' : '#1e293b', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}
                   >
-                    일괄적용
+                    1.0배 (엑셀 산식)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverrideOvertimeRate(1.5)}
+                    style={{ padding: '0.15rem 0.4rem', borderRadius: '4px', background: overrideOvertimeRate === 1.5 ? '#ec4899' : '#1e293b', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}
+                  >
+                    1.5배 (법정 가산)
                   </button>
                 </div>
+              </div>
+            ) : (
+              /* 일반 스케줄 계산 모드 */
+              <>
+                {/* 근무 형태 선택 탭 (고정 vs 변동) */}
+                <div style={{ marginBottom: '0.85rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.3rem' }}>
+                    근무시간 형태 선택 (고정 vs 변동)
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setWorkScheduleType('fixed')}
+                      style={{
+                        flex: 1, padding: '0.4rem', borderRadius: '6px',
+                        background: workScheduleType === 'fixed' ? 'linear-gradient(135deg, #0284c7, #38bdf8)' : '#0f172a',
+                        color: workScheduleType === 'fixed' ? '#ffffff' : '#64748b',
+                        border: '1px solid #334155', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
+                      }}
+                    >
+                      📌 고정 근무 (주 N일/N시간)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWorkScheduleType('flexible')}
+                      style={{
+                        flex: 1, padding: '0.4rem', borderRadius: '6px',
+                        background: workScheduleType === 'flexible' ? 'linear-gradient(135deg, #d97706, #f59e0b)' : '#0f172a',
+                        color: workScheduleType === 'flexible' ? '#ffffff' : '#64748b',
+                        border: '1px solid #334155', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
+                      }}
+                    >
+                      🔀 요일별 변동 근무 (일괄/개별)
+                    </button>
+                  </div>
+                </div>
 
-                {/* 3) 요일별 개별 스케줄 리스트 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxHeight: '120px', overflowY: 'auto' }}>
-                  {['월', '화', '수', '목', '금', '토', '일'].map(day => {
-                    const sched = daySchedules[day];
-                    return (
-                      <div key={day} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#1e293b', padding: '0.25rem 0.4rem', borderRadius: '4px', fontSize: '0.72rem' }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextActive = !sched.active;
-                            setDaySchedules(prev => ({
-                              ...prev,
-                              [day]: {
-                                ...prev[day],
-                                active: nextActive,
-                                ...(nextActive ? { start: batchStart, end: batchEnd, breakTime: batchBreak } : {})
-                              }
-                            }));
-                            setBatchDays(prev => nextActive ? (prev.includes(day) ? prev : [...prev, day]) : prev.filter(d => d !== day));
-                          }}
-                          style={{
-                            padding: '0.15rem 0.4rem', borderRadius: '3px',
-                            background: sched.active ? '#0284c7' : '#334155', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.7rem', cursor: 'pointer'
-                          }}
+                {/* A. 고정 근무 입력 모드 */}
+                {workScheduleType === 'fixed' && (
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.85rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 근무일수</label>
+                        <select
+                          value={weeklyDays}
+                          onChange={(e) => setWeeklyDays(Number(e.target.value))}
+                          style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
                         >
-                          {day} {sched.active ? '근무' : '휴무'}
-                        </button>
-                        {sched.active ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <select
-                              value={sched.start}
-                              onChange={(e) => setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], start: e.target.value } }))}
-                              style={{ padding: '0.1rem 0.2rem', borderRadius: '3px', background: '#0f172a', color: '#fff', border: '1px solid #334155', fontSize: '0.7rem' }}
-                            >
-                              {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
-                            <span>~</span>
-                            <select
-                              value={sched.end}
-                              onChange={(e) => setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], end: e.target.value } }))}
-                              style={{ padding: '0.1rem 0.2rem', borderRadius: '3px', background: '#0f172a', color: '#fff', border: '1px solid #334155', fontSize: '0.7rem' }}
-                            >
-                              {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#64748b' }}>휴무</span>
-                        )}
+                          {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>주 {d}일 근무</option>)}
+                        </select>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 실근로시간</label>
+                        <input
+                          type="number"
+                          step="0.5"
+                          value={dailyHours}
+                          onChange={(e) => setDailyHours(Number(e.target.value))}
+                          style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 야간(22~06h)</label>
+                        <input
+                          type="number"
+                          step="0.5"
+                          value={nightHoursWeekly}
+                          onChange={(e) => setNightHoursWeekly(Number(e.target.value))}
+                          style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-            {/* 연간 공휴일 근무일수 정밀 선택/입력 */}
-            <div style={{ marginBottom: '0.85rem' }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>
-                연간 공휴일/대체공휴일 근무일수 선택 및 직접 입력
-              </label>
-              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                <select
-                  value={holidayDaysYear}
-                  onChange={(e) => setHolidayDaysYear(Number(e.target.value))}
-                  style={{ flex: 1, padding: '0.35rem 0.5rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
-                >
-                  <option value={0}>0일 (공휴일 전일 휴무)</option>
-                  <option value={4}>연 4일 (명절만 나와서 일함)</option>
-                  <option value={7}>연 7일 (주요 국경일 일함)</option>
-                  <option value={10}>연 10일 근무</option>
-                  <option value={12}>연 12일 근무</option>
-                  <option value={15}>연 15일 전일 (모든 공휴일 일함)</option>
-                  <option value={20}>연 20일 근무</option>
-                </select>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', width: '90px' }}>
-                  <input
-                    type="number"
-                    min="0"
-                    max="365"
-                    value={holidayDaysYear}
-                    onChange={(e) => setHolidayDaysYear(Math.max(0, Number(e.target.value)))}
-                    style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
-                  />
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>일</span>
+                {/* B. 요일별 변동 근무 입력 모드 (일괄 적용 & 요일별 개별 시간 입력) */}
+                {workScheduleType === 'flexible' && (
+                  <div style={{ background: '#0f172a', padding: '0.65rem', borderRadius: '10px', border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: '0.85rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 800, marginBottom: '0.4rem' }}>
+                      ⚡ 일할 요일 선택 ➔ 일괄 적용 & 세부 변경
+                    </div>
+
+                    {/* 1) 요일 토글 버튼 */}
+                    <div style={{ display: 'flex', gap: '0.2rem', marginBottom: '0.4rem' }}>
+                      {['월', '화', '수', '목', '금', '토', '일'].map((day) => {
+                        const isChecked = batchDays.includes(day);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => {
+                              const nextChecked = !isChecked;
+                              setBatchDays(prev => isChecked ? prev.filter(d => d !== day) : [...prev, day]);
+                              setDaySchedules(prev => ({
+                                ...prev,
+                                [day]: {
+                                  ...prev[day],
+                                  active: nextChecked,
+                                  ...(nextChecked ? { start: batchStart, end: batchEnd, breakTime: batchBreak } : {})
+                                }
+                              }));
+                            }}
+                            style={{
+                              flex: 1, padding: '0.25rem 0', borderRadius: '4px',
+                              background: isChecked ? '#0284c7' : '#1e293b',
+                              color: isChecked ? '#ffffff' : '#64748b',
+                              border: `1px solid ${isChecked ? '#38bdf8' : '#334155'}`,
+                              fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer'
+                            }}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* 2) 출퇴근시각(24시간제) & 일괄 적용 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: '0.3rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                        <select
+                          value={batchStart}
+                          onChange={(e) => setBatchStart(e.target.value)}
+                          style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.74rem' }}
+                        >
+                          {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>~</span>
+                        <select
+                          value={batchEnd}
+                          onChange={(e) => setBatchEnd(e.target.value)}
+                          style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.74rem' }}
+                        >
+                          {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+
+                      <select
+                        value={batchBreak}
+                        onChange={(e) => setBatchBreak(e.target.value)}
+                        style={{ padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.72rem' }}
+                      >
+                        <option value="1.0">휴게 1h</option>
+                        <option value="1.5">휴게 1.5h</option>
+                        <option value="2.0">휴게 2h</option>
+                        <option value="0.5">휴게 0.5h</option>
+                        <option value="0.0">휴게 없음</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={handleApplyBatch}
+                        style={{
+                          padding: '0.3rem 0.5rem', borderRadius: '4px',
+                          background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                          color: '#fff', border: 'none', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer'
+                        }}
+                      >
+                        일괄적용
+                      </button>
+                    </div>
+
+                    {/* 3) 요일별 개별 스케줄 리스트 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxHeight: '120px', overflowY: 'auto' }}>
+                      {['월', '화', '수', '목', '금', '토', '일'].map(day => {
+                        const sched = daySchedules[day];
+                        return (
+                          <div key={day} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#1e293b', padding: '0.25rem 0.4rem', borderRadius: '4px', fontSize: '0.72rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextActive = !sched.active;
+                                setDaySchedules(prev => ({
+                                  ...prev,
+                                  [day]: {
+                                    ...prev[day],
+                                    active: nextActive,
+                                    ...(nextActive ? { start: batchStart, end: batchEnd, breakTime: batchBreak } : {})
+                                  }
+                                }));
+                                setBatchDays(prev => nextActive ? (prev.includes(day) ? prev : [...prev, day]) : prev.filter(d => d !== day));
+                              }}
+                              style={{
+                                padding: '0.15rem 0.4rem', borderRadius: '3px',
+                                background: sched.active ? '#0284c7' : '#334155', color: '#fff', border: 'none', fontWeight: 700, fontSize: '0.7rem', cursor: 'pointer'
+                              }}
+                            >
+                              {day} {sched.active ? '근무' : '휴무'}
+                            </button>
+                            {sched.active ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <select
+                                  value={sched.start}
+                                  onChange={(e) => setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], start: e.target.value } }))}
+                                  style={{ padding: '0.1rem 0.2rem', borderRadius: '3px', background: '#0f172a', color: '#fff', border: '1px solid #334155', fontSize: '0.7rem' }}
+                                >
+                                  {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                                <span>~</span>
+                                <select
+                                  value={sched.end}
+                                  onChange={(e) => setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], end: e.target.value } }))}
+                                  style={{ padding: '0.1rem 0.2rem', borderRadius: '3px', background: '#0f172a', color: '#fff', border: '1px solid #334155', fontSize: '0.7rem' }}
+                                >
+                                  {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                              </div>
+                            ) : (
+                              <span style={{ color: '#64748b' }}>휴무</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 연간 공휴일 근무일수 정밀 선택/입력 */}
+                <div style={{ marginBottom: '0.85rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>
+                    연간 공휴일/대체공휴일 근무일수 선택 및 직접 입력
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <select
+                      value={holidayDaysYear}
+                      onChange={(e) => setHolidayDaysYear(Number(e.target.value))}
+                      style={{ flex: 1, padding: '0.35rem 0.5rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
+                    >
+                      <option value={0}>0일 (공휴일 전일 휴무)</option>
+                      <option value={4}>연 4일 (명절만 나와서 일함)</option>
+                      <option value={7}>연 7일 (주요 국경일 일함)</option>
+                      <option value={10}>연 10일 근무</option>
+                      <option value={12}>연 12일 근무</option>
+                      <option value={15}>연 15일 전일 (모든 공휴일 일함)</option>
+                      <option value={20}>연 20일 근무</option>
+                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', width: '90px' }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="365"
+                        value={holidayDaysYear}
+                        onChange={(e) => setHolidayDaysYear(Math.max(0, Number(e.target.value)))}
+                        style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
+                      />
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>일</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
 
             {/* 비과세 식대 및 연차 정밀 설정 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px solid #334155', paddingTop: '0.75rem' }}>
@@ -648,7 +744,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.nightAllowance.toLocaleString()} 원</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
-                  <span>공휴일 수당 (연 {holidayDaysYear}일분)</span>
+                  <span>휴일근로/공휴일 수당</span>
                   <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.holidayPayMonthly.toLocaleString()} 원</span>
                 </div>
                 {includeAnnualLeave && (
