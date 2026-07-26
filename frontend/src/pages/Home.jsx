@@ -1223,7 +1223,16 @@ export default function Home() {
                               key={day}
                               type="button"
                               onClick={() => {
+                                const nextChecked = !isChecked;
                                 setBatchDays(prev => isChecked ? prev.filter(d => d !== day) : [...prev, day]);
+                                setDaySchedules(prev => ({
+                                  ...prev,
+                                  [day]: {
+                                    ...prev[day],
+                                    active: nextChecked,
+                                    ...(nextChecked ? { start: batchStart, end: batchEnd, breakTime: batchBreak } : {})
+                                  }
+                                }));
                               }}
                               style={{
                                 flex: 1, padding: '0.35rem 0', borderRadius: '6px',
@@ -1314,10 +1323,22 @@ export default function Home() {
                               <button
                                 type="button"
                                 onClick={() => {
+                                  const nextActive = !sched.active;
                                   setDaySchedules(prev => ({
                                     ...prev,
-                                    [day]: { ...prev[day], active: !prev[day].active }
+                                    [day]: {
+                                      ...prev[day],
+                                      active: nextActive,
+                                      ...(nextActive ? { start: batchStart, end: batchEnd, breakTime: batchBreak } : {})
+                                    }
                                   }));
+                                  setBatchDays(prev => {
+                                    if (nextActive) {
+                                      return prev.includes(day) ? prev : [...prev, day];
+                                    } else {
+                                      return prev.filter(d => d !== day);
+                                    }
+                                  });
                                 }}
                                 style={{
                                   padding: '0.2rem 0.6rem', borderRadius: '4px',
