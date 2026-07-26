@@ -710,8 +710,9 @@ export default function Home() {
           } else if (activeStep === 2) {
             setChatStep(3);
             const is5 = !userText.includes('미만');
-            replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n3️⃣ **세 번째 질문 (근무일수 & 평일/주말 근무 구분)**: 주 5일 근무이더라도 **평일(월~금)만 일하시나요, 아니면 토/일 주말이 포함되어 있나요?** 그리고 요일별 일하는 시간이 다른가요?\n*(예: "월~금 근무" 또는 "수~일 근무 [주말 포함] / 평일 10~22시, 토일 10~17시" 처럼 일하는 요일을 구별해 적어주시면 휴일수당을 0% 오차로 구분 계산합니다!)*`;
+            replyText = `확인했습니다! (**${is5 ? '5인 이상 사업장 [연장·야간·휴일 1.5배 가산 및 연차유급휴가 의무 적용]' : '5인 미만 사업장 [기본 수당 적용]'}**) 💡\n\n🚀 **[질문 생략 ⚡ 0% 오차 실시간 대화형 월급 계산기 자동 오픈]**\n번거로운 질문들을 일일이 답하실 필요 없이, **실시간 대화형 월급 계산기 창이 열렸습니다!**\n근무시간, 요일, 연차, 식대, 공휴일 수치를 한눈에 보면서 자유롭게 만지시면 실시간 실수령액이 산출됩니다!`;
             setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+            setIsWageCalcOpen(true);
           } else if (activeStep === 3) {
             // 💡 3단계 스케줄러 폼에서 근무시간, 휴게시간, 야간근로 조건이 이미 모두 선택/완료되었습니다!
             // 따라서 중복되는 4번(휴게시간), 5번(야간근로) 질문을 자동 건너뛰고(스킵), 곧바로 6번(공휴일) 질문으로 점프합니다!
@@ -1516,8 +1517,26 @@ export default function Home() {
                 overflowX: 'auto',
                 alignItems: 'center'
               }}>
+                <button
+                  type="button"
+                  onClick={() => setIsWageCalcOpen(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, #ec4899, #f43f5e)',
+                    border: '1px solid #f43f5e',
+                    color: '#ffffff',
+                    borderRadius: '20px',
+                    padding: '0.4rem 0.85rem',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(236, 72, 153, 0.4)'
+                  }}
+                >
+                  ⚡ 긴 질문 생략 ➔ 대화형 계산기 열기
+                </button>
                 <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <Sparkles size={14} color="#38bdf8" /> 원클릭 답변 선택 <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '0.74rem' }}>(원하는 항목이 없으면 아래 입력창에 직접 입력하세요!)</span>:
+                  <Sparkles size={14} color="#38bdf8" /> 원클릭 답변 선택:
                 </span>
                 {STEP_CHOICE_OPTIONS[editingStep || chatStep].map((opt, idx) => (
                   <button
