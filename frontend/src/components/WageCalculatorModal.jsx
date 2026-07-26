@@ -69,16 +69,16 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [includeMeal, setIncludeMeal] = useState(calcData?.mealPay > 0);
 
   // 연차 정밀 설정 (전체 연차일수 vs 실사용 연차일수)
-  const [includeAnnualLeave, setIncludeAnnualLeave] = useState(calcData?.annualLeaveMonthlyPay > 0);
-  const [totalAnnualLeaveDays, setTotalAnnualLeaveDays] = useState(calcData?.totalAnnualLeaveDays || 15);
-  const [usedAnnualLeaveDays, setUsedAnnualLeaveDays] = useState(calcData?.usedAnnualLeaveDays || 0);
+  const [includeAnnualLeave, setIncludeAnnualLeave] = useState(calcData?.annualLeaveMonthlyPay !== undefined ? calcData?.annualLeaveMonthlyPay > 0 : true);
+  const [totalAnnualLeaveDays, setTotalAnnualLeaveDays] = useState(calcData?.totalAnnualLeaveDays || 26);
+  const [usedAnnualLeaveDays, setUsedAnnualLeaveDays] = useState(calcData?.usedAnnualLeaveDays || 2);
 
-  // ⚙️ [핵심 추가] 엑셀/계약서 수치 100% 매칭을 위한 시간 수치 직접 지정/수정 모드
-  const [isCustomOverride, setIsCustomOverride] = useState(false);
-  const [overrideOvertimeHours, setOverrideOvertimeHours] = useState(12.74);
-  const [overrideNightHours, setOverrideNightHours] = useState(13.04);
-  const [overrideHolidayHours, setOverrideHolidayHours] = useState(20.0);
-  const [overrideOvertimeRate, setOverrideOvertimeRate] = useState(1.0); // 엑셀 가산비율 (1.0배 또는 1.5배 선택)
+  // ⚙️ [기본 세팅] 엑셀/계약서 표준 포괄 서식 산식 (연장 12.74h, 야간 13.04h, 휴일 20.0h, 연차 16.0h) 기본 적용
+  const [isCustomOverride, setIsCustomOverride] = useState(calcData?.isCustomOverride !== undefined ? calcData?.isCustomOverride : true);
+  const [overrideOvertimeHours, setOverrideOvertimeHours] = useState(calcData?.overtimeHours || 12.74);
+  const [overrideNightHours, setOverrideNightHours] = useState(calcData?.nightHours || 13.04);
+  const [overrideHolidayHours, setOverrideHolidayHours] = useState(calcData?.holidayHours || 20.0);
+  const [overrideOvertimeRate, setOverrideOvertimeRate] = useState(1.0); // 엑셀 포괄 가산비율 (1.0배)
 
   // 일괄 적용 클릭 이벤트
   const handleApplyBatch = () => {
