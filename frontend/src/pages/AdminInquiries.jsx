@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, Inbox, RefreshCw } from 'lucide-react';
+import { ShieldAlert, Inbox, RefreshCw, Trash2, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { supabase } from '../context/AuthContext.jsx';
 
 const ADMIN_EMAIL = 'aigoid1203@gmail.com';
+
+const STATUS_CONFIG = {
+  pending: { label: '접수대기', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)' },
+  in_progress: { label: '진행중', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)', border: 'rgba(56, 189, 248, 0.4)' },
+  completed: { label: '처리완료', color: '#34d399', bg: 'rgba(52, 211, 153, 0.15)', border: 'rgba(52, 211, 153, 0.4)' }
+};
 
 function AdminInquiries() {
   const { user, openLoginModal } = useAuth();
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
@@ -28,6 +35,40 @@ function AdminInquiries() {
       setError(err.message || '문의 목록을 불러오지 못했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (id, newStatus) => {
+    if (!supabase) return;
+    try {
+      const { error: updateError } = await supabase
+        .from('inquiries')
+        .update({ status: newStatus })
+        .eq('id', id);
+      if (updateError) throw updateError;
+
+      setInquiries(prev =>
+        prev.map(inq => (inq.id === id ? { ...inq, status: newStatus } : inq))
+      );
+    } catch (err) {
+      alert('상태 변경 중 오류가 발생했습니다: ' + (err.message || '잠시 후 다시 시도해 주세요.'));
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!supabase) return;
+    if (!window.confirm(`'${name}' 님의 문의 건을 정말 삭제하시겠습니까?`)) return;
+
+    try {
+      const { error: delError } = await supabase
+        .from('inquiries')
+        .delete()
+        .eq('id', id);
+      if (delError) throw delError;
+
+      setInquiries(prev => prev.filter(inq => inq.id !== id));
+    } catch (err) {
+      alert('삭제 중 오류가 발생했습니다: ' + (err.message || '잠시 후 다시 시도해 주세요.'));
     }
   };
 
@@ -65,23 +106,84 @@ function AdminInquiries() {
     );
   }
 
+  const filteredInquiries = inquiries.filter(inq => {
+    const currentStatus = inq.status || 'pending';
+    if (statusFilter === 'all') return true;
+    return currentStatus === statusFilter;
+  });
+
+  const countPending = inquiries.filter(i => (i.status || 'pending') === 'pending').length;
+  const countInProgress = inquiries.filter(i => i.status === 'in_progress').length;
+  const countCompleted = inquiries.filter(i => i.status === 'completed').length;
+
   return (
     <div className="page-container">
       <div className="tool-page-header">
-        <h1 className="tool-page-title"><Inbox size={26} color="#38bdf8" /> 문의 목록</h1>
-        <p className="tool-page-desc">사이트에 접수된 문의를 최신순으로 확인합니다.</p>
+        <h1 className="tool-page-title"><Inbox size={26} color="#38bdf8" /> 문의 목록 및 처리 관리</h1>
+        <p className="tool-page-desc">사이트에 접수된 고객 문의 상태를 관리(진행중/처리완료)하고 삭제할 수 있습니다.</p>
       </div>
 
       <section className="glass-panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>총 {inquiries.length}건</span>
+        {/* 상단 탭 및 새로고침 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              style={{
+                padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                background: statusFilter === 'all' ? '#0284c7' : 'rgba(255,255,255,0.05)',
+                color: statusFilter === 'all' ? '#ffffff' : '#94a3b8',
+                border: `1px solid ${statusFilter === 'all' ? '#38bdf8' : 'rgba(255,255,255,0.1)'}`
+              }}
+            >
+              전체 ({inquiries.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('pending')}
+              style={{
+                padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                background: statusFilter === 'pending' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255,255,255,0.05)',
+                color: statusFilter === 'pending' ? '#f59e0b' : '#94a3b8',
+                border: `1px solid ${statusFilter === 'pending' ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`
+              }}
+            >
+              🟡 접수대기 ({countPending})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('in_progress')}
+              style={{
+                padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                background: statusFilter === 'in_progress' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255,255,255,0.05)',
+                color: statusFilter === 'in_progress' ? '#38bdf8' : '#94a3b8',
+                border: `1px solid ${statusFilter === 'in_progress' ? '#38bdf8' : 'rgba(255,255,255,0.1)'}`
+              }}
+            >
+              🔵 진행중 ({countInProgress})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('completed')}
+              style={{
+                padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                background: statusFilter === 'completed' ? 'rgba(52, 211, 153, 0.25)' : 'rgba(255,255,255,0.05)',
+                color: statusFilter === 'completed' ? '#34d399' : '#94a3b8',
+                border: `1px solid ${statusFilter === 'completed' ? '#34d399' : 'rgba(255,255,255,0.1)'}`
+              }}
+            >
+              🟢 처리완료 ({countCompleted})
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={loadInquiries}
             disabled={loading}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38bdf8', padding: '0.5rem 1rem', borderRadius: '8px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: '#38bdf8', padding: '0.45rem 0.9rem', borderRadius: '8px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '0.8rem' }}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className={loading ? 'spin' : ''} />
             새로고침
           </button>
         </div>
@@ -92,26 +194,100 @@ function AdminInquiries() {
           </div>
         )}
 
-        {inquiries.length === 0 && !loading && !error && (
-          <p style={{ textAlign: 'center', color: '#64748b', padding: '2rem 0' }}>접수된 문의가 없습니다.</p>
+        {filteredInquiries.length === 0 && !loading && !error && (
+          <p style={{ textAlign: 'center', color: '#64748b', padding: '2.5rem 0' }}>
+            해당 조건의 접수된 문의가 없습니다.
+          </p>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {inquiries.map((inq) => (
-            <div key={inq.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <strong style={{ color: '#f8fafc' }}>{inq.name}</strong>
-                  <span style={{ color: '#38bdf8', fontSize: '0.85rem' }}>{inq.email}</span>
-                  {inq.phone && <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{inq.phone}</span>}
+        {/* 문의 리스트 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {filteredInquiries.map((inq) => {
+            const curStatusKey = inq.status || 'pending';
+            const curStatus = STATUS_CONFIG[curStatusKey] || STATUS_CONFIG.pending;
+
+            return (
+              <div
+                key={inq.id}
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${curStatus.border}`,
+                  borderRadius: '10px',
+                  padding: '1.1rem',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  {/* 이름 & 연락처 정보 */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                      <strong style={{ color: '#f8fafc', fontSize: '1.02rem' }}>{inq.name}</strong>
+                      <span style={{ color: '#38bdf8', fontSize: '0.85rem' }}>{inq.email}</span>
+                      {inq.phone && <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>📞 {inq.phone}</span>}
+                    </div>
+                    <span style={{ color: '#64748b', fontSize: '0.78rem' }}>
+                      📅 {new Date(inq.created_at).toLocaleString('ko-KR')}
+                    </span>
+                  </div>
+
+                  {/* 상태 선택 및 삭제 버튼 컨트롤 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    {/* 상태 설정 드롭다운 */}
+                    <select
+                      value={curStatusKey}
+                      onChange={(e) => handleStatusChange(inq.id, e.target.value)}
+                      style={{
+                        padding: '0.35rem 0.65rem',
+                        borderRadius: '6px',
+                        background: curStatus.bg,
+                        color: curStatus.color,
+                        border: `1px solid ${curStatus.border}`,
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="pending" style={{ background: '#0f172a', color: '#f59e0b' }}>🟡 접수대기</option>
+                      <option value="in_progress" style={{ background: '#0f172a', color: '#38bdf8' }}>🔵 진행중</option>
+                      <option value="completed" style={{ background: '#0f172a', color: '#34d399' }}>🟢 처리완료</option>
+                    </select>
+
+                    {/* 삭제 버튼 */}
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(inq.id, inq.name)}
+                      title="문의 항목 삭제"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        padding: '0.35rem 0.65rem',
+                        borderRadius: '6px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        color: '#f87171',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Trash2 size={13} />
+                      삭제
+                    </button>
+                  </div>
                 </div>
-                <span style={{ color: '#64748b', fontSize: '0.78rem' }}>
-                  {new Date(inq.created_at).toLocaleString('ko-KR')}
-                </span>
+
+                {/* 문의 내용 */}
+                <div style={{ background: '#0f172a', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p style={{ color: '#cbd5e1', fontSize: '0.9rem', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                    {inq.message}
+                  </p>
+                </div>
               </div>
-              <p style={{ color: '#cbd5e1', fontSize: '0.9rem', margin: 0, whiteSpace: 'pre-wrap' }}>{inq.message}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>
@@ -119,3 +295,4 @@ function AdminInquiries() {
 }
 
 export default AdminInquiries;
+

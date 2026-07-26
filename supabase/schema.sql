@@ -123,6 +123,18 @@ CREATE TABLE IF NOT EXISTS public.industrial_accidents (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 9. Inquiries Table (고객 노무 문의 & 상태 관리)
+CREATE TABLE IF NOT EXISTS public.inquiries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    message TEXT NOT NULL,
+    status VARCHAR(30) DEFAULT 'pending', -- pending, in_progress, completed
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ======================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- Strict Isolation per Tenant, Company, User
