@@ -217,10 +217,13 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       baseHoursMonthly,
       actualBasePay,
       monthlyOvertime: finalMonthlyOvertime,
+      netOvertimeHours: finalMonthlyOvertime > 0 ? (finalMonthlyOvertime / (is5Over ? 1.5 : 1.0)).toFixed(2) : '0',
       monthlyOvertimePay,
       monthlyNightHours: finalMonthlyNightHours,
+      netNightHours: finalMonthlyNightHours > 0 ? (finalMonthlyNightHours / (is5Over ? 0.5 : 1.0)).toFixed(2) : '0',
       nightAllowance,
       holidayPayMonthly,
+      netHolidayHours: holidayPayMonthly > 0 ? (holidayDaysYear * computedDailyNetWork).toFixed(2) : '0',
       unusedAnnualLeaveDays,
       annualLeaveMonthlyHours,
       annualLeaveMonthlyPay,
@@ -664,7 +667,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 <button
                   type="button"
                   onClick={() => {
-                    alert(`📱 [카카오톡 알림톡 전송 완료]\n\n2026년 7월 법정 급여명세서\n-------------------------------\n• 세전 월급: 2,800,000 원\n• 실수령액: 2,509,290 원\n• 국민연금 과세표준: 2,600,000 원\n• 연장수당(12.74h): 131,430 원\n• 야간수당(13.04h): 134,570 원\n• 휴일수당(20.00h): 206,400 원\n• 연차수당(16.00h): 165,120 원\n• 국민연금 공제액: 123,500 원\n\n카카오톡으로 급여명세서 발송이 성공적으로 완료되었습니다!`);
+                    alert(`📱 [카카오톡 알림톡 전송 완료]\n\n2026년 7월 법정 급여명세서\n-------------------------------\n• 세전 월급: ${calculated.totalGross.toLocaleString()} 원\n• 실수령액: ${calculated.netPay.toLocaleString()} 원\n• 국민연금 과세표준: ${(calculated.totalGross - calculated.mealPay).toLocaleString()} 원\n• 실제 연장근로: ${calculated.netOvertimeHours} 시간 (${calculated.monthlyOvertimePay.toLocaleString()} 원)\n• 실제 야간근로: ${calculated.netNightHours} 시간 (${calculated.nightAllowance.toLocaleString()} 원)\n• 국민연금 공제액: ${calculated.nationalPension.toLocaleString()} 원\n\n카카오톡으로 급여명세서 발송이 성공적으로 완료되었습니다!`);
                   }}
                   style={{
                     background: '#FEE500',
@@ -722,27 +725,28 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     <tbody>
                       <tr>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', fontWeight: 600 }}>기본급</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#64748b' }}>209h</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#64748b' }}>{calculated.baseHoursMonthly}h</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', textAlign: 'right', fontWeight: 700 }}>{calculated.actualBasePay.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>12.74h</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', fontWeight: 600 }}>연장근로수당 (1.5배)</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>{calculated.netOvertimeHours}h</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', textAlign: 'right', fontWeight: 700 }}>{calculated.monthlyOvertimePay.toLocaleString()}</td>
                       </tr>
                       <tr>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', fontWeight: 600 }}>야간근로수당 (0.5배 가산)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>13.04h</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>{calculated.netNightHours}h</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{calculated.nightAllowance.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', fontWeight: 600 }}>휴일근로수당 (중복가산)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>20.00h</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', fontWeight: 600 }}>휴일근로수당 (1.5배 가산)</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>{calculated.netHolidayHours}h</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{calculated.holidayPayMonthly.toLocaleString()}</td>
                       </tr>
                       {includeAnnualLeave && (
                         <tr>
                           <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', fontWeight: 600 }}>연차휴가수당</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#6d28d9', fontWeight: 700 }}>16h</td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.2rem', textAlign: 'center', color: '#6d28d9', fontWeight: 700 }}>{calculated.annualLeaveMonthlyHours}h</td>
                           <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.3rem', textAlign: 'right', fontWeight: 700, color: '#6d28d9' }}>{calculated.annualLeaveMonthlyPay.toLocaleString()}</td>
                         </tr>
                       )}
