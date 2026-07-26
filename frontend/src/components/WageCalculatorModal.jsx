@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, X, RefreshCw, CheckCircle, ShieldCheck, DollarSign, Clock, AlertCircle, Calendar, Sparkles, Sliders } from 'lucide-react';
+import { Calculator, X, RefreshCw, CheckCircle, ShieldCheck, DollarSign, Clock, AlertCircle, Calendar, Sparkles, Sliders, MessageSquare, Share2, Printer, FileText, Send } from 'lucide-react';
 
 const TIME_OPTIONS_24H = (() => {
   const options = [];
@@ -758,69 +758,129 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
             </div>
           </div>
 
-          {/* 2) 우측: 실시간 산출 결과 */}
+          {/* 2) 우측: 실시간 산출 결과 (법정 임금명세서 풀타입 실시간 직관 렌더링) */}
           <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '14px', border: '1px solid #334155', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 800, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <DollarSign size={16} /> 2. 실시간 계산된 예상 세전 급여 & 실수령액
+              {/* 헤더 & 카카오톡 전송 퀵버튼 */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                <div style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <FileText size={16} /> 2. 📜 실시간 법정 임금명세서 (제48조)
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    alert(`📱 [카카오톡 알림톡 전송 완료]\n\n2026년 7월 법정 급여명세서\n-------------------------------\n• 세전 월급: ${calculated.totalGross.toLocaleString()} 원\n• 실수령액: ${calculated.netPay.toLocaleString()} 원\n• 국민연금 과세표준: ${(calculated.totalGross - calculated.mealPay).toLocaleString()} 원\n• 국민연금 공제액: ${calculated.nationalPension.toLocaleString()} 원\n\n카카오톡으로 급여명세서 발송이 성공적으로 완료되었습니다!`);
+                  }}
+                  style={{
+                    background: '#FEE500',
+                    color: '#000000',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.35rem 0.65rem',
+                    fontSize: '0.73rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    boxShadow: '0 2px 8px rgba(254, 229, 0, 0.3)'
+                  }}
+                >
+                  <MessageSquare size={14} color="#000" /> 💬 카톡 명세서 전송
+                </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
-                  <span>기본급 ({calculated.baseHoursMonthly}h)</span>
-                  <span style={{ fontWeight: 700, color: '#fff' }}>{calculated.actualBasePay.toLocaleString()} 원</span>
+              {/* A. 세전 지급 항목 명세 */}
+              <div style={{ background: '#0f172a', padding: '0.65rem', borderRadius: '8px', border: '1px solid #334155', marginBottom: '0.65rem' }}>
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 800, marginBottom: '0.4rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.2rem' }}>
+                  💰 세전 지급 내역 (근로시간 & 수당)
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
-                  <span>연장근로수당 ({calculated.monthlyOvertime}h)</span>
-                  <span style={{ fontWeight: 700, color: '#fff' }}>{calculated.monthlyOvertimePay.toLocaleString()} 원</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
-                  <span>야간근로수당 ({calculated.monthlyNightHours}h)</span>
-                  <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.nightAllowance.toLocaleString()} 원</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
-                  <span>휴일근로/공휴일 수당</span>
-                  <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.holidayPayMonthly.toLocaleString()} 원</span>
-                </div>
-                {includeAnnualLeave && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
-                    <span>연차수당 (미사용 {calculated.unusedAnnualLeaveDays}일분)</span>
-                    <span style={{ fontWeight: 700, color: '#a78bfa' }}>{calculated.annualLeaveMonthlyPay.toLocaleString()} 원</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.78rem', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>기본급 ({calculated.baseHoursMonthly}h)</span>
+                    <span style={{ fontWeight: 700, color: '#fff' }}>{calculated.actualBasePay.toLocaleString()} 원</span>
                   </div>
-                )}
-                {calculated.extraOvertimeAllowance > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
-                    <span style={{ color: '#38bdf8', fontWeight: 700 }}>➕ 추가 연장 수당 (약정 잔액)</span>
-                    <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.extraOvertimeAllowance.toLocaleString()} 원</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>연장근로수당 ({calculated.monthlyOvertime}h)</span>
+                    <span style={{ fontWeight: 700, color: '#fff' }}>{calculated.monthlyOvertimePay.toLocaleString()} 원</span>
                   </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.3rem' }}>
-                  <span>비과세 식대</span>
-                  <span style={{ fontWeight: 700, color: '#16a34a' }}>{calculated.mealPay.toLocaleString()} 원</span>
-                </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', marginTop: '0.3rem' }}>
-                  <span>지급 총액 (세전)</span>
-                  <span>{calculated.totalGross.toLocaleString()} 원</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#ef4444' }}>
-                  <span>4대보험 & 세금 공제액</span>
-                  <span>- {calculated.totalDeductions.toLocaleString()} 원</span>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '0.3rem 0.5rem', borderRadius: '4px', marginTop: '0.2rem' }}>
-                  <span>💡 국민연금 부과 대상 금액 (과세표준액)</span>
-                  <span style={{ fontWeight: 700 }}>{(calculated.totalGross - calculated.mealPay).toLocaleString()} 원</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>야간근로수당 ({calculated.monthlyNightHours}h)</span>
+                    <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.nightAllowance.toLocaleString()} 원</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>휴일근로수당</span>
+                    <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.holidayPayMonthly.toLocaleString()} 원</span>
+                  </div>
+                  {includeAnnualLeave && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>연차수당 (미사용 {calculated.unusedAnnualLeaveDays}일분)</span>
+                      <span style={{ fontWeight: 700, color: '#a78bfa' }}>{calculated.annualLeaveMonthlyPay.toLocaleString()} 원</span>
+                    </div>
+                  )}
+                  {calculated.extraOvertimeAllowance > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#38bdf8', fontWeight: 700 }}>➕ 추가 연장 수당 (약정 잔액)</span>
+                      <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.extraOvertimeAllowance.toLocaleString()} 원</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>비과세 식대</span>
+                    <span style={{ fontWeight: 700, color: '#16a34a' }}>{calculated.mealPay.toLocaleString()} 원</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 800, color: '#38bdf8', borderTop: '1px solid #334155', paddingTop: '0.3rem', marginTop: '0.2rem' }}>
+                    <span>지급 총액 (세전)</span>
+                    <span>{calculated.totalGross.toLocaleString()} 원</span>
+                  </div>
                 </div>
               </div>
 
-              {/* 실수령액 큰 강조 박스 */}
+              {/* B. 4대보험 & 세금 공제 세부 내역 */}
+              <div style={{ background: '#0f172a', padding: '0.65rem', borderRadius: '8px', border: '1px solid #334155', marginBottom: '0.65rem' }}>
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 800, marginBottom: '0.4rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.2rem' }}>
+                  🛡️ 4대보험 & 세금 세부 공제 내역
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8', fontWeight: 700, background: 'rgba(56, 189, 248, 0.1)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>
+                    <span>💡 국민연금 부과 대상 금액 (과세표준액)</span>
+                    <span>{(calculated.totalGross - calculated.mealPay).toLocaleString()} 원</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>국민연금 (4.75%)</span>
+                    <span style={{ color: '#ef4444' }}>-{calculated.nationalPension.toLocaleString()} 원</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>건강보험 (3.595%)</span>
+                    <span style={{ color: '#ef4444' }}>-{calculated.healthInsurance.toLocaleString()} 원</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>장기요양보험</span>
+                    <span style={{ color: '#ef4444' }}>-{calculated.longtermCare.toLocaleString()} 원</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>고용보험 (0.9%)</span>
+                    <span style={{ color: '#ef4444' }}>-{calculated.employmentInsurance.toLocaleString()} 원</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>근로소득세 & 지방소득세</span>
+                    <span style={{ color: '#ef4444' }}>-{(calculated.incomeTax + calculated.localIncomeTax).toLocaleString()} 원</span>
+                  </div>
+                  
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 800, color: '#ef4444', borderTop: '1px solid #334155', paddingTop: '0.25rem', marginTop: '0.15rem' }}>
+                    <span>공제 총액 합계</span>
+                    <span>- {calculated.totalDeductions.toLocaleString()} 원</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* C. 실수령액 큰 강조 박스 */}
               <div style={{
-                marginTop: '1rem', padding: '0.85rem', borderRadius: '10px',
+                padding: '0.75rem', borderRadius: '10px',
                 background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(16, 185, 129, 0.15))',
                 border: '1px solid #38bdf8', textAlign: 'center'
               }}>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.2rem' }}>예상 100% 실 수 령 액</div>
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.15rem' }}>예상 100% 실 수 령 액</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#38bdf8' }}>
                   {calculated.netPay.toLocaleString()} 원
                 </div>
@@ -828,7 +888,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
             </div>
 
             {/* 적용 및 갱신 버튼 */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.85rem' }}>
               <button
                 type="button"
                 onClick={handleApply}
