@@ -775,19 +775,15 @@ function ReverseSalaryCalculator() {
           </div>
 
           <div className="form-group" style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)', marginBottom: '1.5rem' }}>
-            <label className="form-label"><Clock size={16} color="#38bdf8" /> 근무 형태 선택</label>
-            <div className="radio-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem', marginBottom: '1rem' }}>
-              <div className={`radio-card ${scheduleType === '요일별' ? 'active' : ''}`} onClick={() => setScheduleType('요일별')} style={{ padding: '0.5rem 0.25rem' }}>
-                <span className="radio-card-title" style={{ fontSize: '0.75rem' }}>요일별 상세 입력</span>
-                <span className="radio-card-desc" style={{ fontSize: '0.6rem' }}>매일 다른 알바생 등</span>
+            <label className="form-label"><Clock size={16} color="#38bdf8" /> 근무 형태 선택 (시간 자동 산출)</label>
+            <div className="radio-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '1rem' }}>
+              <div className={`radio-card ${scheduleType === '요일별' ? 'active' : ''}`} onClick={() => setScheduleType('요일별')} style={{ padding: '0.65rem 0.5rem', textAlign: 'center' }}>
+                <span className="radio-card-title" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>📅 요일별 출퇴근 선택</span>
+                <span className="radio-card-desc" style={{ fontSize: '0.65rem' }}>월~일요일별 출퇴근시간 선택</span>
               </div>
-              <div className={`radio-card ${scheduleType === '패턴별' || !scheduleType ? 'active' : ''}`} onClick={() => setScheduleType('패턴별')} style={{ padding: '0.5rem 0.25rem' }}>
-                <span className="radio-card-title" style={{ fontSize: '0.75rem' }}>고정 패턴별 입력</span>
-                <span className="radio-card-desc" style={{ fontSize: '0.6rem' }}>주 5일 고정 직장인</span>
-              </div>
-              <div className={`radio-card ${scheduleType === '직접입력' ? 'active' : ''}`} onClick={() => setScheduleType('직접입력')} style={{ padding: '0.5rem 0.25rem' }}>
-                <span className="radio-card-title" style={{ fontSize: '0.75rem' }}>교대제/스케줄 입력</span>
-                <span className="radio-card-desc" style={{ fontSize: '0.6rem' }}>간호사, 유동 근무 등</span>
+              <div className={`radio-card ${scheduleType === '패턴별' || scheduleType === '직접입력' || !scheduleType ? 'active' : ''}`} onClick={() => setScheduleType('패턴별')} style={{ padding: '0.65rem 0.5rem', textAlign: 'center' }}>
+                <span className="radio-card-title" style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>⏱️ 고정 패턴별 선택</span>
+                <span className="radio-card-desc" style={{ fontSize: '0.65rem' }}>월~금 9 to 6 등 고정 근무</span>
               </div>
             </div>
 
