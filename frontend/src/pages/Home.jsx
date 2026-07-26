@@ -29,6 +29,17 @@ const AGENT_TEAM = [
   { name: '재무제표·신용진단 수석', role: '재무제표 진단 및 신보/기보 보증서 승인 시뮬레이션', icon: <Wallet size={24} color="#a78bfa" /> }
 ];
 
+const TIME_OPTIONS_24H = (() => {
+  const options = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m of ['00', '30']) {
+      const hh = String(h).padStart(2, '0');
+      options.push(`${hh}:${m}`);
+    }
+  }
+  return options;
+})();
+
 // 마크다운 문법(###, **, --- 등)을 일반 사용자가 읽기 쉬운 깔끔한 디자인으로 변환해 주는 뷰 컴포넌트
 function FormattedMessage({ text }) {
   if (!text) return null;
@@ -1131,19 +1142,25 @@ export default function Home() {
                       <div style={{ background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
                         <label style={{ fontSize: '0.74rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 700 }}>⏰ 출퇴근 시간</label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                          <input
-                            type="time"
+                          <select
                             value={fixedStart}
                             onChange={(e) => setFixedStart(e.target.value)}
-                            style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.8rem' }}
-                          />
+                            style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.8rem', cursor: 'pointer' }}
+                          >
+                            {TIME_OPTIONS_24H.map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
                           <span style={{ color: '#94a3b8' }}>~</span>
-                          <input
-                            type="time"
+                          <select
                             value={fixedEnd}
                             onChange={(e) => setFixedEnd(e.target.value)}
-                            style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.8rem' }}
-                          />
+                            style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.8rem', cursor: 'pointer' }}
+                          >
+                            {TIME_OPTIONS_24H.map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
 
@@ -1225,19 +1242,25 @@ export default function Home() {
                       {/* 2) 출퇴근시각(24시간제) & 휴게시간 */}
                       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr', gap: '0.4rem', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                          <input
-                            type="time"
+                          <select
                             value={batchStart}
                             onChange={(e) => setBatchStart(e.target.value)}
-                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.78rem' }}
-                          />
+                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.78rem', cursor: 'pointer' }}
+                          >
+                            {TIME_OPTIONS_24H.map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
                           <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>~</span>
-                          <input
-                            type="time"
+                          <select
                             value={batchEnd}
                             onChange={(e) => setBatchEnd(e.target.value)}
-                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.78rem' }}
-                          />
+                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.78rem', cursor: 'pointer' }}
+                          >
+                            {TIME_OPTIONS_24H.map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
                         </div>
 
                         <select
@@ -1316,25 +1339,31 @@ export default function Home() {
                               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '0.4rem', alignItems: 'center' }}>
                                 {/* 출퇴근 */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                  <input
-                                    type="time"
+                                  <select
                                     value={sched.start}
                                     onChange={(e) => {
                                       const val = e.target.value;
                                       setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], start: val } }));
                                     }}
-                                    style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.76rem' }}
-                                  />
+                                    style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.76rem', cursor: 'pointer' }}
+                                  >
+                                    {TIME_OPTIONS_24H.map(t => (
+                                      <option key={t} value={t}>{t}</option>
+                                    ))}
+                                  </select>
                                   <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>~</span>
-                                  <input
-                                    type="time"
+                                  <select
                                     value={sched.end}
                                     onChange={(e) => {
                                       const val = e.target.value;
                                       setDaySchedules(prev => ({ ...prev, [day]: { ...prev[day], end: val } }));
                                     }}
-                                    style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.76rem' }}
-                                  />
+                                    style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', background: '#1e293b', color: '#fff', border: '1px solid #334155', fontSize: '0.76rem', cursor: 'pointer' }}
+                                  >
+                                    {TIME_OPTIONS_24H.map(t => (
+                                      <option key={t} value={t}>{t}</option>
+                                    ))}
+                                  </select>
                                 </div>
 
                                 {/* 주간 휴게 */}
