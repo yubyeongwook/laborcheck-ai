@@ -1515,7 +1515,7 @@ export default function Home() {
                 alignItems: 'center'
               }}>
                 <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                  <Sparkles size={14} color="#38bdf8" /> 원클릭 답변 선택:
+                  <Sparkles size={14} color="#38bdf8" /> 원클릭 답변 선택 <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '0.74rem' }}>(원하는 항목이 없으면 아래 입력창에 직접 입력하세요!)</span>:
                 </span>
                 {STEP_CHOICE_OPTIONS[editingStep || chatStep].map((opt, idx) => (
                   <button
