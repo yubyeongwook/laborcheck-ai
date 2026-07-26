@@ -737,38 +737,35 @@ export default function Home() {
           } else if (activeStep === 7) {
             setChatStep(8);
             replyText = `네! 입사일 및 연차 사용·수당 포함 조건(**"${userText}"**)을 확인했습니다! 💡\n\n8️⃣ **마지막 질문 (비과세 절세 수당 반영)**: 식대(월 20만원), 자가운전보조금(월 20만원) 등 **세금을 안 내도 되는 수당**을 넣어서 4대보험료와 소득세를 아껴드릴까요?\n*(예: 네 식대 20만원 포함 / 아니오)*`;
-            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
           } else {
-            calculateAndRespond(updatedAnswers, null);
-          }
-        } else {
-          // 💡 이미 계산이 완료되었거나 8단계 이후 사용자가 실제 급여(예: "세전 250만원", "월급 230 받는데 맞아?")를 입력했을 때
-          const numMatch = userText.replace(/,/g, '').match(/\d+/);
-          const legalGross = latestCalcResult?.totalGrossSalary || 2800000;
+            // 💡 이미 계산이 완료되었거나 8단계 이후 사용자가 실제 급여(예: "세전 250만원", "월급 230 받는데 맞아?")를 입력했을 때
+            const numMatch = userText.replace(/,/g, '').match(/\d+/);
+            const legalGross = latestCalcResult?.totalGrossSalary || 2800000;
 
-          if (numMatch && (userText.includes('월급') || userText.includes('세전') || userText.includes('원') || userText.includes('받') || userText.includes('급여'))) {
-            let actualSalary = parseInt(numMatch[0], 10);
-            if (actualSalary < 10000 && actualSalary >= 100) actualSalary *= 10000; // "250만" ➔ 2500000
+            if (numMatch && (userText.includes('월급') || userText.includes('세전') || userText.includes('원') || userText.includes('받') || userText.includes('급여'))) {
+              let actualSalary = parseInt(numMatch[0], 10);
+              if (actualSalary < 10000 && actualSalary >= 100) actualSalary *= 10000; // "250만" ➔ 2500000
 
-            const diff = legalGross - actualSalary;
-            let evalReport = '';
+              const diff = legalGross - actualSalary;
+              let evalReport = '';
 
-            let extraNote = '';
-            if (userText.includes('연차') || userText.includes('휴일')) {
-              extraNote = `\n\n---\n\n### ⚖️ 5. 포괄임금(연차·휴일수당 포함) 법적 유효성 진단 리포트\n- 🌴 **연차수당 포함 계약 주의사항**: 대법원 판례 기준, 근로계약서상 **기본급과 연차수당의 시간수·금액이 명확하게 구분 명시**되지 않고 "월급에 연차수당 포함"이라고 뭉뚱그려 쓴 계약은 **법적으로 100% 무효**입니다! (미사용 연차에 대한 추가 청구 가능)\n- 🏢 **공휴일근로수당 포함 주의사항**: 2022년 1월부터 5인 이상 사업장은 **공휴일·대체공휴일이 법정유급휴일**로 지정되었으므로, 해당 일에 근무한 시간은 **1.5배 가산 수당**으로 지급되거나 서면 합의된 휴일대체로 부여되어야 합니다.`;
-            }
+              let extraNote = '';
+              if (userText.includes('연차') || userText.includes('휴일')) {
+                extraNote = `\n\n---\n\n### ⚖️ 5. 포괄임금(연차·휴일수당 포함) 법적 유효성 진단 리포트\n- 🌴 **연차수당 포함 계약 주의사항**: 대법원 판례 기준, 근로계약서상 **기본급과 연차수당의 시간수·금액이 명확하게 구분 명시**되지 않고 "월급에 연차수당 포함"이라고 뭉뚱그려 쓴 계약은 **법적으로 100% 무효**입니다! (미사용 연차에 대한 추가 청구 가능)\n- 🏢 **공휴일근로수당 포함 주의사항**: 2022년 1월부터 5인 이상 사업장은 **공휴일·대체공휴일이 법정유급휴일**로 지정되었으므로, 해당 일에 근무한 시간은 **1.5배 가산 수당**으로 지급되거나 서면 합의된 휴일대체로 부여되어야 합니다.`;
+              }
 
-            if (Math.abs(diff) <= 10000) {
-              evalReport = `### 🕵️‍♂️ 근로자 임금 적정성 [1초 자가진단 결과 리포트]\n\n🎉 **[100% 임금 준수 적법 사업장]**\n- 💰 **법정 정당 세전 월급**: **${legalGross.toLocaleString()}원**\n- 💵 **근로자 실제 세전 월급**: **${actualSalary.toLocaleString()}원**\n\n✅ 현재 받고 계신 월급은 근로기준법 및 최저임금법 수당 산정 기준을 **100% 완벽하게 준수**하고 있는 정당한 임금입니다! 안심하셔도 됩니다.👍${extraNote}`;
-            } else if (diff > 10000) {
-              evalReport = `### 🕵️‍♂️ 근로자 임금 적정성 [1초 자가진단 결과 리포트]\n\n🚨 **[임금 미달 / 체불 주의 진단!]**\n- 💰 **법정 정당 세전 월급**: **${legalGross.toLocaleString()}원**\n- 💵 **근로자 실제 세전 월급**: **${actualSalary.toLocaleString()}원**\n- 🔴 **매월 미달/체불 발생액**: 매달 약 **${diff.toLocaleString()}원**을 덜 받고 계십니다! (연간 약 **${(diff * 12).toLocaleString()}원** 덜 받음)\n\n🔍 **[수당 누락 예상 항목]**:\n1. ⏰ **연장·야간·휴일근로 가산수당 미반영** (주 40시간 초과근로 및 야간/주말수당 누락 가능성)\n2. 🌴 **미사용 연차유급휴가 수당 미정산**\n3. 🍚 **비과세 식대 수당 미분리**${extraNote}\n\n💡 **[대응 가이드]**: 아래 **[📄 법정 급여명세서 보기/출력]** 및 **[📋 근로계약서 자동 생성]** 버튼을 눌러 공식 증빙서류를 저장해 두세요!`;
+              if (Math.abs(diff) <= 10000) {
+                evalReport = `### 🕵️‍♂️ 근로자 임금 적정성 [1초 자가진단 결과 리포트]\n\n🎉 **[100% 임금 준수 적법 사업장]**\n- 💰 **법정 정당 세전 월급**: **${legalGross.toLocaleString()}원**\n- 💵 **근로자 실제 세전 월급**: **${actualSalary.toLocaleString()}원**\n\n✅ 현재 받고 계신 월급은 근로기준법 및 최저임금법 수당 산정 기준을 **100% 완벽하게 준수**하고 있는 정당한 임금입니다! 안심하셔도 됩니다.👍${extraNote}`;
+              } else if (diff > 10000) {
+                evalReport = `### 🕵️‍♂️ 근로자 임금 적정성 [1초 자가진단 결과 리포트]\n\n🚨 **[임금 미달 / 체불 주의 진단!]**\n- 💰 **법정 정당 세전 월급**: **${legalGross.toLocaleString()}원**\n- 💵 **근로자 실제 세전 월급**: **${actualSalary.toLocaleString()}원**\n- 🔴 **매월 미달/체불 발생액**: 매달 약 **${diff.toLocaleString()}원**을 덜 받고 계십니다! (연간 약 **${(diff * 12).toLocaleString()}원** 덜 받음)\n\n🔍 **[수당 누락 예상 항목]**:\n1. ⏰ **연장·야간·휴일근로 가산수당 미반영** (주 40시간 초과근로 및 야간/주말수당 누락 가능성)\n2. 🌴 **미사용 연차유급휴가 수당 미정산**\n3. 🍚 **비과세 식대 수당 미분리**${extraNote}\n\n💡 **[대응 가이드]**: 아래 **[📄 법정 급여명세서 보기/출력]** 및 **[📋 근로계약서 자동 생성]** 버튼을 눌러 공식 증빙서류를 저장해 두세요!`;
+              } else {
+                evalReport = `### 🕵️‍♂️ 근로자 임금 적정성 [1초 자가진단 결과 리포트]\n\n✨ **[법정 기준 초과 우대 사업장]**\n- 💰 **법정 최소 세전 월급**: **${legalGross.toLocaleString()}원**\n- 💵 **근로자 실제 세전 월급**: **${actualSalary.toLocaleString()}원**\n\n🌟 법정 최소 기준보다 매달 약 **${Math.abs(diff).toLocaleString()}원**을 더 넉넉히 우대하여 지급하고 있는 훌륭한 사업장입니다!${extraNote}`;
+              }
+
+              setMessages(prev => [...prev, { sender: 'secretary', text: evalReport }]);
             } else {
-              evalReport = `### 🕵️‍♂️ 근로자 임금 적정성 [1초 자가진단 결과 리포트]\n\n✨ **[법정 기준 초과 우대 사업장]**\n- 💰 **법정 최소 세전 월급**: **${legalGross.toLocaleString()}원**\n- 💵 **근로자 실제 세전 월급**: **${actualSalary.toLocaleString()}원**\n\n🌟 법정 최소 기준보다 매달 약 **${Math.abs(diff).toLocaleString()}원**을 더 넉넉히 우대하여 지급하고 있는 훌륭한 사업장입니다!${extraNote}`;
+              calculateAndRespond(updatedAnswers, null);
             }
-
-            setMessages(prev => [...prev, { sender: 'secretary', text: evalReport }]);
-          } else {
-            calculateAndRespond(updatedAnswers, null);
           }
         }
       } catch (err) {
