@@ -1,5 +1,6 @@
-import { PureLaborCalculator, CONSTANTS } from './laborCalculator';
+import { PureLaborCalculator, IndustrialAccidentCalculator, CONSTANTS } from './laborCalculator';
 import { encryptData, decryptData, maskRRN } from '../security/crypto';
+
 
 console.log('======================================================================');
 console.log(' [노무체크 AI] 0% 오차 정밀 백엔드 노무 계산 엔진 & 보안 유틸리티 검증');
@@ -45,6 +46,30 @@ console.assert(calcResult.monthlyOvertimeHoursPaid === 123.55, '123.55시간 고
 console.assert(calcResult.monthlyHolidayHoursPaid === 21.25, '21.25시간 연간휴일 분할 산정 오류');
 console.assert(calcResult.monthlyAnnualLeaveHoursPaid === 7.33, '7.33시간 연차수당 분할 산정 오류');
 
+// 3. 정밀 산재 계산 엔진 테스트 (3개월 평균임금 & 통상임금 보정 & 휴업급여 70%)
+console.log('\n3. [산재 계산 엔진] 평균임금 3개월 산정, 통상임금 보정 및 70% 휴업급여 검증:');
+
+const sanjaeResult = IndustrialAccidentCalculator.calculate({
+  averageWageDetail: {
+    last3MonthsTotalWages: 9100000, // 3개월 총 9,100,000원 -> 1일 100,000원
+    last3MonthsTotalDays: 91,
+    dailyOrdinaryWage: 120000,      // 1일 통상임금 120,000원 -> 통상임금이 더 높아 보정 적용!
+  },
+  treatmentDays: 30, // 30일 치료
+  age: 45,
+});
+
+console.log(` - [산정된 1일 평균임금]: ${sanjaeResult.appliedAverageDailyWage.toLocaleString()}원`);
+console.log(` - [통상임금 보정 적용 여부]: ${sanjaeResult.isOrdinaryWageAdjusted ? '보정 적용됨 (통상임금 > 평균임금)' : '미적용'}`);
+console.log(` - [1일 휴업급여(70%)]: ${sanjaeResult.dailyOffWorkAllowance.toLocaleString()}원`);
+console.log(` - [총 30일 휴업급여액]: ${sanjaeResult.totalOffWorkAllowance.toLocaleString()}원`);
+console.log(` - [법적 조언 및 가수칙 개수]: ${sanjaeResult.legalAdviceNotes.length}개`);
+
+console.assert(sanjaeResult.appliedAverageDailyWage === 120000, '통상임금 보정 평균임금 산정 오류');
+console.assert(sanjaeResult.dailyOffWorkAllowance === 84000, '1일 70% 휴업급여(84,000원) 산정 오류');
+console.assert(sanjaeResult.totalOffWorkAllowance === 2520000, '30일 휴업급여액(2,520,000원) 산정 오류');
+
 console.log('\n======================================================================');
-console.log(' All Core Security & Calculation Engine Verification Passed Successfully!');
+console.log(' All Core Security, Labor & Industrial Accident Engine Verification Passed!');
 console.log('======================================================================');
+

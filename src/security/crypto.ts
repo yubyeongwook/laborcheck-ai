@@ -91,7 +91,7 @@ export function decryptData(input: string | EncryptedPayload): string {
 }
 
 /**
- * Masking utility for display purposes (e.g., 900101-1******)
+ * Masking utility for Resident Registration Number (RRN)
  */
 export function maskRRN(rrn: string): string {
   const clean = rrn.replace(/[^0-9]/g, '');
@@ -100,3 +100,56 @@ export function maskRRN(rrn: string): string {
   }
   return '******-*******';
 }
+
+/**
+ * Masking utility for Bank Account numbers
+ */
+export function maskBankAccount(accountNo: string): string {
+  const clean = accountNo.replace(/[^0-9]/g, '');
+  if (clean.length >= 8) {
+    const visibleStart = clean.substring(0, 3);
+    const visibleEnd = clean.substring(clean.length - 2);
+    const maskedMiddle = '*'.repeat(clean.length - 5);
+    return `${visibleStart}${maskedMiddle}${visibleEnd}`;
+  }
+  return '***-****-****';
+}
+
+/**
+ * Encrypt sensitive employee data payload (RRN, Bank, Disease Info)
+ */
+export function encryptSensitiveFields<T extends Record<string, any>>(
+  data: T,
+  sensitiveKeys: (keyof T)[]
+): T {
+  const result = { ...data };
+  for (const key of sensitiveKeys) {
+    const val = result[key];
+    if (typeof val === 'string' && val.trim().length > 0) {
+      (result as any)[key] = encryptData(val).combined;
+    }
+  }
+  return result;
+}
+
+/**
+ * Decrypt sensitive employee data payload
+ */
+export function decryptSensitiveFields<T extends Record<string, any>>(
+  data: T,
+  sensitiveKeys: (keyof T)[]
+): T {
+  const result = { ...data };
+  for (const key of sensitiveKeys) {
+    const val = result[key];
+    if (typeof val === 'string' && val.includes(':')) {
+      try {
+        (result as any)[key] = decryptData(val);
+      } catch {
+        // preserve original if not decryptable
+      }
+    }
+  }
+  return result;
+}
+

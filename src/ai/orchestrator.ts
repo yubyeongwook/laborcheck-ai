@@ -1,34 +1,46 @@
 import { UnifiedAIClient, ChatMessage } from './client';
 
 /**
- * 노무체크 AI - 5대 분야별 수석 에이전트 & 노무비서실장 정의
+ * 노무체크 AI - 4대 주요 분야별 수석 에이전트 & 노무비서실장 정의
  */
+export type DomainCategory = 'labor' | 'industrial_accident' | 'labor_office' | 'compliance';
+
 export type AgentRole =
   | 'MasterRouter'
-  | 'LaborLawChief'
-  | 'IndustrialAccidentChief'
-  | 'LaborInspectionChief'
+  | 'LaborLawChief'           // 노무·임금 수석 (labor)
+  | 'IndustrialAccidentChief' // 산재보상·재해 수석 (industrial_accident)
+  | 'LaborInspectionChief'    // 노동청 지도감독 수석 (labor_office)
+  | 'ComplianceChief'         // 컴플라이언스·4대보험 수석 (compliance)
   | 'PolicyFundsChief'
   | 'FinancialDiagnosticChief';
 
 export type UserRole = 'super_admin' | 'agency_admin' | 'company_admin' | 'employee';
 
 export interface RequiredLaborSlots {
-  workDaysPerWeek?: number;         // 주 당 근무 일수
-  dailyStartTime?: string;          // 출근 시간
-  dailyEndTime?: string;            // 퇴근 시간
-  breakTimeMinutes?: number;        // 휴게 시간(분)
-  hourlyOrMonthlyBaseSalary?: number; // 약정임금 (시급/월급)
+  workDaysPerWeek?: number;            // 주 당 근무 일수
+  dailyStartTime?: string;             // 출근 시간
+  dailyEndTime?: string;               // 퇴근 시간
+  breakTimeMinutes?: number;           // 휴게 시간(분)
+  hourlyOrMonthlyBaseSalary?: number;  // 약정임금 (시급/월급)
   hasHolidayAllowanceIncluded?: boolean; // 포괄임금/수당 녹임 여부
-  holidayDailyWorkHours?: number;   // 휴일 1일 근무시간
-  annualHolidayCount?: number;      // 연간 휴일 일수
-  annualLeaveCount?: number;        // 연간 연차 일수
+  holidayDailyWorkHours?: number;      // 휴일 1일 근무시간
+  annualHolidayCount?: number;         // 연간 휴일 일수
+  annualLeaveCount?: number;           // 연간 연차 일수
 }
 
-export interface SlotStatus {
+export interface RequiredSanjaeSlots {
+  accidentDate?: string;               // 재해 발생일자 (YYYY-MM-DD)
+  accidentType?: 'accident' | 'disease' | 'commuting'; // 사고/질병/출퇴근재해
+  diseaseDetail?: string;              // 질병/상병명 또는 사고 내용
+  treatmentDays?: number;              // 요양/치료 일수
+  last3MonthsTotalWages?: number;     // 3개월간 임금 총액
+  dailyOrdinaryWage?: number;          // 1일 통상임금 (보정용)
+}
+
+export interface SlotStatus<T> {
   isComplete: boolean;
   missingSlots: string[];
-  slots: RequiredLaborSlots;
+  slots: T;
 }
 
 export class MasterAgentOrchestrator {
@@ -39,19 +51,19 @@ export class MasterAgentOrchestrator {
   }
 
   /**
-   * 노무비서실장 (Master Router): 의도 분석 및 5대 분야 수석 에이전트 분기
+   * 노무비서실장 (Master Router): 사용자 질의 분석 후 4대 분야로 분기
+   * (labor / industrial_accident / labor_office / compliance)
    */
-  async routeIntent(userQuery: string): Promise<AgentRole> {
+  async routeDomain(userQuery: string): Promise<DomainCategory> {
     const routingPrompt: ChatMessage[] = [
       {
         role: 'system',
-        content: `너는 노무체크 AI의 총괄 디렉터 [노무비서실장]이다. 사용자의 질문을 분석하여 법령 및 판례 전문가인 5대 수석 에이전트 중 가장 적합한 1곳으로 정확히 라우팅해라.
-반드시 아래 5개 코드 이름 중 하나만 정확히 단어로 답변해라 (설명 금지):
-- LaborLawChief : 근로기준법, 최저임금법, 근로자퇴직급여보장법, 통상임금/포괄임금 판례, 209시간, 연차, 임금계산
-- IndustrialAccidentChief : 산재보상보험법, 산업안전보건법, 중대재해처벌법, 뇌심혈관계/근골격계/출퇴근재해 대법원 판례, 요양/휴업급여
-- LaborInspectionChief : 고용노동부 근로감독, 임금체불 진정, 4대보험 관계법령, 부당해고, 대지급금, 형사처벌 리스크
-- PolicyFundsChief : 고용정책기본법, 2026 청년일자리도약장려금, 중진공/소진공 융자·출연금, R&D 지원금
-- FinancialDiagnosticChief : 외부감사법, 신용보증기금/기술보증기금 KTRS 평가모형, 재무제표 진단, 보증 승인 시뮬레이션`,
+        content: `너는 노무체크 AI의 총괄 디렉터 [노무비서실장]이다. 사용자의 질문을 분석하여 4대 전문 분야 중 1곳으로 정확히 라우팅해라.
+반드시 아래 4개 단어 중 하나만 답변해라 (단어 외 답변 금지):
+- labor : 근로계약, 포괄임금, 209시간, 급여계산, 연차유급휴가, 퇴직금, 주휴수당
+- industrial_accident : 업무상 사고, 뇌심혈관계/근골격계/직무스트레스 질병, 산재승인, 휴업급여(70%), 평균임금/통상임금 보정, 요양급여 신청서, 재해경위서
+- labor_office : 고용노동부 임금체불 진정, 근로감독 대비 체크리스트, 주 52시간 위반, 부당해고 진정
+- compliance : 4대보험 취득/상실 데이터, 취업규칙 신고, 컴플라이언스 체크리스트, 세무 비과세`,
       },
       {
         role: 'user',
@@ -61,227 +73,256 @@ export class MasterAgentOrchestrator {
 
     try {
       const response = await this.aiClient.generateResponse(routingPrompt);
-      const clean = response.trim();
-      if (clean.includes('LaborLawChief')) return 'LaborLawChief';
-      if (clean.includes('IndustrialAccidentChief')) return 'IndustrialAccidentChief';
-      if (clean.includes('LaborInspectionChief')) return 'LaborInspectionChief';
-      if (clean.includes('PolicyFundsChief')) return 'PolicyFundsChief';
-      if (clean.includes('FinancialDiagnosticChief')) return 'FinancialDiagnosticChief';
-      return 'LaborLawChief';
+      const clean = response.trim().toLowerCase();
+      if (clean.includes('industrial_accident') || clean.includes('산재')) return 'industrial_accident';
+      if (clean.includes('labor_office') || clean.includes('노동청')) return 'labor_office';
+      if (clean.includes('compliance') || clean.includes('4대보험')) return 'compliance';
+      return 'labor';
     } catch {
-      return 'LaborLawChief';
+      return 'labor';
     }
   }
 
   /**
-   * Slot Filling 검증: 정밀 노무 산출을 위한 필수 변수 확인
+   * AgentRole 호환용 라우팅 메서드
    */
-  inspectLaborSlots(currentSlots: Partial<RequiredLaborSlots>): SlotStatus {
+  async routeIntent(userQuery: string): Promise<AgentRole> {
+    const domain = await this.routeDomain(userQuery);
+    switch (domain) {
+      case 'labor': return 'LaborLawChief';
+      case 'industrial_accident': return 'IndustrialAccidentChief';
+      case 'labor_office': return 'LaborInspectionChief';
+      case 'compliance': return 'ComplianceChief';
+      default: return 'LaborLawChief';
+    }
+  }
+
+  /**
+   * Slot Filling 검증: 정밀 노무 산출 필수 변수
+   */
+  inspectLaborSlots(currentSlots: Partial<RequiredLaborSlots>): SlotStatus<Partial<RequiredLaborSlots>> {
     const missing: string[] = [];
 
     if (currentSlots.workDaysPerWeek === undefined) missing.push('주당 근무일수 (예: 주 5일)');
     if (!currentSlots.dailyStartTime) missing.push('일일 출근시간 (예: 09:00)');
     if (!currentSlots.dailyEndTime) missing.push('일일 퇴근시간 (예: 18:00)');
-    if (currentSlots.breakTimeMinutes === undefined) missing.push('일일 총 휴게시간 (식사시간 + 브레이크 타임 합산 분)');
+    if (currentSlots.breakTimeMinutes === undefined) missing.push('일일 총 휴게시간 (식사 및 브레이크 타임 분)');
     if (currentSlots.hourlyOrMonthlyBaseSalary === undefined) missing.push('약정 임금 (시급 또는 월 기본급 원)');
     if (currentSlots.hasHolidayAllowanceIncluded === undefined) missing.push('포괄임금/휴일·연차수당 녹임 여부');
 
     return {
       isComplete: missing.length === 0,
       missingSlots: missing,
-      slots: currentSlots as RequiredLaborSlots,
+      slots: currentSlots,
     };
   }
 
   /**
-   * 5대 분야별 수석 에이전트 - 법령 및 판례 데이터베이스 탑재 딥 실행 엔진
+   * Slot Filling 검증: 정밀 산재 산출 및 요양신청서 생성을 위한 필수 변수
+   */
+  inspectSanjaeSlots(currentSlots: Partial<RequiredSanjaeSlots>): SlotStatus<Partial<RequiredSanjaeSlots>> {
+    const missing: string[] = [];
+
+    if (!currentSlots.accidentDate) missing.push('재해 발생일자 (예: 2026-03-15)');
+    if (!currentSlots.accidentType) missing.push('재해 유형 (사고 / 뇌심·근골격계 질병 / 출퇴근 재해)');
+    if (!currentSlots.diseaseDetail) missing.push('상병명 또는 재해 경위 내용');
+    if (currentSlots.treatmentDays === undefined) missing.push('예상 치료/입원/통원 일수 (일)');
+    if (currentSlots.last3MonthsTotalWages === undefined) missing.push('재해 이전 3개월간 지급된 임금 총액 (원)');
+
+    return {
+      isComplete: missing.length === 0,
+      missingSlots: missing,
+      slots: currentSlots,
+    };
+  }
+
+  /**
+   * 산재 요양급여 신청서 및 재해경위서 초안 자동 생성
+   */
+  async generateSanjaeApplicationDraft(
+    slots: RequiredSanjaeSlots,
+    employeeInfo: { name: string; rrnMasked: string; companyName: string; position: string }
+  ): Promise<string> {
+    const draftPrompt: ChatMessage[] = [
+      {
+        role: 'system',
+        content: `너는 근로복지공단 서식 전문 [산재보상 수석 에이전트]다.
+근로자의 재해 정보와 슬롯 데이터를 기반으로 고용노동부/근로복지공단 제출용 [요양급여 신청서] 및 [재해경위서] 완벽 초안을 마크다운 문서 서식으로 생성해라.
+사업주 날인이 없어도 근로자 단독 신청이 가능함을 명시하고, 대법원 판례 및 인과관계 입증 팁을 서식 하단에 명확히 첨부해라.`,
+      },
+      {
+        role: 'user',
+        content: `[근로자 및 사업장 정보]:
+- 성명: ${employeeInfo.name} (주민번호: ${employeeInfo.rrnMasked})
+- 소속 사업장: ${employeeInfo.companyName} (${employeeInfo.position})
+
+[재해 슬롯 데이터]:
+- 재해 발생일: ${slots.accidentDate}
+- 재해 유형: ${slots.accidentType}
+- 상병/재해 내용: ${slots.diseaseDetail}
+- 요양 일수: ${slots.treatmentDays}일
+- 3개월 임금 총액: ${slots.last3MonthsTotalWages?.toLocaleString()}원
+
+위 정보를 사용하여 서면 제출 가능한 요양급여 신청서 및 재해경위서 전문 초안을 작성해 줘.`,
+      },
+    ];
+
+    return await this.aiClient.generateResponse(draftPrompt);
+  }
+
+  /**
+   * 4대 분야별 수석 에이전트 오케스트레이션 실행 엔진
    */
   async processRequest(
     userRole: UserRole,
     userQuery: string,
     history: ChatMessage[] = [],
-    existingSlots: Partial<RequiredLaborSlots> = {}
-  ): Promise<{ agent: AgentRole; response: string; updatedSlots: Partial<RequiredLaborSlots>; isCalculationReady: boolean }> {
-    const targetAgent = await this.routeIntent(userQuery);
+    existingLaborSlots: Partial<RequiredLaborSlots> = {},
+    existingSanjaeSlots: Partial<RequiredSanjaeSlots> = {}
+  ): Promise<{
+    domain: DomainCategory;
+    agent: AgentRole;
+    response: string;
+    updatedLaborSlots: Partial<RequiredLaborSlots>;
+    updatedSanjaeSlots: Partial<RequiredSanjaeSlots>;
+    isCalculationReady: boolean;
+  }> {
+    const domain = await this.routeDomain(userQuery);
+    const agent = await this.routeIntent(userQuery);
 
-    // 5대 수석 에이전트별 특화 법령 & 대법원 주요 판례 지식 주입 및 대화식 정리 규격
     const commonFormattingRule = `
 [노무비서실장의 눈높이 친절 대화 원칙]:
-답변 및 역질문 시 한자어 법률 용어나 딱딱한 행정 단어를 절대 사용하지 말고, 사장님과 근로자가 10초 만에 이해하고 편하게 답변할 수 있는 친근한 생활 대화체를 써라:
-- 상시 근로자 수 -> "사장님 빼고 평소 같이 일하는 직원 수"
-- 10인 이상 신고 의무 -> "직원이 10명이 넘어서 노동청에 서류를 내야 하는 매장"
-- 비과세 수당 -> "식대처럼 세금을 안 내도 되는 세금 절약 수당"
-- 퇴직연금 DB/DC -> "퇴직금을 회사가 모아주는 방식(DB)인지, 직원 통장에 매달 넣어주는 방식(DC)인지"
-- 브레이크 타임/휴게시간 -> "점심·저녁 식사시간과 중간에 쉬는 시간을 합친 시간"
-- 가산수당 -> "야간이나 휴일에 일할 때 더 얹어주는 수당"
+답변 및 역질문 시 한자어 법률 용어나 딱딱한 행정 단어를 절대 사용하지 말고, 사장님과 근로자가 10초 만에 이해하고 편하게 답변할 수 있는 친근한 생활 대화체를 써라.
 
 [대화식 답변 정리 표준 규칙]:
 답변 시 마크다운(Markdown) 형태로 아래 3단계로 친절히 정리하여 대답해라:
-1. ⚖️ [법적 근거 및 판례 진단]: 쉬운 설명과 함께 관련 근로기준법/판례 근거 제시
-2. 🧮 [정밀 계산식 및 수치 내역]: 백엔드 정밀 산식(209시간, 123.55h 등)과 금액을 원 단위로 정밀 표기
+1. ⚖️ [법적 근거 및 판례 진단]: 쉬운 설명과 함께 관련 근로기준법/산재보험법/판례 근거 제시
+2. 🧮 [정밀 계산식 및 수치 내역]: 백엔드 Pure TypeScript 계산 수식(209시간, 123.55h, 산재 70% 통상임금 보정) 적용 결과
 3. 💬 [대화 이어나가기 & 실행 가이드]: 사장님/근로자가 다음에 할 일을 친절히 안내`;
 
     const systemPrompts: Record<AgentRole, string> = {
-      MasterRouter: `너는 노무체크 AI의 총괄 디렉터 [노무비서실장]이다. 모든 수석 에이전트에게 법령과 대법원 판례를 총괄 지도한다.`,
+      MasterRouter: `너는 노무체크 AI 총괄 [노무비서실장]이다. 노동 전담 부장판사의 법리 판단과 직업환경의학과 전문의의 의학 소견을 종합 지휘한다.`,
 
-      LaborLawChief: `너는 대한민국 최고의 [노무·근로기준법 수석 에이전트]다.
+      LaborLawChief: `너는 대한민국 최고 권위의 [노동 전담 부장판사 및 노무·근로기준법 수석 에이전트]다.
 ${commonFormattingRule}
+[판사급 핵심 지침]:
+1. 대법원 전원합의체 판례(통상임금 성립요건 2013다87154, 포괄임금 유효성 2010다93996, 209시간 주휴수당 2019다283906 등)에 입각하여 위법성 및 수당 청구권을 명확히 법리 판단한다.
+2. 백엔드 정밀 급여 산식(174h+35h=209h 기본, 주 19h 연장=123.55h, 연15일 일10.5h 휴일중복가산=21.25h)을 100% 연동하여 판결문에 준하는 오차 0% 결과를 제공한다.`,
 
-[노무비서실장 5대 수석 에이전트 교차 검증 & 의논(Cross-Verification) 철칙]:
-1. 노무 사례는 방대하고 사업장 케이스마다 수당/세무/계약 조건이 완전히 다르므로, 어설프게 단정짓지 말고 5대 수석 에이전트 전담반이 교차 검증하여 답을 내라:
-   - ⚖️ **노무·근로기준법 수석**: 법정 209시간, 수당 산식, 연차 및 계약서 조항 정밀 검토
-   - 🛡️ **노동청 지도감독 수석**: 임금체불 진정 및 과태료/형사처벌 리스크 방어 검토
-   - 🩺 **산재보상 수석**: 업무상 재해 및 공단 서식 요구사항 대조 검토
-   - 💰 **정책자금 수석**: 2026 고용장려금 및 지원금 신청 자격 교차 검토
-   - 📊 **재무·신용진단 수석**: 4대보험 요율(4.75%, 3.595%, 13.14%) 및 세무 비과세 검토
-2. 질문 내용이 복잡할 경우, 수석 에이전트 간 교차 검증을 거쳐 '오류 0%의 최적화된 리포트'로 정리하여 대답해라.
-
-[법적 개념 엄격 분리 철칙 (간주근로 vs 기간제 근로 100% 정확 구분)]:
-노무비서실장 및 수석 에이전트는 사용자가 100% 신뢰하므로 아래 두 개념을 절대로 혼동하지 말고 정밀히 구분해라:
-1. ⏰ **[간주근로시간제 (근로기준법 제58조)]**: **'근로시간 계산 방식'**에 관한 조항. 외근/출장/대기시간 시비 방지를 위해 1일 8시간 일한 것으로 보는 수칙.
-2. 📜 **[기간제 근로자 (기간제법 제4조)]**: **'근로계약 기간 및 종료 조건'**에 관한 조항. 마트/사용처 위탁계약 종료 시 근로계약이 기간 만료로 자동 종료되는 계약직 수칙.
-- 위 두 개념은 서로 다른 범주이므로 자문 및 서식 생성 시 헷갈리지 말고 각각의 조항을 명확히 분리 명시해라.
-
-[간주근로자(근로기준법 제58조 - 대기시간/이동시간 임금폭등 방지) 자문 규칙]:
-1. 외근 영업직, 출장직, 마트 상주직 등 사업장 밖 근로 관련 질문 시, 근로기준법 제58조 간주근로시간제의 핵심 본질을 자문해라:
-   - 🛡️ **대기시간/이동시간 근로시간 시비 방지**: 손님 기다리는 대기시간이나 이동시간이 근로시간에 포함되어 급여 및 연장수당이 폭등하는 리스크를 사전에 막기 위해 **"1일 8시간(또는 서면 합의 시간)만 근로한 것으로 딱 간주"**하는 법정 수칙
-   - 📜 취업규칙 제3장 및 근로계약서에 사업장 밖 간주근로시간제 조항을 명시하여 추후 연장수당 소송 및 진정을 100% 원천 차단하도록 안내해라.
-
-[기간제 근로자(기간제법 제4조 - 특정한 사업 완성/도급 기간 한정) 자문 규칙]:
-1. 마트 위탁계약 기간에 맞추어 일하는 [기간제 근로자(계약직)] 관련 질문 시, 기간제 및 단시간근로자 보호 등에 관한 법률 제4조에 따른 정밀 자문 및 특약 조항을 작성해라:
-   - 📜 **기간제 근로계약 만료 자동 퇴직 조항**: *"본 근로계약은 회사(유통회사)와 마트(사용처) 간의 도급/위탁 용역 계약 기간을 계약기간으로 하는 기간제 근로계약이며, 마트와의 계약이 만료되는 경우 본 근로계약도 계약기간 만료로 자동 종료(퇴직)된다"* 는 법정 조항
-   - 🛡️ **기간제법 제4조 제1항 제1호 예외 적용**: 특정 사업의 완료에 필요한 기간을 정한 경우로서 2년 초과 사용 시 무기계약 전환 예외가 적용될 수 있음을 안내
-2. 기간제 근로자 특약을 취업규칙 및 근로계약서에 명시하여 계약 만료 시 부당해고 시비를 법적으로 100% 사전 차단해라.
-
-[임금형태 & 휴일근로일수 & 하계/동계 휴가 정밀 디테일 자문 규칙]:
-1. 급여 및 임금 산출 질문 시, 대화를 통해 아래 디테일 조건을 수집하여 정밀 계산해라:
-   - ① **임금 형태**: 시급제 / 일급제 / 주급제 / 정액 월급제 선택 및 약정 금액
-   - ② **휴일근로수당 산정 휴일 일수**: 연간 부여할 실제 휴일 일수(예: 연 15일, 연 12일 등)
-   - ③ **연차유급휴가 및 하계/동계 휴가 방침**:
-     - 법정 연차 일수(15일/11일) 외 **하계휴가(여름휴가)** 및 **동계휴가(겨울휴가)** 부여 일수 (예: 하계 3일, 동계 2일)
-     - 하계/동계 휴가를 법정 연차에서 차감하는지, 별도 유급 약정휴가로 주는지, 아니면 월급에 포함하여 휴일근로수당으로 산입하는지 확인
-2. 수집된 조건에 맞춰 하계/동계 휴가가 기본 연차 외 휴일근로수당이나 약정 수당으로 산입된 산식을 정밀하게 정리하여 답변해라.
-
-[실급여액 vs 세무신고액 분리 & 비과세 수당 & 국민연금 7월 소득월액 자문 규칙]:
-1. 급여 및 임금 질문 시, 대화를 통해 아래 사항을 확인하여 백엔드 엔진(TaxExemptSalaryCalculator)으로 정밀 진단해라:
-   - ① **실제 지급하는 실급여액**과 **국세청/4대보험 세무 신고액**이 동일한지, 아니면 차이가 있는지 수집
-   - ② **국민연금 매년 7월 공단 결정 기준소득월액**(상한액 659만원 / 하한액 40만원) 반영 여부 확인
-   - ③ 기본급 외 포함시킬 **비과세 수당 종류** 확인:
-     - 🍚 식대 (월 20만원 한도 비과세)
-     - 🚗 자가운전보조금 (월 20만원 한도 비과세)
-     - 👶 6세 이하 자녀 보육수당 (월 20만원 한도 비과세)
-     - 🔬 연구보조비 (월 20만원 한도 비과세)
-2. 국민연금은 매년 7월 전년도 소득 기반 기준소득월액 상·하한액이 고시되므로 상한액(659만원) 초과 소득자는 상한액까지만 4.75% 부과됨을 함께 자문해라.
-
-[퇴직연금 유형별 & 육아휴직·병가 반영 정밀 계산 자문 규칙]:
-1. 퇴직금 질문 시, 대화를 통해 아래 필수 조건을 수집하여 백엔드 정밀 엔진(PureSeveranceCalculator)으로 계산해라:
-   - ① 퇴직연금 제도 유형 (법정 일반퇴직금 / DB형 확정급여형 / DC형 확정기여형 / IRP)
-   - ② 입사일 및 퇴직일 (총 재직일수)
-   - ③ 퇴직 전 3개월 임금 총액 (기본급, 수당) 및 연간 상여금/연차수당
-   - ④ 육아휴직, 산재 요양 병가, 사용자 귀책 휴업 기간 (근로기준법 시행령 제2조에 따라 평균임금 산정 제외일수로 공제)
-2. 근로기준법 제2조 및 시행령 제2조에 따라 육아휴직과 산재 병가 기간은 평균임금 산정 대상 기간에서 완전히 제외하여 근로자의 평균임금이 깎이지 않도록 안전하게 계산 과정을 설명해라.
-
-[매해 최신 개정 노동법 & 업장 맞춤 취업규칙 대화형 작성 엔진]:
-1. 매해 달라지는 최신 개정 법령(2026년 최저임금 10,030원, 관공서 공휴일 민간 전면 적용, 육아휴직·배우자 출산휴가 확대, 직장 내 괴롭힘 예방 규정 등)을 기본 표준으로 탑재한다.
-2. [업장 맞춤형 취업규칙 생성 대화 규칙]:
-   취업규칙 작성 또는 개정 요청 시, 대화(역질문)를 통해 다음 업장별 필수 변수를 질문하여 수집한 후 맞춤형 조항을 생성해라:
-   - ① 업종 (예: 외식업, IT/벤처, 제조업, 병의원, 유통업 등) 및 상시 근로자 수 (10인 이상 신고 의무)
-   - ② 근무 형태 (일반 사무직, 교대제, 시프트제) 및 출퇴근/휴게시간
-   - ③ 주휴일 및 회사 지정 약정휴일 (창립일, 명절 등)
-   - ④ 임금 구조 (기본급, 수당 구성, 포괄임금 수당 포함 여부)
-   - ⑤ 경조휴가 및 징계/복리후생 특약 사항
-3. 수집된 정보를 바탕으로 고용노동부에 즉시 신고 가능한 최신 표준 취업규칙 전문 조항(제1장 총칙 ~ 제10장 징계/보칙)을 업장 특성에 딱 맞게 생성해라.
-
-[학습 법령 및 판례 딥 데이터베이스]:
-1. 근로기준법(제15조, 제50조, 제54조, 제55조, 제56조, 제60조, 제93조 취업규칙 작성/신고 등)
-2. 최저임금법, 근로자퇴직급여 보장법, 남녀고용평등법, 남녀고용평등과 일·가정 양립 지원에 관한 법률
-3. 대법원 핵심 판례:
-   - 대법원 2013다87154 전원합의체 (통상임금 성립요건)
-   - 대법원 2010다93996 (포괄임금제 유효 판단)
-   - 대법원 2018다207847 (연차수당 청구권 산정)
-   - 대법원 2019다283906 (209시간 주휴수당 기준)`,
-
-      IndustrialAccidentChief: `너는 대한민국 [산재보상·재해 수석 에이전트]다.
+      IndustrialAccidentChief: `너는 대한민국 최고의 [산재 전담 판사 & 직업환경의학과 전문의 수석 에이전트]다.
 ${commonFormattingRule}
-[산재보험금 청구 필수 제출 4대 서류 세트 자문 규칙]:
-1. 산재 서류 질문 시 아래 4가지 필수 서류와 신청 팁을 명확히 안내해라:
-   - 📄 **① 요양급여 신청서 (최초요양신청서)**: 근로자 인적사항 및 사고 경위 작성 (사업주 도장 없어도 접수 가능)
-   - 🩺 **② 산재 진단서 (의료기관 산재 소견서)**: 진료받은 산재 지정 병원 산재 담당 창구에서 작성 및 대행 접수 가능
-   - 💵 **③ 평균임금 증빙 서류**: 사고 전 최근 3개월 급여명세서, 통장 거래 내역, 근로계약서 복사본
-   - 📸 **④ 사고 증빙 자료**: 119 구급대 이송증명서, 목격자 진술서, 현장/상처 사진 (출퇴근 시 출퇴근재해신고서 및 이동 경로 지도)
-2. 병원 산재 원무과 창구에 요청하면 [요양신청서]와 [산재소견서]를 공단에 원스톱으로 전자 대행 접수해 줌을 안내해라.
+[산재 승인 vs 부승인 사건사고 딥 판정 데이터베이스 100% 반영 지침]:
+사용자의 질문 및 사건 재해 경위에 대해 아래 근로복지공단·고용노동부 지침 및 법원 판례 기준 [승인 vs 부승인] 가능성을 정밀 판정하고 입증 전략을 제안해라:
 
-[산업재해보상보험법 0% 오차 정밀 보상금 및 권리구제 자문 규칙]:
-1. 산재(업무상 재해, 출퇴근 재해, 뇌심혈관계, 근골격계) 질문 시 아래 지침을 100% 반영하여 답변해라:
-   - 🏥 **휴업급여 산식**: $\text{평균임금} \times 70\% \times \text{치료/통원 일수}$ (2026년 상한 127,600원, 하한 80,240원 자동 적용)
-   - 👴 **65세 이상 연령 감액**: 65세 65%, 66세 60%, 67세 55%, 68세 50%, 69세 이상 45% 감액 산율 적용
-   - 🛡️ **사업주 동의(날인) 폐지 명시**: 2018년 개정으로 사장님 날인 없이 근로자 단독으로 근로복지공단에 직접 신청 가능함을 안내하여 사업주와의 마찰 사전에 방지
-   - 🚗 **출퇴근 재해 100% 보상**: 도보, 자가용, 버스 출퇴근 중 발생한 사고도 산재 100% 청구 가능
-   - ⚠️ **공상 처리(사적 합의) 리스크 방지**: 사적 합의 후 재발 시 산재 보증을 받지 못하고 과태료 위험이 있음을 경고
-2. 백엔드 산재 엔진(IndustrialAccidentCalculator) 수식 결과를 기반으로 휴업급여, 장해급여(1~14급), 유족급여를 명확히 진단해라.
-[학습 법령 및 판례 딥 데이터베이스]:
-1. 산업재해보상보험법, 산업안전보건법, 중대재해 처벌 등에 관한 법률
-2. 대법원 및 근로복지공단 핵심 기준:
-   - 대법원 2016두40608 (사업주 제공 교통수단 외 출퇴근 재해 인정 판례)
-   - 대법원 2017두45942 (뇌심혈관계 질환과 업무상 과로 간 상당인과관계 추정)`,
+1. 🫀 **[뇌심혈관계 질환 (뇌출혈/뇌경색/심근경색/청사)]**:
+   - ✅ **승인 케이스**:
+     * 급성 과로: 발병 전 24시간 이내 예측 곤란한 돌발사태/급격한 업무 환경 변화
+     * 단기 과로: 발병 전 1주일간 업무량/업무시간이 이전 12주간 평균 대비 30% 이상 증가
+     * 만성 과로: 발병 전 12주간 주 평균 60시간 초과 (주 52시간 초과 시 야간근무·교대제·육체적 강도 등 가산요인 산입)
+   - ❌ **부승인 케이스 및 방어책**: 주 52시간 미만 근무 + 고혈압/당뇨 기저질환의 단순 자연경과적 악화 주장 시 -> *업무상 강한 스트레스 및 유해 작업 환경을 입증하여 부승인 뒤집기 전략 제안*
 
-      LaborInspectionChief: `너는 대한민국 [노동청 지도감독·컴플라이언스 수석 에이전트]다.
+2. 🦴 **[근골격계 질환 (요추/경추 디스크, 회전근개 파열, 수근관 증후군)]**:
+   - ✅ **승인 케이스**: 신체부담작업(반복 동작, 부적절한 자세, 중량물 들기, 진동)을 수개월~수년간 지속 수행하여 기존 퇴행성 질환이 업무로 급격히 악화(자연경과 이상)된 경우
+   - ❌ **부승인 케이스 및 방어책**: 단순 연령 증가에 따른 자연스러운 퇴행성 질환으로 보아 부승인 시 -> *작업 자세 사진, 중량물 무게/횟수 표, 동료 진술서로 신체부담 신체부위별 입증 표 작성 가이드*
+
+3. 🧠 **[직무스트레스 & 정신질환 (우울증, 적응장애, 극단적 선택)]**:
+   - ✅ **승인 케이스**: 직장 내 괴롭힘, 폭언/폭행, 업무상 중대한 실수/사고로 인한 PTSD, 극단적 선택 당시 업무상 스트레스로 정상적 인식/행위선택 능력이 현저히 떨어진 상태 입증 시
+   - ❌ **부승인 케이스 및 방어책**: 사적 채무/가정사 원인으로 내모는 경우 -> *사내 카톡, 녹음 파일, 병원 정신건강의학과 기록, 동료 진술서 확보로 업무 관련성 100% 입증*
+
+4. 🚗 **[업무상 사고 & 출퇴근 재해]**:
+   - ✅ **승인 케이스**: 사업장 내 작업/대기/생리현상 중 사고, 통상적인 경로/방법에 의한 출퇴근 재해 (도보, 자가용, 버스, 지하철 등)
+   - ❌ **부승인 케이스**: 근로자의 사적 일탈/가회 행동 중 사고, 범죄행위/음주운전에 의한 사고
+
+5. 🧪 **[직업성 암 & 유해물질 노출 (벤젠, 석면, 용접휨, 먼지)]**:
+   - ✅ **승인 케이스**: 유해 물질 장기 노출 역학조사 및 잠복기 부합 시 역학조사 생략/간이 승인
+
+백엔드 산재 엔진으로 3개월 평균임금, 통상임금 보정(통상임금 > 평균임금 시 대체), 휴업급여(70%, 1일 80,240~127,600원 상하한)를 0% 오차로 정밀 계산하고, 고용노동부/근로복지공단 제출용 [요양급여 신청서] 및 [재해경위서] 초안을 작성해라.`,
+
+
+      LaborInspectionChief: `너는 대한민국 [노동청 근로감독관 & 근로감독 전문 수석 에이전트]다.
 ${commonFormattingRule}
-[학습 법령 및 판례 딥 데이터베이스]:
-1. 근로감독관 집무규정, 근로기준법 제109조(벌칙), 4대사회보험 관계법령
-2. 고용노동부 근로감독 자율점검 매뉴얼 및 체당금(대지급금) 제도`,
+[핵심 지침]: 임금체불 진정 대응, 고용노동부 근로감독 대비 체크리스트, 주 52시간 준수, 대지급금 신청 대응 절차를 안내한다.`,
 
-      PolicyFundsChief: `너는 대한민국 [정책자금·지원금 종합 설계 수석 에이전트]다.
+      ComplianceChief: `너는 대한민국 [컴플라이언스·4대보험 수석 에이전트]다.
 ${commonFormattingRule}
-[학습 법령 및 정부 지침 딥 데이터베이스]:
-1. 고용정책기본법, 보조금 관리에 관한 법률, 중소기업진흥에 관한 법률
-2. 2026년 고용노동부 청년일자리도약장려금 사업운영지침 및 소진공/중진공 융자공고`,
+[핵심 지침]: 4대보험 취득/상실 신고 데이터 생성, 취업규칙 법령 준수 진단, 비과세 항목(식대 20만 등) 및 노무 컴플라이언스를 총괄한다.`,
 
-      FinancialDiagnosticChief: `너는 [재무제표·신용진단 수석 에이전트]다.
-${commonFormattingRule}
-[학습 법령 및 금융 평가지표 딥 데이터베이스]:
-1. 주식회사의 외부감사에 관한 법률, 신용보증기금법, 기술보증기금법
-2. 신보/기보 KTRS 기술신용평가 모형 및 재무제표 진단 지표`,
+      PolicyFundsChief: `너는 [정책자금 수석 에이전트]다.`,
+      FinancialDiagnosticChief: `너는 [재무진단 수석 에이전트]다.`,
     };
 
-    const slotCheck = this.inspectLaborSlots(existingSlots);
 
-    if (targetAgent === 'LaborLawChief' && !slotCheck.isComplete) {
-      const missingListStr = slotCheck.missingSlots.map((s, idx) => `${idx + 1}. ${s}`).join('\n');
+    // 노무 분야 슬롯 검증
+    const laborSlotCheck = this.inspectLaborSlots(existingLaborSlots);
+    if (domain === 'labor' && !laborSlotCheck.isComplete && userQuery.includes('계산')) {
+      const missingListStr = laborSlotCheck.missingSlots.map((s, idx) => `${idx + 1}. ${s}`).join('\n');
       const slotPrompt: ChatMessage[] = [
         { role: 'system', content: systemPrompts.LaborLawChief },
         ...history,
         {
           role: 'user',
           content: `사용자 질문: "${userQuery}"
-[슬롯 수집 진행 상황]: 현재까지 미수집된 필수 근로 조건:
+[미수집 필수 근로조건]:
 ${missingListStr}
 
-[지시]: 노무비서실장의 총괄 지도에 따라, 수치를 절대로 임의 추정하지 말고 위 미수집 항목을 친절히 역질문하여 정밀 노무 계산을 준비해라.`,
+[지시]: 숫자를 절대 추정하지 말고 위 항목을 친절히 역질문해라.`,
         },
       ];
 
-      const agentReply = await this.aiClient.generateResponse(slotPrompt);
+      const reply = await this.aiClient.generateResponse(slotPrompt);
       return {
-        agent: targetAgent,
-        response: agentReply,
-        updatedSlots: existingSlots,
+        domain,
+        agent: 'LaborLawChief',
+        response: reply,
+        updatedLaborSlots: existingLaborSlots,
+        updatedSanjaeSlots: existingSanjaeSlots,
+        isCalculationReady: false,
+      };
+    }
+
+    // 산재 분야 슬롯 검증
+    const sanjaeSlotCheck = this.inspectSanjaeSlots(existingSanjaeSlots);
+    if (domain === 'industrial_accident' && !sanjaeSlotCheck.isComplete && (userQuery.includes('신청서') || userQuery.includes('경위서') || userQuery.includes('계산'))) {
+      const missingListStr = sanjaeSlotCheck.missingSlots.map((s, idx) => `${idx + 1}. ${s}`).join('\n');
+      const slotPrompt: ChatMessage[] = [
+        { role: 'system', content: systemPrompts.IndustrialAccidentChief },
+        ...history,
+        {
+          role: 'user',
+          content: `사용자 질문: "${userQuery}"
+[미수집 필수 산재/재해 항목]:
+${missingListStr}
+
+[지시]: 정확한 산재 보상금 계산 및 요양급여 신청서/재해경위서 초안 작성을 위해 위 미수집 항목을 친절히 역질문해라.`,
+        },
+      ];
+
+      const reply = await this.aiClient.generateResponse(slotPrompt);
+      return {
+        domain,
+        agent: 'IndustrialAccidentChief',
+        response: reply,
+        updatedLaborSlots: existingLaborSlots,
+        updatedSanjaeSlots: existingSanjaeSlots,
         isCalculationReady: false,
       };
     }
 
     const messages: ChatMessage[] = [
-      { role: 'system', content: `${systemPrompts[targetAgent]}\n[사용자 권한 Level: ${userRole}]` },
+      { role: 'system', content: `${systemPrompts[agent]}\n[사용자 권한 Level: ${userRole}]` },
       ...history,
       { role: 'user', content: userQuery },
     ];
 
-    const agentReply = await this.aiClient.generateResponse(messages);
+    const reply = await this.aiClient.generateResponse(messages);
     return {
-      agent: targetAgent,
-      response: agentReply,
-      updatedSlots: existingSlots,
-      isCalculationReady: slotCheck.isComplete,
+      domain,
+      agent,
+      response: reply,
+      updatedLaborSlots: existingLaborSlots,
+      updatedSanjaeSlots: existingSanjaeSlots,
+      isCalculationReady: domain === 'labor' ? laborSlotCheck.isComplete : sanjaeSlotCheck.isComplete,
     };
   }
 }
+

@@ -4,8 +4,8 @@ import { supabase, useAuth } from '../context/AuthContext.jsx';
 
 function ContactForm() {
   const { user } = useAuth();
-  const [name, setName] = useState(user?.user_metadata?.full_name || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);

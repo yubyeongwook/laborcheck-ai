@@ -40,9 +40,26 @@ export const CONSTANTS = {
 // ----------------------------------------------------------------------
 // 6. 산재보상보험법 정밀 계산 엔진 (IndustrialAccidentCalculator)
 // ----------------------------------------------------------------------
+export interface SanjaeAverageWageInput {
+  /** 재해 이전 3개월간 지급된 임금 총액 (원) */
+  last3MonthsTotalWages: number;
+
+  /** 재해 이전 3개월간의 총 일수 (예: 91일) */
+  last3MonthsTotalDays?: number;
+
+  /** 1일 통상임금 (원) - 통상임금이 평균임금보다 높을 시 보정을 위해 입력 */
+  dailyOrdinaryWage?: number;
+}
+
 export interface SanjaeCalcInput {
-  /** 1일 평균임금 (원) */
-  averageDailyWage: number;
+  /** 1일 평균임금 (직접 입력하거나 last3MonthsTotalWages로 산정) (원) */
+  averageDailyWage?: number;
+
+  /** 3개월 임금 기반 정밀 평균임금 산정 입력 (선택) */
+  averageWageDetail?: SanjaeAverageWageInput;
+
+  /** 1일 통상임금 (보정용) (원) */
+  dailyOrdinaryWage?: number;
 
   /** 요양/입원/통원 치료 일수 (일) */
   treatmentDays: number;
@@ -58,6 +75,12 @@ export interface SanjaeCalcInput {
 }
 
 export interface SanjaeCalcOutput {
+  /** 최종 적용된 1일 평균임금 (통상임금 보정 반영 후) (원) */
+  appliedAverageDailyWage: number;
+
+  /** 통상임금 보정 적용 여부 */
+  isOrdinaryWageAdjusted: boolean;
+
   /** 1일 휴업급여액 (평균임금 70%, 상하한 및 연령 감액 반영) (원) */
   dailyOffWorkAllowance: number;
 
@@ -89,16 +112,63 @@ export class IndustrialAccidentCalculator {
   private static MIN_DAILY_OFF_WORK = 80240;  // 최저보상기준 1일 하한 (최저임금 8h 연동)
 
   /**
+   * 재해 이전 3개월 임금 기반 1일 평균임금 산정 및 통상임금 보정 로직
+   */
+  public static calculateAverageDailyWage(input: SanjaeAverageWageInput): {
+    calculatedAverageDailyWage: number;
+    appliedAverageDailyWage: number;
+    isOrdinaryWageAdjusted: boolean;
+  } {
+    const totalDays = input.last3MonthsTotalDays || 91;
+    const rawAverageWage = roundPrecision(input.last3MonthsTotalWages / totalDays, 2);
+    const dailyOrdinaryWage = input.dailyOrdinaryWage || 0;
+
+    let appliedAverageDailyWage = rawAverageWage;
+    let isOrdinaryWageAdjusted = false;
+
+    // 통상임금이 평균임금보다 높은 경우 통상임식을 평균임금으로 적용 (산재법 제36조 제2항)
+    if (dailyOrdinaryWage > rawAverageWage) {
+      appliedAverageDailyWage = dailyOrdinaryWage;
+      isOrdinaryWageAdjusted = true;
+    }
+
+    return {
+      calculatedAverageDailyWage: rawAverageWage,
+      appliedAverageDailyWage,
+      isOrdinaryWageAdjusted,
+    };
+  }
+
+  /**
    * 산재 보상금 (휴업, 장해, 유족, 장의비) 정밀 산출
    */
   public static calculate(input: SanjaeCalcInput): SanjaeCalcOutput {
-    const { averageDailyWage, treatmentDays, age = 40, disabilityGrade = 0, isFatal = false } = input;
     const notes: string[] = [];
 
-    // 1. 1일 휴업급여 기본액 (평균임금의 70%)
-    let baseDailyOffWork = averageDailyWage * 0.7;
+    // 1. 평균임금 결정을 위한 계산 및 보정 로직 적용
+    let appliedAverageWage = input.averageDailyWage || 0;
+    let isOrdinaryWageAdjusted = false;
 
-    // 2. 65세 이상 연령별 감액 규칙 (산재보험법 제55조)
+    if (input.averageWageDetail) {
+      const avgResult = this.calculateAverageDailyWage(input.averageWageDetail);
+      appliedAverageWage = avgResult.appliedAverageDailyWage;
+      isOrdinaryWageAdjusted = avgResult.isOrdinaryWageAdjusted;
+      notes.push(`재해 전 3개월 임금 총액을 3개월 총 일수(${input.averageWageDetail.last3MonthsTotalDays || 91}일)로 나누어 평균임금을 산정했습니다.`);
+    } else if (input.dailyOrdinaryWage && input.dailyOrdinaryWage > appliedAverageWage) {
+      appliedAverageWage = input.dailyOrdinaryWage;
+      isOrdinaryWageAdjusted = true;
+    }
+
+    if (isOrdinaryWageAdjusted) {
+      notes.push('통상임금이 평균임금보다 높아 산업재해보상보험법 제36조 제2항에 따라 통상임금을 평균임금으로 보정 적용했습니다.');
+    }
+
+    const { treatmentDays, age = 40, disabilityGrade = 0, isFatal = false } = input;
+
+    // 2. 1일 휴업급여 기본액 (평균임금의 70%)
+    let baseDailyOffWork = appliedAverageWage * 0.7;
+
+    // 3. 65세 이상 연령별 감액 규칙 (산재보험법 제55조)
     if (age >= 65) {
       if (age === 65) baseDailyOffWork *= 0.65;
       else if (age === 66) baseDailyOffWork *= 0.60;
@@ -108,7 +178,7 @@ export class IndustrialAccidentCalculator {
       notes.push(`65세 이상 고령 근로자 연령별 휴업급여 감액율(${age}세)이 적용되었습니다.`);
     }
 
-    // 3. 상한액 및 하한액 보정
+    // 4. 상한액 및 하한액 보정 (휴업급여)
     let dailyOffWorkAllowance = Math.round(baseDailyOffWork);
     if (dailyOffWorkAllowance > this.MAX_DAILY_OFF_WORK) {
       dailyOffWorkAllowance = this.MAX_DAILY_OFF_WORK;
@@ -118,27 +188,27 @@ export class IndustrialAccidentCalculator {
       notes.push('1일 휴업급여 최저 보상 하한액(80,240원)이 적용되었습니다.');
     }
 
-    // 총 휴업급여액
+    // 총 휴업급여액 (평균임금 * 70% * 휴업일수 기반)
     const totalOffWorkAllowance = Math.max(0, dailyOffWorkAllowance * treatmentDays);
 
-    // 4. 장해급여 일수 산정 (장해등급 1급~14급)
+    // 5. 장해급여 일수 산정 (장해등급 1급~14급)
     const disabilityGradeDaysMap: Record<number, number> = {
       1: 1474, 2: 1309, 3: 1155, 4: 1012, 5: 869, 6: 737, 7: 616,
       8: 495, 9: 385, 10: 297, 11: 220, 12: 154, 13: 99, 14: 55
     };
 
     const disabilityDays = disabilityGradeDaysMap[disabilityGrade] || 0;
-    const disabilityCompensation = Math.round(averageDailyWage * disabilityDays);
+    const disabilityCompensation = Math.round(appliedAverageWage * disabilityDays);
     if (disabilityGrade > 0) {
       notes.push(`장해 제${disabilityGrade}급 기준 일수(${disabilityDays}일분 평균임금)가 반영되었습니다.`);
     }
 
-    // 5. 사망 시 유족급여(1,300일분) 및 장의비(120일분)
+    // 6. 사망 시 유족급여(1,300일분) 및 장의비(120일분)
     let survivorCompensation = 0;
     let funeralExpense = 0;
     if (isFatal) {
-      survivorCompensation = Math.round(averageDailyWage * 1300);
-      funeralExpense = Math.round(averageDailyWage * 120);
+      survivorCompensation = Math.round(appliedAverageWage * 1300);
+      funeralExpense = Math.round(appliedAverageWage * 120);
       notes.push('사망 재해에 따른 유족보상 일시금(1,300일분) 및 장의비(120일분)가 반영되었습니다.');
     }
 
@@ -148,6 +218,8 @@ export class IndustrialAccidentCalculator {
     const totalEstimatedCompensation = totalOffWorkAllowance + disabilityCompensation + survivorCompensation + funeralExpense;
 
     return {
+      appliedAverageDailyWage: appliedAverageWage,
+      isOrdinaryWageAdjusted,
       dailyOffWorkAllowance,
       totalOffWorkAllowance,
       disabilityDays,
@@ -159,6 +231,7 @@ export class IndustrialAccidentCalculator {
     };
   }
 }
+
 
 // ----------------------------------------------------------------------
 // 2. 입력 및 출력 타입 정의

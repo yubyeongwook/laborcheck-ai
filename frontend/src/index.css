@@ -988,6 +988,19 @@ input, textarea {
   color: #cbd5e1;
   font-weight: 500;
   white-space: nowrap;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.navbar-user-chip-link {
+  cursor: pointer;
+}
+
+.navbar-user-chip-link:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
 }
 
 .navbar-user-dot {

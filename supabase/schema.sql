@@ -100,6 +100,29 @@ CREATE TABLE IF NOT EXISTS public.agent_sessions (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 8. Industrial Accidents Table (산재 보상 & 질병/사고 민감 정보 AES-256 저장)
+CREATE TABLE IF NOT EXISTS public.industrial_accidents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+    company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+    employee_id UUID REFERENCES public.employees(id) ON DELETE CASCADE,
+    accident_date DATE NOT NULL,
+    accident_type VARCHAR(50) NOT NULL, -- 'accident', 'disease', 'commuting'
+    -- AES-256 Encrypted Sensitive Health & Disease Detail
+    disease_info_encrypted TEXT NOT NULL, 
+    accident_cause_detail TEXT,
+    average_daily_wage NUMERIC(15, 2) NOT NULL,
+    adjusted_average_daily_wage NUMERIC(15, 2) NOT NULL, -- 통상임금 보정 반영 1일 임금
+    off_work_days INT DEFAULT 0,
+    daily_off_work_allowance NUMERIC(15, 2) NOT NULL, -- 70% 및 상하한 적용
+    total_off_work_allowance NUMERIC(15, 2) NOT NULL,
+    disability_grade INT DEFAULT 0,
+    total_estimated_compensation NUMERIC(15, 2) NOT NULL,
+    status VARCHAR(30) DEFAULT 'draft', -- draft, submitted, approved, rejected
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ======================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- Strict Isolation per Tenant, Company, User
@@ -111,6 +134,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.labor_calculation_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agent_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.industrial_accidents ENABLE ROW LEVEL SECURITY;
 
 -- Helper Function: Get Current User Role & Tenant ID
 CREATE OR REPLACE FUNCTION public.get_current_user_info()
@@ -179,3 +203,23 @@ CREATE POLICY agent_sessions_isolation_policy ON public.agent_sessions
     FOR ALL USING (
         user_id = auth.uid()
     );
+
+-- ----------------------------------------------------------------------
+-- RLS: Industrial Accidents Policy (Company/Tenant Strict Isolation)
+-- ----------------------------------------------------------------------
+CREATE POLICY industrial_accidents_isolation_policy ON public.industrial_accidents
+    FOR ALL USING (
+        tenant_id IN (SELECT tenant_id FROM public.get_current_user_info())
+        AND (
+            (SELECT role FROM public.get_current_user_info()) IN ('super_admin', 'agency_admin')
+            OR (
+                (SELECT role FROM public.get_current_user_info()) = 'company_admin'
+                AND company_id = (SELECT company_id FROM public.get_current_user_info())
+            )
+            OR (
+                (SELECT role FROM public.get_current_user_info()) = 'employee'
+                AND employee_id IN (SELECT id FROM public.employees WHERE user_id = auth.uid())
+            )
+        )
+    );
+

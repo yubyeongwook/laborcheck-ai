@@ -2,7 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const dotenv = require('dotenv');
+const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 
 // 환경변수 로드
 dotenv.config();
@@ -47,9 +49,11 @@ app.use(cors({
 app.use(express.json());
 
 // 프론트엔드 정적 번들 자산 (JS, CSS) 우선 서빙
-const path = require('path');
 const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
 app.use(express.static(frontendDistPath));
+app.use(express.static(path.join(__dirname, 'public')));
+
+
 
 // Gemini API 설정
 const apiKey = process.env.GEMINI_API_KEY;
@@ -1493,12 +1497,8 @@ ${contractText}
   }
 });
 
-// 프론트엔드 빌드 정적 파일 서빙 (frontend/dist)
-const path = require('path');
-const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
-app.use(express.static(frontendDistPath));
-
 // 기본 헬스체크 API 라우트
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'LaborCheck AI', time: new Date() });
 });

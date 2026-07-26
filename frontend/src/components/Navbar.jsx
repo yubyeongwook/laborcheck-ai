@@ -54,13 +54,17 @@ function Navbar() {
         <div className="navbar-auth navbar-auth-desktop">
           {user ? (
             <>
-              {user.email === ADMIN_EMAIL && (
-                <Link to="/admin/inquiries" className="navbar-link">관리자</Link>
+              {user.email === ADMIN_EMAIL ? (
+                <Link to="/admin/inquiries" className="navbar-user-chip navbar-user-chip-link" title="문의 내역 관리 페이지로 이동">
+                  <span className="navbar-user-dot"></span>
+                  <span>{displayName}님 (문의관리)</span>
+                </Link>
+              ) : (
+                <div className="navbar-user-chip">
+                  <span className="navbar-user-dot"></span>
+                  <span>{displayName}님</span>
+                </div>
               )}
-              <div className="navbar-user-chip">
-                <span className="navbar-user-dot"></span>
-                <span>{displayName}님</span>
-              </div>
               <button type="button" className="navbar-btn-ghost" onClick={handleLogout}>로그아웃</button>
             </>
           ) : (
@@ -95,13 +99,17 @@ function Navbar() {
           <div className="navbar-mobile-auth">
             {user ? (
               <>
-                {user.email === ADMIN_EMAIL && (
-                  <Link to="/admin/inquiries" className="navbar-mobile-link" onClick={() => setMobileOpen(false)}>관리자</Link>
+                {user.email === ADMIN_EMAIL ? (
+                  <Link to="/admin/inquiries" className="navbar-user-chip navbar-user-chip-link" onClick={() => setMobileOpen(false)} title="문의 내역 관리 페이지로 이동">
+                    <span className="navbar-user-dot"></span>
+                    <span>{displayName}님 (문의관리)</span>
+                  </Link>
+                ) : (
+                  <div className="navbar-user-chip">
+                    <span className="navbar-user-dot"></span>
+                    <span>{displayName}님</span>
+                  </div>
                 )}
-                <div className="navbar-user-chip">
-                  <span className="navbar-user-dot"></span>
-                  <span>{displayName}님</span>
-                </div>
                 <button type="button" className="navbar-btn-ghost" onClick={() => { handleLogout(); setMobileOpen(false); }}>로그아웃</button>
               </>
             ) : (
