@@ -43,6 +43,15 @@ export default function PayslipModal({ data = {}, onClose }) {
     netPay = 2118480
   } = data;
 
+  // 💡 금액은 존재하나 시간값이 0인 경우 통상시급 기준 산출시간 안전 보정 (Fallback)
+  const displayHolidayHours = holidayHours > 0 
+    ? holidayHours 
+    : (holidayAllowance > 0 ? Math.round((holidayAllowance / (hourlyRate || 10320)) * 100) / 100 : 0);
+
+  const displayAnnualLeaveHours = annualLeaveHours > 0 
+    ? annualLeaveHours 
+    : (annualLeaveAllowance > 0 ? Math.round((annualLeaveAllowance / (hourlyRate || 10320)) * 100) / 100 : 0);
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 99999,
@@ -144,12 +153,12 @@ export default function PayslipModal({ data = {}, onClose }) {
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>휴일근로수당 (중복가산)</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{holidayHours}h</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{displayHolidayHours}h</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{holidayAllowance.toLocaleString()}</td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>연차휴가수당</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{annualLeaveHours}h</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{displayAnnualLeaveHours}h</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{annualLeaveAllowance.toLocaleString()}</td>
                   </tr>
                   <tr style={{ background: '#f8fafc' }}>
