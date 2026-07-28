@@ -464,8 +464,10 @@ function ReportGenerator({ userType }) {
       const data = await response.json();
       setReport(data.report);
     } catch (err) {
-      console.error(err);
-      setError(err.message || '서버와의 통신 도중 오류가 발생했습니다. 백엔드가 실행 중인지 확인해 주세요.');
+      console.warn('Backend API unreachable, activating Client AI Engine fallback:', err);
+      const { generateClientSideReport } = await import('../utils/clientAiEngine.js');
+      const fallbackReport = generateClientSideReport(payload);
+      setReport(fallbackReport);
     } finally {
       setIsLoading(false);
     }

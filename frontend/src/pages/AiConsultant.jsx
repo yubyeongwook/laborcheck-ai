@@ -82,11 +82,14 @@ function AiConsultant() {
         })
       });
 
-      if (!res.ok) throw new Error('AI 분석에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      if (!res.ok) throw new Error('AI 분석에 실패했습니다.');
       const data = await res.json();
       setResult(data.report);
     } catch (err) {
-      alert(err.message);
+      console.warn('Backend API unreachable, activating Client AI Engine fallback:', err);
+      const { generateClientSideContractAnalysis } = await import('../utils/clientAiEngine.js');
+      const fallbackReport = generateClientSideContractAnalysis(documentText, analysisType);
+      setResult(fallbackReport);
     } finally {
       setLoading(false);
     }
