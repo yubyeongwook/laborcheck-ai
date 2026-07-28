@@ -155,7 +155,7 @@ def generate_html(topic):
 <img src="{topic['img']}" alt="{topic['title']}" style="width:100%;border-radius:8px;margin:16px 0">
 
 <h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">{topic['h1']}</h2>
-<p>{topic['p1']}</p>
+<p style="background:#f8f9fa;padding:12px;border-radius:6px;border-left:3px solid #1a3a6b;">💡 <strong>어려운 법 조문 쉽게 풀이</strong>: {topic['p1']}</p>
 
 <h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">{topic['h2']}</h2>
 <p>{topic['p2']}</p>
