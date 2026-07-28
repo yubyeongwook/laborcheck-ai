@@ -224,7 +224,32 @@ def publish():
         post.post_status = 'publish'
 
         post_id = wp.call(NewPost(post))
+        post_url = f"http://www.laborcheckai.co.kr/?p={post_id}"
         log(f"SUCCESS: 워드프레스 포스팅 완료! ID: {post_id} | 카테고리: {topic['category']} | 제목: {topic['title']}")
+
+        # 1. 윈도우 데스크톱 알림 발송
+        try:
+            from notification_utils import send_windows_toast, send_telegram_alert, send_discord_alert, send_kakaotalk_alert
+            send_windows_toast(
+                "🎉 노무체크AI 신규 글 발행 완료!",
+                f"제목: {topic['title']}\n카테고리: {topic['category']}"
+            )
+            
+            # 2. 카카오톡 / 텔레그램 / 디스코드 알림 (환경변수 설정 시 발송)
+            kakao_token = os.environ.get("KAKAO_ACCESS_TOKEN")
+            if kakao_token:
+                send_kakaotalk_alert(kakao_token, topic['title'], post_url, topic['category'])
+
+            tg_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+            tg_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+            if tg_token and tg_chat_id:
+                send_telegram_alert(tg_token, tg_chat_id, topic['title'], post_url, topic['category'])
+
+            discord_url = os.environ.get("DISCORD_WEBHOOK_URL")
+            if discord_url:
+                send_discord_alert(discord_url, topic['title'], post_url, topic['category'])
+        except Exception as ex_notif:
+            log(f"알림 발송 중 모듈 알림: {ex_notif}")
 
         # Fetch 2 random existing posts to add cross-links
         try:
