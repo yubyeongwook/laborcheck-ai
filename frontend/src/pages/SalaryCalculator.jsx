@@ -1790,9 +1790,6 @@ function SalaryCalculator() {
     setEntries((prev) => prev.filter((e) => e.id !== id));
   };
 
-  const allResults = entries.map((entry) => ({ entry, ...computeDerived(entry) }));
-  const totalNetAnnual = allResults.reduce((sum, r) => sum + r.result.netAnnual, 0);
-
   return (
     <div className="page-container">
       <div className="tool-page-header">
@@ -1822,29 +1819,6 @@ function SalaryCalculator() {
       >
         <Plus size={16} /> 다음 연도 추가
       </button>
-
-      {entries.length > 1 && (
-        <section className="glass-panel">
-          <h3 className="dashboard-title">연도별 요약</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {allResults.map(({ entry, result }) => (
-              <div key={entry.id} className="result-row">
-                <span className="result-row-label">
-                  {result.year}년 ({entry.companySize})
-                  <span className={`compliance-badge ${result.isMinWageCompliant ? 'pass' : 'danger'}`} style={{ marginLeft: '0.5rem' }}>
-                    {result.isMinWageCompliant ? '최저임금 준수' : '최저임금 미달'}
-                  </span>
-                </span>
-                <span className="result-row-value">월 실수령 {result.netPay.toLocaleString()}원</span>
-              </div>
-            ))}
-            <div className="result-row" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.9rem', marginTop: '0.4rem' }}>
-              <span className="result-row-label" style={{ color: '#38bdf8', fontWeight: 800 }}>전체 연도 합산 연 실수령액 추정</span>
-              <span className="result-row-value" style={{ color: '#38bdf8', fontWeight: 800 }}>{totalNetAnnual.toLocaleString()}원</span>
-            </div>
-          </div>
-        </section>
-      )}
     </div>
   );
 }
