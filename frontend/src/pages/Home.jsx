@@ -187,6 +187,15 @@ export default function Home() {
   const [editingStep, setEditingStep] = useState(null);
   const [isCalculatedOnce, setIsCalculatedOnce] = useState(false);
 
+  // 💡 블로그 및 외부 링크 접속 시 계산기 자동 활성화
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasCalcParam = searchParams.has('calc') || searchParams.has('from') || searchParams.has('mode') || searchParams.has('tool') || window.location.hash === '#calculator';
+    if (hasCalcParam) {
+      setIsWageCalcOpen(true);
+    }
+  }, []);
+
   // 🕒 3단계 근무시간 세분화 스마트 입력 폼 state (고정 vs 요일별 변동)
   const [scheduleType, setScheduleType] = useState('fixed'); // 'fixed' | 'flexible'
   
@@ -882,6 +891,77 @@ export default function Home() {
               {promptText}
             </button>
           ))}
+        </div>
+
+        {/* 🧮 메인 페이지 노무·임금 정밀 계산 영역 상시 활성화 카드 */}
+        <div id="calculator" style={{
+          marginTop: '2.5rem',
+          padding: '1.5rem 1.8rem',
+          borderRadius: '16px',
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))',
+          border: '1px solid rgba(56, 189, 248, 0.35)',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)',
+          textAlign: 'left'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ background: '#38bdf8', color: '#0f172a', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800 }}>상시 활성화</span>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>🧮 2026년 209시간 노무·임금 실시간 정밀 진단 계산기</h3>
+              </div>
+              <p style={{ fontSize: '0.88rem', color: '#94a3b8', margin: '0.3rem 0 0 0' }}>
+                최저시급(10,320원), 주휴수당, 5인 이상 수당, 식대 비과세(20만원), 연차·퇴직금 산식을 실시간으로 0% 오차 계산합니다.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setIsWageCalcOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                  color: '#ffffff', border: 'none', borderRadius: '10px',
+                  padding: '0.65rem 1.2rem', fontSize: '0.9rem', fontWeight: 800,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  boxShadow: '0 4px 15px rgba(56, 189, 248, 0.4)'
+                }}
+              >
+                🧮 대화형 계산기 조건 수치 직접 수정
+              </button>
+              <Link
+                to="/tools/salary"
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)',
+                  color: '#38bdf8', borderRadius: '10px', padding: '0.65rem 1.1rem',
+                  fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none',
+                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem'
+                }}
+              >
+                📊 월급·급여명세서 상세 페이지 ➔
+              </Link>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem',
+            background: '#0f172a', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)'
+          }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>2026 최저시급</span>
+              <strong style={{ fontSize: '1.1rem', color: '#38bdf8', fontWeight: 800 }}>10,320원</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>월 소정근로시간</span>
+              <strong style={{ fontSize: '1.1rem', color: '#f8fafc', fontWeight: 800 }}>209시간 (주휴 35h 포함)</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>법정 세전 기본 월급</span>
+              <strong style={{ fontSize: '1.1rem', color: '#34d399', fontWeight: 800 }}>2,156,880원</strong>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>식대 비과세 절세 혜택</span>
+              <strong style={{ fontSize: '1.1rem', color: '#fbbf24', fontWeight: 800 }}>월 200,000원 비과세</strong>
+            </div>
+          </div>
         </div>
       </div>
 
