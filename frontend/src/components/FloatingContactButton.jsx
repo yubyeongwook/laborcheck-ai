@@ -11,11 +11,11 @@ function FloatingContactButton() {
   }
 
   return (
-    <Link to="/contact" className="floating-contact-btn" title="빠른 노무상담요청">
+    <Link to="/contact" className="floating-contact-btn" title="노무상담요청 바로가기">
       <span className="floating-contact-pulse"></span>
       <div className="floating-contact-content">
         <MessageSquare size={20} className="floating-contact-icon" />
-        <span className="floating-contact-text">노무상담요청</span>
+        <span className="floating-contact-text">⚡ 노무상담요청</span>
         <Sparkles size={14} className="floating-contact-sparkle" />
       </div>
     </Link>
