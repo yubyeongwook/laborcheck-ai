@@ -24,6 +24,7 @@ import ReverseSalaryCalculator from './pages/ReverseSalaryCalculator.jsx';
 import EmployeeManager from './pages/EmployeeManager.jsx';
 import AiConsultant from './pages/AiConsultant.jsx';
 import ContactForm from './pages/ContactForm.jsx';
+import AdminInquiries from './pages/AdminInquiries.jsx';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
 import UnifiedToolsHub from './pages/UnifiedToolsHub.jsx';
 
