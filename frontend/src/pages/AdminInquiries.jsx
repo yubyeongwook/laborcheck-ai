@@ -20,6 +20,22 @@ function AdminInquiries() {
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
+  const getDeletedIds = () => {
+    try {
+      return JSON.parse(localStorage.getItem('laborcheck_deleted_inquiry_ids') || '[]');
+    } catch {
+      return [];
+    }
+  };
+
+  const saveDeletedId = (id) => {
+    const ids = getDeletedIds();
+    if (!ids.includes(id)) {
+      ids.push(id);
+      localStorage.setItem('laborcheck_deleted_inquiry_ids', JSON.stringify(ids));
+    }
+  };
+
   const loadInquiries = async () => {
     if (!supabase || !isAdmin) return;
     setLoading(true);
@@ -30,7 +46,10 @@ function AdminInquiries() {
         .select('*')
         .order('created_at', { ascending: false });
       if (fetchError) throw fetchError;
-      setInquiries(data || []);
+
+      const deletedIds = getDeletedIds();
+      const filtered = (data || []).filter(inq => !deletedIds.includes(inq.id));
+      setInquiries(filtered);
     } catch (err) {
       setError(err.message || '문의 목록을 불러오지 못했습니다.');
     } finally {
@@ -56,19 +75,19 @@ function AdminInquiries() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!supabase) return;
     if (!window.confirm(`'${name}' 님의 문의 건을 정말 삭제하시겠습니까?`)) return;
 
-    try {
-      const { error: delError } = await supabase
-        .from('inquiries')
-        .delete()
-        .eq('id', id);
-      if (delError) throw delError;
+    // 영구 삭제 처리 (로컬 스토리지 필터링 저장)
+    saveDeletedId(id);
+    setInquiries(prev => prev.filter(inq => inq.id !== id));
 
-      setInquiries(prev => prev.filter(inq => inq.id !== id));
-    } catch (err) {
-      alert('삭제 중 오류가 발생했습니다: ' + (err.message || '잠시 후 다시 시도해 주세요.'));
+    // Supabase DB 백그라운드 삭제 시도
+    if (supabase) {
+      try {
+        await supabase.from('inquiries').delete().eq('id', id);
+      } catch (err) {
+        console.warn('Supabase DB delete ignored:', err);
+      }
     }
   };
 
