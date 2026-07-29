@@ -816,21 +816,22 @@ export default function Home() {
           background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)',
           color: '#38bdf8', fontWeight: 700, fontSize: '0.9rem', marginBottom: '1.25rem'
         }}>
-          <Crown size={18} color="#fbbf24" /> AI 노무비서실장 대화 상시 대기 중
+          <Crown size={18} color="#fbbf24" /> AI 진단 리포트 · 서류 자동생성 SaaS
         </div>
 
         <h1 style={{
           fontSize: '2.5rem', fontWeight: 900, color: '#f8fafc',
           lineHeight: 1.3, marginBottom: '1rem', wordBreak: 'keep-all'
         }}>
-          복잡한 노무 문제, <span style={{ color: '#38bdf8' }}>노무비서실장이 대화로 편리하게 안내해 드립니다</span>
+          우리 회사 근로계약서·급여명세서, <span style={{ color: '#38bdf8' }}>과태료 대상일까?</span>
         </h1>
 
         <p style={{
-          fontSize: '1.15rem', color: '#94a3b8', maxWidth: '720px', margin: '0 auto 2.5rem',
+          fontSize: '1.15rem', color: '#94a3b8', maxWidth: '750px', margin: '0 auto 2.5rem',
           lineHeight: 1.6, wordBreak: 'keep-all'
         }}>
-          페이지를 이동하며 일일이 입력할 필요가 없습니다. <strong style={{ color: '#f8fafc' }}>노무비서실장</strong>이 질문을 드리고 대화를 나누면서 정밀 계산부터 산재 자가진단, 법정 표준 서식까지 한곳에서 손쉽게 지원해 드립니다.
+          노무체크 AI가 <strong style={{ color: '#38bdf8' }}>10초 만에 법정 과태료 및 임금 체불 리스크를 정밀 진단</strong>해 드립니다. <br />
+          진단 후 서류 자동 생성, 법정의무교육 이수 관리, 검증된 노무사 정액제 배너 연결까지 한 번에 이용하세요.
         </p>
 
         {/* 🔍 노무비서실장 1:1 대화 시작 지휘창 */}

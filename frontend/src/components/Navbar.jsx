@@ -6,15 +6,11 @@ import { useAuth } from '../context/AuthContext.jsx';
 const ADMIN_EMAIL = 'aigoid1203@gmail.com';
 
 const NAV_LINKS = [
-  { to: '/remedy', label: '권리구제(AI)' },
-  { to: '/injury', label: '산재가이드' },
-  { to: '/tools/salary', label: '월급·명세서' },
-  { to: '/tools/reverse-salary', label: '역산계산기' },
-  { to: '/employer/employees', label: '직원관리' },
-  { to: '/employer/ai-consultant', label: 'AI컨설턴트' },
-  { to: '/worker', label: '근로자' },
-  { to: '/employer', label: '사업주' },
-  { to: '/contact', label: '노무상담요청', highlight: true },
+  { to: '/', label: '⚡ 무료 진단', highlight: true },
+  { to: '/tools/salary', label: '🛠️ AI 노동관리 도구' },
+  { to: '/employer', label: '🏢 기업 SaaS 구독' },
+  { to: '/remedy', label: '🤝 전문가 연결' },
+  { to: '/contact', label: '🎓 교육센터' }
 ];
 
 const getDisplayName = (user) => {
