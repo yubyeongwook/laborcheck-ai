@@ -24,8 +24,8 @@ import ReverseSalaryCalculator from './pages/ReverseSalaryCalculator.jsx';
 import EmployeeManager from './pages/EmployeeManager.jsx';
 import AiConsultant from './pages/AiConsultant.jsx';
 import ContactForm from './pages/ContactForm.jsx';
-import AdminInquiries from './pages/AdminInquiries.jsx';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
+import UnifiedToolsHub from './pages/UnifiedToolsHub.jsx';
 
 
 function App() {
@@ -89,11 +89,11 @@ function App() {
         <Route path="/worker" element={<WorkerHub />} />
         <Route path="/employer" element={<EmployerHub />} />
 
-        <Route path="/tools/salary" element={<SalaryCalculator />} />
-        <Route path="/tools/reverse-salary" element={<ReverseSalaryCalculator />} />
-        <Route path="/tools/weekly-holiday" element={<WeeklyHolidayCalculator />} />
-        <Route path="/tools/annual-leave" element={<AnnualLeaveCalculator />} />
-        <Route path="/tools/severance" element={<SeveranceCalculator />} />
+        <Route path="/tools/salary" element={<UnifiedToolsHub />} />
+        <Route path="/tools/reverse-salary" element={<UnifiedToolsHub />} />
+        <Route path="/tools/weekly-holiday" element={<UnifiedToolsHub />} />
+        <Route path="/tools/annual-leave" element={<UnifiedToolsHub />} />
+        <Route path="/tools/severance" element={<UnifiedToolsHub />} />
 
         <Route path="/worker/report" element={<ReportGenerator userType="근로자" />} />
         <Route path="/employer/report" element={<ReportGenerator userType="사업주" />} />
