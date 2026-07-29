@@ -1,6 +1,17 @@
 {
   "buildCommand": "cd frontend && npm install && vite build",
   "outputDirectory": "frontend/dist",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/((?!assets/|api/|sitemap\\.xml|robots\\.txt|.*\\..*).*)",
