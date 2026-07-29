@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Coins, RefreshCw, Calendar, Sun, PiggyBank, ShieldCheck } from 'lucide-react';
 
@@ -18,17 +18,23 @@ const TOOLS_TABS = [
   { id: 'insurance', label: '🛡️ 4대보험 계산기', path: '/employer/insurance', icon: <ShieldCheck size={18} /> }
 ];
 
+const getTabIdFromPath = (pathname) => {
+  if (pathname.includes('reverse-salary')) return 'reverse-salary';
+  if (pathname.includes('weekly-holiday')) return 'weekly-holiday';
+  if (pathname.includes('annual-leave')) return 'annual-leave';
+  if (pathname.includes('severance')) return 'severance';
+  if (pathname.includes('insurance')) return 'insurance';
+  return 'salary';
+};
+
 export default function UnifiedToolsHub() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Determine active tab based on current pathname
-  const currentTab = TOOLS_TABS.find(tab => tab.path === location.pathname)?.id || 'salary';
-  const [activeTab, setActiveTab] = useState(currentTab);
+  const [activeTab, setActiveTab] = useState(() => getTabIdFromPath(location.pathname));
 
-  React.useEffect(() => {
-    const tabId = TOOLS_TABS.find(tab => tab.path === location.pathname)?.id || 'salary';
-    setActiveTab(tabId);
+  useEffect(() => {
+    setActiveTab(getTabIdFromPath(location.pathname));
   }, [location.pathname]);
 
   const handleTabChange = (tab) => {
@@ -97,13 +103,20 @@ export default function UnifiedToolsHub() {
       </div>
 
       {/* 🧮 활성화된 계산기 컴포넌트 렌더링 */}
-      <div>
-        {activeTab === 'salary' && <SalaryCalculator />}
-        {activeTab === 'reverse-salary' && <ReverseSalaryCalculator />}
-        {activeTab === 'weekly-holiday' && <WeeklyHolidayCalculator />}
-        {activeTab === 'annual-leave' && <AnnualLeaveCalculator />}
-        {activeTab === 'severance' && <SeveranceCalculator />}
-        {activeTab === 'insurance' && <InsuranceCalculator />}
+      <div style={{ minHeight: '600px' }}>
+        {activeTab === 'reverse-salary' ? (
+          <ReverseSalaryCalculator />
+        ) : activeTab === 'weekly-holiday' ? (
+          <WeeklyHolidayCalculator />
+        ) : activeTab === 'annual-leave' ? (
+          <AnnualLeaveCalculator />
+        ) : activeTab === 'severance' ? (
+          <SeveranceCalculator />
+        ) : activeTab === 'insurance' ? (
+          <InsuranceCalculator />
+        ) : (
+          <SalaryCalculator />
+        )}
       </div>
     </div>
   );

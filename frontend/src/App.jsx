@@ -91,6 +91,8 @@ function App() {
         <Route path="/worker" element={<WorkerHub />} />
         <Route path="/employer" element={<EmployerHub />} />
 
+        <Route path="/tools" element={<UnifiedToolsHub />} />
+        <Route path="/tools/*" element={<UnifiedToolsHub />} />
         <Route path="/tools/salary" element={<UnifiedToolsHub />} />
         <Route path="/tools/reverse-salary" element={<UnifiedToolsHub />} />
         <Route path="/tools/weekly-holiday" element={<UnifiedToolsHub />} />
