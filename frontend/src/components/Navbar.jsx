@@ -10,7 +10,8 @@ const NAV_LINKS = [
   { to: '/tools/salary', label: '🛠️ AI 노동관리 도구' },
   { to: '/employer', label: '🏢 기업 SaaS 구독' },
   { to: '/remedy', label: '🤝 전문가 연결' },
-  { to: '/contact', label: '🎓 교육센터' }
+  { to: '/education', label: '🎓 법정의무교육 센터' },
+  { to: '/contact', label: '💬 1:1 상담·문의' }
 ];
 
 const getDisplayName = (user) => {

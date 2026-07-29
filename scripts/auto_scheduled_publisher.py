@@ -12,6 +12,15 @@ from wordpress_xmlrpc.methods.posts import NewPost
 
 # 로깅 환경 설정
 LOG_FILE = os.path.join(os.path.dirname(__file__), "auto_publisher.log")
+ENV_FILE = os.path.join(os.path.dirname(__file__), ".env")
+
+if os.path.exists(ENV_FILE):
+    with open(ENV_FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ[k.strip()] = v.strip()
 
 def log(msg):
     now_str = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")

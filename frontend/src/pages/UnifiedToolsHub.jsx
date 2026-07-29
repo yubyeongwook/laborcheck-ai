@@ -26,6 +26,11 @@ export default function UnifiedToolsHub() {
   const currentTab = TOOLS_TABS.find(tab => tab.path === location.pathname)?.id || 'salary';
   const [activeTab, setActiveTab] = useState(currentTab);
 
+  React.useEffect(() => {
+    const tabId = TOOLS_TABS.find(tab => tab.path === location.pathname)?.id || 'salary';
+    setActiveTab(tabId);
+  }, [location.pathname]);
+
   const handleTabChange = (tab) => {
     setActiveTab(tab.id);
     navigate(tab.path, { replace: true });
