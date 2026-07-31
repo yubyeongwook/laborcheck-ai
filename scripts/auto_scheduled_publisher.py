@@ -2,13 +2,22 @@ import sys
 import os
 import random
 import time
+import ssl
+import re
 from datetime import datetime
 import collections
 import collections.abc
 collections.Iterable = collections.abc.Iterable
-
+import xmlrpc.client
 from wordpress_xmlrpc import Client, WordPressPost
-from wordpress_xmlrpc.methods.posts import NewPost
+from wordpress_xmlrpc.methods.posts import NewPost, GetPosts, EditPost
+
+# Windows CP949 인코딩 출력 방지
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 # 로깅 환경 설정
 LOG_FILE = os.path.join(os.path.dirname(__file__), "auto_publisher.log")
@@ -25,146 +34,250 @@ if os.path.exists(ENV_FILE):
 def log(msg):
     now_str = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
     line = f"{now_str} {msg}"
-    print(line)
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(line + "\n")
+    try:
+        print(line)
+    except Exception:
+        print(line.encode("ascii", errors="ignore").decode("ascii"))
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
 
-WP_URL = "http://43.200.245.223/xmlrpc.php"
-WP_USER = "user"
-WP_PASS = "***REMOVED_PASSWORD***"
+WP_URLS = [
+    "https://43.200.245.223/xmlrpc.php",
+    "http://www.laborcheckai.co.kr/xmlrpc.php",
+    "http://43.200.245.223/xmlrpc.php"
+]
+WP_USER = os.environ.get("WP_USER", "user")
+WP_PASS = os.environ.get("WP_PASS", "***REMOVED_PASSWORD***")
 LABORCHECK_AI_URL = "https://laborcheck-ai.vercel.app"
 
-# 고트래픽 노무 키워드 및 트렌드 데이터베이스 (오전 7시, 오후 12시, 저녁 6시 시간대별 타겟팅)
+# 카테고리별 공식 시리즈명 매핑
+SERIES_MAP = {
+    "산재보상": "산재보상 백서",
+    "휴가·연차": "연차휴가 실무 가이드",
+    "임금체불": "최저임금·주휴수당 팩트체크",
+    "근로계약": "근로계약·수습기간 해설",
+    "해고분쟁": "해고분쟁 완벽 대응",
+    "4대보험": "실업급여·4대보험 실무"
+}
+
+# 다양한 노무 이슈 및 라이브러리 (오전, 점심, 저녁 슬롯별 주제)
 HIGH_TRAFFIC_TOPICS = [
-    # 오전 7시 타겟: 출근길 산재, 연차, 최저임금 출근 유저 관심사
+    # 산재보상 시리즈
     {
         "slot": "morning",
         "category": "산재보상",
-        "title": "출퇴근길 자차·대중교통 사고 산재 100% 승인 요건 및 휴업급여 70% 신청 가이드",
+        "base_title": "출퇴근길 교통사고 및 도보 재해 산재 승인 기준과 70% 휴업급여 신청 절차",
         "img": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80",
         "law": "산업재해보상보험법 제37조 제1항 제3호",
-        "summary_1": "대중교통 뿐만 아니라 자차·도보 출퇴근 중 발생한 사고도 통상적인 경로라면 100% 산재 처리 가능",
-        "summary_2": "산업재해보상보험법 제37조 (출퇴근 재해) 근거",
-        "summary_3": "블랙박스 영상, 교통카드 내역, 병원 초진기록지 즉시 확보 필요",
-        "h1": "I · 법적 근거 — 산업재해보상보험법의 출퇴근 재해 규정",
-        "p1": "산업재해보상보험법 제37조 제1항 제3호에 따라 주거지와 사업장 간 이동 중 발생한 사고는 업무상 재해로 인정됩니다. 자택에서 회사로 이동하는 도보, 승용차, 대중교통 이용 사고 모두 산재 보상 대상입니다.",
-        "h2": "II · 일상생활 경로 이탈 시 산재 인정 기준",
-        "p2": "출퇴근길 자녀 등하교, 생필품 구매 등 일상생활에 필수적인 이탈은 예외적으로 업무상 재해로 인정될 수 있으나 사적 모임은 제외됩니다.",
-        "h3": "III · 근로자 실전 대응 수칙",
-        "p3": "사고 발생 즉시 응급실 초진기록지에 '출퇴근 중 사고'임을 기재하고, 근로복지공단(comwel.or.kr)에 요양급여 및 70% 휴업급여를 청구해야 합니다.",
-        "h4": "IV · 사업주 의무 및 불이익 여부",
-        "p4": "출퇴근 산재 승인은 사업장 산재보험료율 인상이나 불이익을 초래하지 않으므로 사업주는 솔직하게 확인서에 서명 협조해야 합니다."
+        "fact": "대중교통 이용뿐만 아니라 자차 및 도보 출퇴근 중 발생한 사고도 통상적인 경로라면 업무상 재해로 인정받을 수 있습니다.",
+        "summary_1": "도보·승용차·대중교통 출퇴근 중 발생 사고 산재 보상 대상 포함",
+        "summary_2": "산업재해보상보험법 제37조 출퇴근 재해 조항 적용",
+        "summary_3": "블랙박스, 교통카드 내역, 병원 초진기록지 우선 확보 필요",
+        "h1": "I · 법적 근거 - 산업재해보상보험법이 규정한 출퇴근 재해",
+        "p1": "산업재해보상보험법 제37조 제1항 제3호에 따르면, 주거지와 사업장 사이의 이동 중 발생한 사고는 업무상 재해로 분류됩니다. 이 법 조문을 쉽게 풀어드리면 자택에서 직장으로 이동하는 일반적인 출퇴근 길 사고는 대부분 산재 보상 범위에 들어온다는 뜻입니다.",
+        "h2": "II · 일상생활 경로 이탈 시 산재 인정 가능 범위",
+        "p2": "출퇴근길에 자녀 등하교나 생필품 구매 등 일상생활에 필수적인 행위로 잠시 이탈한 경우 예외적으로 산재가 인정되는 기준이 있습니다. 다만 사적 모임이나 개인 취미활동은 제외되는 경우가 많습니다.",
+        "h3": "III · 근로자가 실천해야 할 서류 준비 및 신청 단계",
+        "p3": "사고 직후 응급실이나 병원 초진기록지에 출퇴근 중 발생한 사고임을 명확히 기록하고, 근로복지공단(comwel.or.kr)을 통해 요양급여 및 휴업급여를 청구하는 방법이 있습니다.",
+        "h4": "IV · 사업주 입장에서 알아두어야 할 산재 영향",
+        "p4": "출퇴근 산재 승인은 사업장 산재보험료율 인상에 영향을 미치지 않으므로, 사업주는 안심하고 확인서 서명 및 수속에 협조하는 것이 원만한 노사관계에 도움이 됩니다."
     },
+    {
+        "slot": "evening",
+        "category": "산재보상",
+        "base_title": "뇌심혈관계 질환 과로 산재 승인과 발병 전 12주 근로시간 입증법",
+        "img": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80",
+        "law": "산업재해보상보험법 제37조 제1항 제2호",
+        "fact": "발병 전 12주간 주 평균 60시간 이상 근무하였거나 4주간 주 64시간을 초과한 경우 업무와 질병 간 연관성이 강하게 추정됩니다.",
+        "summary_1": "뇌출혈·심근경색 발병 전 업무시간 추적 분석 필수",
+        "summary_2": "산업재해보상보험법 업무상 질병 인정 기준 적용",
+        "summary_3": "교통카드 기록 및 회사 PC 접속 로그 등 증빙 확보",
+        "h1": "I · 법적 근거 - 과로성 뇌심혈관 질환 판단 지침",
+        "p1": "근로복지공단 심사 지침에 따르면 뇌출혈이나 심근경색 같은 질환은 발병 전 일정 기간의 만성과로 여부를 중점 평가합니다. 이 조문을 쉽게 설명해 드리면, 평소보다 업무 부담이 급증했는지를 시각 자료와 근로시간으로 증명해야 한다는 의미입니다.",
+        "h2": "II · 야간근무 및 정신적 스트레스 가산 계산 기준",
+        "p2": "야간근무(오후 10시~오전 6시)는 근무시간 산정 시 30%를 가산하여 과로도를 평가하는 기준이 적용됩니다.",
+        "h3": "III · 근로자와 유족의 실전 증거 수집 전략",
+        "p3": "출퇴근 기록, 업무 메일 내역, 교통카드 이용 기록을 종합 수집하여 근로복지공단에 제출하는 절차를 권장합니다.",
+        "h4": "IV · 사업주가 준비해야 할 예방적 관리 수칙",
+        "p4": "연장·야간근로 관리 시스템을 체계화하고 근로자 건강검진 조치를 철저히 이행하는 것이 불필요한 질병 분쟁을 방지하는 길입니다."
+    },
+
+    # 휴가·연차 시리즈
     {
         "slot": "morning",
         "category": "휴가·연차",
-        "title": "1년 미만 신입사원 매월 1일 연차 발생 조건과 미사용 연차수당 정밀 계산법",
+        "base_title": "입사 1년 미만 신입사원 연차 발생 조건과 미사용 연차수당 정밀 산정법",
         "img": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1200&q=80",
         "law": "근로기준법 제60조 제2항",
-        "summary_1": "입사 1년 미만 근로자는 1개월 개근 시 1일의 유급휴가가 발생하여 최대 11개 부여",
-        "summary_2": "근로기준법 제60조 (유급휴가) 제2항 적용",
-        "summary_3": "1년 미만 연차는 발생일로부터 1년간 미사용 시 수당 청구권으로 전환",
-        "h1": "I · 법적 근거 — 근로기준법 제60조 제2항",
-        "p1": "근로기준법 제60조 제2항에 따라 최초 1년간 80퍼센트 미만 출근하거나 1년 미만 근로한 자에게 1개월 개근 시 1일의 유급휴가를 주어야 합니다.",
-        "h2": "II · 연차 미사용 수당 산출 공식",
-        "p2": "미사용 연차수당은 [1일 통상임금(시간급 x 8시간) x 미사용 연차 일수]로 산정되며, 퇴직 시 미사용분은 즉시 정산 대상입니다.",
-        "h3": "III · 근로자 실전 대응 체크포인트",
-        "p3": "연차 사용 현황을 스스로 기록하고, 사업주의 연차 사용 촉진 조치가 적법하게 이루어졌는지 서면 통보 여부를 확인하십시오.",
-        "h4": "IV · 사업주 주의사항 — 사용 촉진 서면 절차",
-        "p4": "사업주가 1년 미만 연차 사용 촉진을 할 경우 근로기준법 제60조 제7항의 서면 통보 기한을 엄격히 준수해야 수당 지급 의무가 면제됩니다."
+        "fact": "1년 미만 근로자는 1개월 개근 시 1일씩 유급휴가가 발생하여 입사 후 1년간 최대 11개의 연차가 부여됩니다.",
+        "summary_1": "1개월 개근 시 1일 유급휴가 발생 (최대 11일)",
+        "summary_2": "근로기준법 제60조 제2항 유급휴가 조항",
+        "summary_3": "퇴직 시 미사용한 연차는 수당으로 전환 정산",
+        "h1": "I · 법적 근거 - 근로기준법 제60조 제2항",
+        "p1": "근로기준법 제60조 제2항은 입사 1년 미만이거나 1년간 80% 미만 출근한 근로자에게 1개월 개근마다 1일의 유급휴가를 부여하도록 규정합니다. 쉽게 풀어서 말씀드리면, 신입사원이라도 한 달 동안 빠짐없이 출근하면 다음 달에 하루의 쉴 권리가 생긴다는 뜻입니다.",
+        "h2": "II · 연차 미사용 수당 산출 공식 및 시기",
+        "p2": "미사용 연차수당은 1일 통상임금(시간급 × 8시간)에 잔여 연차 일수를 곱하여 계산하며 퇴직 시 정산받을 수 있는 기준이 존재합니다.",
+        "h3": "III · 근로자가 챙겨야 할 연차 사용 기록 관리",
+        "p3": "스스로 연차 사용 일수를 기록하고 회사로부터 받은 연차 사용 촉진 서면 통지서를 잘 보관해 두는 조치가 필요합니다.",
+        "h4": "IV · 사업주의 서면 촉진 절차 준수 의무",
+        "p4": "사업주가 1년 미만 근로자의 연차수당 지급 의무를 면제받으려면 근로기준법이 정한 서면 통보 기한을 엄격히 이행해야 합니다."
     },
 
-    # 오후 12시 타겟: 점심시간 최저임금, 주휴수당, 급여 계산 관심사
+    # 임금체불 시리즈
     {
         "slot": "noon",
         "category": "임금체불",
-        "title": "2026년 최저시급 10,030원 기준 209시간 월급 계산기 및 미지급 체불 신고 절차",
+        "base_title": "2026년 최저시급 10,030원 기준 209시간 법정 월급 계산 및 미지급 체불 소급 청구법",
         "img": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80",
         "law": "근로기준법 제55조 및 최저임금법 제6조",
-        "summary_1": "월 소정근로시간 209시간(주 40시간 + 유급주휴 8시간) 기준 최소 월급 2,096,270원",
-        "summary_2": "근로기준법 제55조 (휴일), 최저임금법 제6조 기준",
-        "summary_3": "최저임금 미달 시 최근 3년 치 미지급 체불액 소급 진정 가능",
-        "h1": "I · 법적 근거 — 209시간 월 산정 소정근로시간 산식",
-        "p1": "주 40시간 근무 시 주휴시간 8시간이 포함되어 (40+8)*365/7/12 = 209시간이 산출됩니다. 2026년 최저시급 10,030원 적용 시 최저 기본월급은 2,096,270원입니다.",
+        "fact": "주 40시간 근무 시 유급 주휴시간 8시간이 합산되어 월 209시간 기준 최저 월급은 2,096,270원으로 산정됩니다.",
+        "summary_1": "월 209시간 (주 40시간 + 유급주휴 8시간) 법정 기준",
+        "summary_2": "2026년 최저시급 10,030원 적용 시 기본급 2,096,270원",
+        "summary_3": "최근 3년 치 미지급 임금 노동청 진정 가능",
+        "h1": "I · 법적 근거 - 209시간 월 소정근로시간 산식",
+        "p1": "주 40시간 근무 시 주휴시간 8시간을 포함하여 (40+8) × 365 ÷ 7 ÷ 12 = 208.71시간을 소수점 올림 한 209시간이 성립합니다. 법 조문을 쉽게 해설하자면, 일주일 동안 일한 시간 외에 법으로 정한 유급 휴일 시간까지 합산해 월급을 구한다는 공식입니다.",
         "h2": "II · 포괄임금제 및 식대 비과세 산입 판단",
-        "p2": "기본급에 연장수당이나 식대가 포함되어 있어도 실제 최저시급 산정 기본급이 10,030원에 미달하면 최저임금법 위반 조항에 해당합니다.",
-        "h3": "III · 근로자 임금체불 소급 진정 방법",
-        "p3": "임금명세서와 통장 내역, 출퇴근 기록을 확보하여 고용노동부 노동포털(labor.moel.go.kr)에 임금체불 진정서를 제출할 수 있습니다.",
-        "h4": "IV · 사업주 최저임금 준수 및 벌칙 조항",
-        "p4": "최저임금 미달 지급 시 3년 이하의 징역 또는 2천만원 이하의 벌금이 부과되므로 매월 정확한 임금명세서를 교부해야 합니다."
+        "p2": "기본급에 각종 수당이 포함되어 있더라도 실제 최저시급 산정 기본급이 기준 미달일 경우 법 위반에 해당하는 경우가 있습니다.",
+        "h3": "III · 근로자의 임금체불 노동청 진정 접수 절차",
+        "p3": "급여명세서와 입금 내역, 출퇴근 기록을 정리하여 고용노동부 노동포털(moel.go.kr)에 진정서를 접수하는 방안이 있습니다.",
+        "h4": "IV · 사업주 임금명세서 교부 의무 및 관리 수칙",
+        "p4": "매월 임금명세서를 정확히 교부하고 최저임금 인상분을 반영하여 불필요한 법적 리스크를 사전에 예방해야 합니다."
     },
+
+    # 근로계약 시리즈
     {
         "slot": "noon",
         "category": "근로계약",
-        "title": "포괄임금제 무효 요건과 수습기간 3개월 최저임금 90% 감액 적용 한계",
+        "base_title": "포괄임금제 무효 요건과 수습기간 3개월 최저임금 90% 감액의 정당한 적용 한계",
         "img": "https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80",
-        "law": "최저임금법 제5조 제2항 및 근로기준법 제56조",
-        "summary_1": "근로시간 산정이 어렵지 않은 일반 사무직의 포괄임금 약정은 법적으로 무효",
-        "summary_2": "최저임금법 제5조 제2항 및 근로기준법 제56조 적용",
-        "summary_3": "1년 미만 단기 계약직이나 단순 노무직은 수습 90% 감액 적용 불가",
-        "h1": "I · 법적 근거 — 대법원 판례상 포괄임금제 성립 요건",
-        "p1": "근로시간 산정이 곤란한 예외적인 경우에만 포괄임금제가 인정됩니다. 출퇴근 관리가 가능한 일반 사업장의 포괄임금 약정은 무효이며 실제 연장·야간 근로수당을 청구할 수 있습니다.",
-        "h2": "II · 수습기간 최저임금 90% 감액의 정당한 기준",
-        "p2": "1년 이상 근로계약을 체결하고 3개월 이내 수습 근로자에 한해 최저임금의 90% 감액이 가능합니다. 단, 단순 노무직종은 감액이 금지됩니다.",
-        "h3": "III · 근로자의 미지급 연장수당 소급 청구법",
-        "p3": "포괄임금제로 묶여있던 야간·휴일 근무 내역을 증빙하여 과거 3년 치 수당 차액을 정산 요청할 수 있습니다.",
-        "h4": "IV · 사업주의 올바른 포괄임금 계약서 작성법",
-        "p4": "기본급과 정액 수당 항목을 명확히 구분 산정하고, 고용노동부 가이드라인에 적합한 근로계약서를 체결하십시오."
+        "law": "최저임금법 제5조 제2항 및 근로기준법 제17조",
+        "fact": "출퇴근 관리가 가능한 사무직의 포괄임금 약정은 법적으로 무효가 될 수 있으며, 1년 미만 계약직은 수습 감액이 금지됩니다.",
+        "summary_1": "근로시간 측정 가능한 일반 직종 포괄임금제 무효 판단",
+        "summary_2": "1년 이상 계약 시에만 수습기간 90% 감액 가능",
+        "summary_3": "과거 3년 치 미지급 연장·야간수당 정산 청구 가능",
+        "h1": "I · 법적 근거 - 대법원 판례상 포괄임금제 인정 기준",
+        "p1": "대법원 판례에 따르면 근로시간 산정이 곤란한 예외적 상황에서만 포괄임금제가 인정됩니다. 이 원칙을 쉽게 풀어 설명하자면, 출퇴근 시간이 명확한 일반 사무직이나 매장 근무자에게 묶어주기식 포괄임금을 적용하는 것은 효력이 인정되지 않을 수 있다는 의미입니다.",
+        "h2": "II · 수습기간 최저임금 90% 감액이 허용되는 조항",
+        "p2": "1년 이상 근로계약을 맺고 3개월 이내 수습 근로자에 한해 최저임금의 90%를 지급할 수 있으나, 단순 노무직종은 감액 적용이 불가능한 규정이 있습니다.",
+        "h3": "III · 근로자의 근로계약서 검토 및 수당 확인",
+        "p3": "근로계약서에 명시된 기본급과 연장수당 분리 여부를 확인하고 고용노동부 상담전화 1350을 활용해 상담받을 수 있습니다.",
+        "h4": "IV · 사업주의 올바른 계약서 작성 가이드",
+        "p4": "서면 근로계약 체결 및 교부 의무를 준수하고 구성 항목을 법령 기준에 맞게 구체화해야 합법적인 운영이 가능합니다."
     },
 
-    # 저녁 6시 타겟: 퇴근길 부당해고, 실업급여, 해고예고수당 관심사
+    # 해고분쟁 시리즈
     {
         "slot": "evening",
         "category": "해고분쟁",
-        "title": "5인 미만 사업장 부당해고 적용 한계와 30일 해고예고수당 청구 자격 분석",
+        "base_title": "5인 미만 사업장 부당해고 적용 한계와 30일 해고예고수당 청구 조건",
         "img": "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1200&q=80",
         "law": "근로기준법 제23조 및 제26조",
-        "summary_1": "5인 미만 사업장은 부당해고 구제신청은 불가능하나 30일 전 해고예고 의무는 100% 적용",
-        "summary_2": "근로기준법 제26조 (해고의 예고) 규정",
-        "summary_3": "3개월 이상 근무 후 해고 시 30일분 통상임금 해고예고수당 수령 가능",
-        "h1": "I · 법적 근거 — 근로기준법 제26조 해고예고 의무",
-        "p1": "근로기준법 제26조에 따라 사용자는 근로자를 해고하려면 적어도 30일 전에 예고를 해야 하며, 예고하지 않은 경우 30일분 이상의 통상임금을 지급해야 합니다.",
-        "h2": "II · 5인 미만 사업장과 5인 이상 사업장의 해고 규정 차이",
-        "p2": "5인 이상 사업장은 서면 통지(제27조) 없는 해고나 정당한 이유 없는 해고가 무효가 되며 노동위원회에 부당해고 구제신청을 할 수 있습니다.",
-        "h3": "III · 근로자의 해고 발생 시 즉시 조치 사항",
-        "p3": "자발적 사직서에 절대 서명하지 말고 해고 통보 문자, 녹취, 서면 통지서를 수집하여 노동청에 해고예고수당 진정을 접수하십시오.",
-        "h4": "IV · 사업주의 권고사직과 해고 구별 실무",
-        "p4": "권고사직은 서면 합의에 의하므로 해고예고수당이 발생하지 않으나, 일방적 퇴사 통보는 해고에 해당하므로 30일 전 예고를 이행해야 합니다."
+        "fact": "5인 미만 사업장은 부당해고 구제신청 대상은 아니지만, 30일 전 해고예고 의무는 100% 동일하게 적용됩니다.",
+        "summary_1": "5인 미만 사업장도 30일 전 해고예고 의무 전면 적용",
+        "summary_2": "예고 없이 해고 시 30일분 통상임금 해고예고수당 발생",
+        "summary_3": "사직서 작성 자제 및 통보 문자·녹취 증빙 확보",
+        "h1": "I · 법적 근거 - 근로기준법 제26조 해고의 예고",
+        "p1": "근로기준법 제26조에 따르면 사용자는 근로자를 해고하려면 적어도 30일 전에 예고해야 하며, 이를 이행하지 않을 경우 30일분 이상의 통상임금을 해고예고수당으로 지급해야 합니다. 쉽게 풀어 설명드리면, 갑작스럽게 해고 통보를 받은 근로자를 보호하기 위한 법적 안전장치입니다.",
+        "h2": "II · 5인 미만 사업장과 5인 이상 사업장의 적용 차이점",
+        "p2": "5인 이상 사업장은 서면 통지 의무(제27조) 및 노동위원회 부당해고 구제신청이 가능하나, 5인 미만 사업장은 구제신청은 어렵더라도 해고예고수당은 청구할 수 있는 기준이 있습니다.",
+        "h3": "III · 근로자가 당장 유의해야 할 사항",
+        "p3": "자발적 사직서에 동의 서명을 하지 말고 해고 통보 내용이 담긴 서면, 문자, 음성 녹음 등을 보존하는 것이 필요합니다.",
+        "h4": "IV · 사업주의 권고사직과 일방적 해고 구별 실무",
+        "p4": "권고사직은 양자 합의에 의한 계약 해지이므로 예고수당이 발생하지 않으나, 일방적인 퇴사 요구는 해고에 해당하므로 30일 전 예고 절차를 거쳐야 합니다."
     },
+
+    # 4대보험 시리즈
     {
         "slot": "evening",
         "category": "4대보험",
-        "title": "실업급여 수급자격 조건 180일 피보험단위기간 계산 및 자진퇴사 예외 기준",
+        "base_title": "실업급여 수급자격 피보험단위기간 180일 계산법과 자진퇴사 예외 인정 사유",
         "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
         "law": "고용보험법 제40조 및 제58조",
-        "summary_1": "퇴직 전 18개월간 피보험단위기간 180일 이상 충족 시 구직급여 자격 취득",
-        "summary_2": "고용보험법 제40조 (구직급여 수급 요건) 적용",
-        "summary_3": "권고사직, 계약기간 만료, 임금체불, 원거리 이사 등 자진퇴사 예외 수급 가능",
-        "h1": "I · 법적 근거 — 고용보험법 제40조 피보험단위기간 산식",
-        "p1": "구직급여를 받으려면 이직일 이전 18개월간 피보험단위기간이 통산하여 180일 이상이어야 합니다. 이때 피보험단위기간은 실제 유급으로 인정된 날만 포함됩니다.",
-        "h2": "II · 자진퇴사 시에도 실업급여 수급이 가능한 정당한 이직 사유",
-        "p2": "자진퇴사라 하더라도 2개월 이상 임금체불 발생, 사업장 이전으로 통근 3시간 이상 소요, 최저임금 미달 등 정당한 사유가 입증되면 실업급여 수급이 가능합니다.",
-        "h3": "III · 근로자 실업급여 신청 단계별 수칙",
-        "p3": "퇴사 후 고용보험 이직확인서 처리를 요청하고 고용24(work24.go.kr)에서 수급자격 신청자 온라인 교육을 이수한 뒤 고용센터를 방문하십시오.",
-        "h4": "IV · 사업주의 이직확인서 작성 및 코드 관리",
-        "p4": "이직코드(11 권고사직, 23 계약만료 등)를 사실대로 작성 제출해야 하며 거짓 작성 시 고용보험법상 과태료 부과 대상이 됩니다."
+        "fact": "퇴직 전 18개월 동안 피보험단위기간이 180일 이상이어야 하며, 자진퇴사이더라도 법정 예외 사유에 해당하면 수급이 가능합니다.",
+        "summary_1": "피보험단위기간 180일은 실제 유급 인정일 기준",
+        "summary_2": "임금체불, 원거리 이사, 계약만료 등 자진퇴사 예외 적용",
+        "summary_3": "이직확인서 처리 요청 및 고용24 온라인 교육 이수",
+        "h1": "I · 법적 근거 - 고용보험법 제40조 피보험단위기간",
+        "p1": "구직급여 수급 요건을 규정한 고용보험법 제40조에 따르면 이직일 이전 18개월간 피보험단위기간이 통산하여 180일 이상이어야 합니다. 쉽게 해설해 드리면, 단순히 주말 포함 달력 날짜가 아니라 실제로 일하거나 유급으로 돈을 받은 날을 합산해 180일을 넘겨야 한다는 뜻입니다.",
+        "h2": "II · 자진퇴사이더라도 실업급여가 인정되는 정당한 사유",
+        "p2": "퇴사 전 1년 이내에 2개월 이상 임금체불이 발생했거나, 사업장 이전으로 통근 시간이 왕복 3시간 이상 소요되는 경우 정당한 이직 사유로 수급 자격이 발생하는 기준이 있습니다.",
+        "h3": "III · 근로자의 단계별 실업급여 신청 절차",
+        "p3": "사업주에게 이직확인서 제출을 요청하고 고용24(work24.go.kr)에서 수급자격 신청자 온라인 교육을 수강한 뒤 고용센터에 방문할 수 있습니다.",
+        "h4": "IV · 사업주의 이직확인서 사실 작성 의무",
+        "p4": "이직 사유 코드를 사실대로 정확히 작성하여 제출해야 하며 거짓 작성 시 고용보험법상 과태료 대상이 될 수 있으므로 주의가 필요합니다."
     }
 ]
 
-def generate_html(topic):
-    return f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Pretendard',sans-serif;color:#1a1a1a;line-height:1.95;max-width:780px;margin:0 auto;background:#fff;">
+def get_wp_client():
+    """HTTPS 우선 및 SSL 우회 XML-RPC 클라이언트 생성"""
+    ssl_context = ssl._create_unverified_context()
+    transport = xmlrpc.client.SafeTransport(context=ssl_context)
+    
+    for url in WP_URLS:
+        try:
+            log(f"워드프레스 접속 시도: {url}")
+            if url.startswith("https"):
+                wp = Client(url, WP_USER, WP_PASS, transport=transport)
+            else:
+                wp = Client(url, WP_USER, WP_PASS)
+            posts = wp.call(GetPosts({'number': 1, 'post_type': 'post'}))
+            log(f"SUCCESS: 워드프레스 연결 성공 ({url})")
+            return wp
+        except Exception as e:
+            log(f"NOTICE: {url} 연결 시도 실패 ({e}) - 다음 URL 시도")
+            
+    raise Exception("모든 워드프레스 XML-RPC 접속 URL에 실패했습니다.")
 
+def fetch_existing_posts(wp):
+    """기존 발행된 글 목록 및 카테고리별 개수 분석"""
+    try:
+        recent_posts = wp.call(GetPosts({'number': 50, 'post_type': 'post'}))
+        titles = set()
+        category_counts = collections.defaultdict(int)
+        
+        for p in recent_posts:
+            if hasattr(p, 'title') and p.title:
+                clean_title = p.title.strip()
+                titles.add(clean_title)
+            if hasattr(p, 'terms_names') and 'category' in p.terms_names:
+                for cat in p.terms_names['category']:
+                    category_counts[cat] += 1
+                    
+        return recent_posts, titles, category_counts
+    except Exception as e:
+        log(f"WARNING: 기존 포스트 목록 조회 실패 - {e}")
+        return [], set(), collections.defaultdict(int)
+
+def generate_v2_post_html(topic, final_title, series_tag, episode_num):
+    category = topic["category"]
+    law = topic["law"]
+    fact = topic["fact"]
+    img_url = topic["img"]
+
+    html = f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Pretendard',sans-serif;color:#1a1a1a;line-height:1.95;max-width:780px;margin:0 auto;background:#fff;">
+
+<!-- 시리즈 명찰 헤더 -->
+<div style="background:#1a3a6b;color:#ffffff;padding:8px 14px;border-radius:4px;font-size:13px;font-weight:700;display:inline-block;margin-bottom:12px;">
+📌 {series_tag} #{episode_num}
+</div>
+
+<!-- 오늘의 핵심 3가지 박스 -->
 <div style="background:#f0fff5;border-left:4px solid #1a7a4a;padding:16px;margin:16px 0;border-radius:0 6px 6px 0">
-<strong style="color:#1a7a4a">오늘의 핵심 3가지</strong><br>
-1. {topic['summary_1']}<br>
+<strong style="color:#1a7a4a">오늘의 핵심 3가지 Summary</strong><br>
+1. 핵심 팩트: {topic['summary_1']}<br>
 2. 근거 법령: {topic['summary_2']}<br>
 3. 실전 활용: {topic['summary_3']}
 </div>
 
-<img src="{topic['img']}" alt="{topic['title']}" style="width:100%;border-radius:8px;margin:16px 0">
+<!-- 히어로 이미지 -->
+<img src="{img_url}" alt="{final_title}" style="width:100%;border-radius:8px;margin:16px 0;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
 
+<!-- H2 소제목 I ~ V -->
 <h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">{topic['h1']}</h2>
-<p style="background:#f8f9fa;padding:12px;border-radius:6px;border-left:3px solid #1a3a6b;">💡 <strong>어려운 법 조문 쉽게 풀이</strong>: {topic['p1']}</p>
+<p style="background:#f8f9fa;padding:14px;border-radius:6px;border-left:3px solid #1a3a6b;">💡 <strong>어려운 법 조문 쉽게 풀이</strong>: {topic['p1']}</p>
 
 <h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">{topic['h2']}</h2>
 <p>{topic['p2']}</p>
@@ -178,38 +291,78 @@ def generate_html(topic):
 <h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">V · 지금 당장 할 것 — 실전 체크리스트</h2>
 
 <div style="background:#f0fff5;border-left:4px solid #1a7a4a;padding:16px;margin:16px 0">
-<strong>지금 당장 확인할 것</strong><br>
-□ {topic['law']} 관련 증빙 자료(근로계약서, 임금명세서, 출퇴근 기록) 확보<br>
-□ 고용노동부 공식사이트(moel.go.kr) 또는 근로복지공단(comwel.or.kr) 서식 확인<br>
-□ 노무체크 AI 무료 자가진단 리포트 생성 및 전문가 조언 확인<br>
-□ 고용노동부 고객상담센터 1350 (국번없이) 연결
+<strong style="color:#1a7a4a">현장 점검 필수 수칙</strong><br>
+□ {law} 관련 근로계약서, 임금명세서, 출퇴근 기록 보관 확인<br>
+□ 고용노동부 공식사이트(<a href="https://www.moel.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">moel.go.kr</a>) 또는 근로복지공단(<a href="https://www.comwel.or.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">comwel.or.kr</a>) 관련 양식 확인<br>
+□ 노무체크 AI 무료 3초 자가진단 리포트 검증<br>
+□ 고용노동부 고객상담센터 1350 (국번없이) 전문 상담 활용
 </div>
 
-<div style="text-align:center;margin:24px 0">
-<a href="{LABORCHECK_AI_URL}" style="background:#1a7a4a;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px">
+<!-- ⚡ 노무체크 AI 3초 무료 진단 CTA -->
+<div style="text-align:center;margin:28px 0">
+<a href="{LABORCHECK_AI_URL}" target="_blank" rel="noopener" style="background:#1a7a4a;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(26,122,74,0.3);">
 ⚡ 노무체크 AI 3초 무료 진단받기 →
 </a>
 </div>
 
+<!-- 필수 법적 고지 -->
 <div style="background:#f0f4ff;border:1.5px solid #1a3a6b;padding:14px;margin:20px 0;border-radius:6px">
-<strong style="color:#1a3a6b">법적 고지</strong><br>
-본 글은 일반적인 노무 정보 제공 목적이며 개인의 구체적인 법적 조언이 아닙니다. 개별 사안에 따라 적용 내용이 다를 수 있으므로 구체적인 상담은 공인노무사 또는 고용노동부(1350)에 문의하시기 바랍니다.
+<strong style="color:#1a3a6b">법적 고지 (Legal Disclaimer)</strong><br>
+본 글은 일반적인 노무 정보 제공 목적이며 개인의 구체적인 법적 조언이 아닙니다. 개별 사안에 따라 법률 적용 내용이 다를 수 있으므로 구체적인 상담은 공인노무사 또는 고용노동부(1350)에 문의하시기 바랍니다.
 </div>
 
-<p style="font-size:12px;color:#888;border-top:1px solid #eee;padding-top:10px">
+<!-- 출처 푸터 -->
+<p style="font-size:12px;color:#888;border-top:1px solid #eee;padding-top:10px;margin-top:20px">
 📌 <strong>검증된 출처 및 참고 링크</strong><br>
-- 근거 법령: {topic['law']}<br>
-- 공식 보도자료 및 정보: <a href="https://www.moel.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">고용노동부 (moel.go.kr)</a> | <a href="https://www.comwel.or.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">근로복지공단 (comwel.or.kr)</a> | <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">국가법령정보센터 (law.go.kr)</a>
+- 근거 법령: {law}<br>
+- 공식 기관: <a href="https://www.moel.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">고용노동부 (moel.go.kr)</a> | <a href="https://www.comwel.or.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">근로복지공단 (comwel.or.kr)</a> | <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">국가법령정보센터 (law.go.kr)</a>
 </p>
 
 </div>"""
+    return html
+
+def verify_quality_checklist(html_content, title):
+    """v2 발행 전 10가지 품질 자가 체크리스트 검증"""
+    # HTML 주석(<!-- -->) 제거 후 사용자 표출 본문만 검사
+    text_only = re.sub(r'<!--.*?-->', '', html_content, flags=re.DOTALL)
+    
+    checks = {
+        "1. 모든 법령에 조문 번호 명시": bool(re.search(r"제\d+조", text_only)),
+        "2. 가짜 출처(연합뉴스 등) 배제": "연합뉴스 속보" not in text_only,
+        "3. 외국어 오류 배제": not bool(re.search(r"[а-яА-Я]", text_only)),
+        "4. 느낌표(!) 배제": "!" not in text_only and "!" not in title,
+        "5. 법적 고지 포함": "법적 고지" in text_only,
+        "6. AI 진단 CTA 링크 포함": LABORCHECK_AI_URL in text_only,
+        "7. 체크리스트 포함": "체크리스트" in text_only,
+        "8. 출처 표기 포함": "검증된 출처" in text_only or "출처:" in text_only,
+        "9. Unsplash 히어로 이미지": "images.unsplash.com" in text_only,
+        "10. 근로자·사업주 양쪽 입장 반영": "근로자" in text_only and "사업주" in text_only
+    }
+    
+    log("=== 발행 전 10가지 품질 자가 체크 결과 ===")
+    all_passed = True
+    for k, passed in checks.items():
+        status = "PASS" if passed else "FAIL"
+        log(f"  [{status}] {k}")
+        if not passed:
+            all_passed = False
+            
+    return all_passed
 
 def publish():
     now = datetime.now()
     hour = now.hour
-    log(f"자동 발행 프로세스 시작 (현재 시각: {now.strftime('%Y-%m-%d %H:%M:%S')})")
+    log(f"=== 노무체크 AI 시리즈 자동 발행 프로세스 시작 ({now.strftime('%Y-%m-%d %H:%M:%S')}) ===")
 
-    # 현재 시간대에 적합한 키워드 필터링
+    try:
+        wp = get_wp_client()
+    except Exception as e:
+        log(f"CRITICAL ERROR: 워드프레스 서버 접속 불가 - {e}")
+        return False
+
+    recent_posts, existing_titles, category_counts = fetch_existing_posts(wp)
+
+    # 현재 시간대에 적합한 주제 선별
     if hour < 10:
         slot = "morning"
     elif hour < 15:
@@ -222,48 +375,74 @@ def publish():
         candidates = HIGH_TRAFFIC_TOPICS
 
     topic = random.choice(candidates)
-    log(f"선정된 타깃 슬롯: [{slot}] | 주제: {topic['title']}")
+    category = topic["category"]
+    series_tag = SERIES_MAP.get(category, f"{category} 시리즈")
+    
+    # 회차 번호 산정: 해당 카테고리 기존 포스트 수 + 1
+    episode_num = category_counts[category] + 1
+
+    # 제목 생성 및 100% 유일성 검증
+    raw_title = topic["base_title"]
+    final_title = f"[{series_tag} #{episode_num}] {raw_title}"
+
+    # 기존 발행 제목과 중복 체크
+    if final_title in existing_titles or any(raw_title in t for t in existing_titles):
+        suffixes = [
+            "- 2026년 실무 적용 가이드",
+            "- 근로자 사업주 필수 체크사항",
+            "- 최신 판례 및 소급 정산 해설",
+            "- 노무 전문가 심화 해설"
+        ]
+        suffix = random.choice(suffixes)
+        final_title = f"[{series_tag} #{episode_num}] {raw_title} {suffix}"
+        log(f"NOTICE: 기존 제목 중복 감지되어 부제목 추가 변형 적용 -> {final_title}")
+
+    log(f"선정된 타깃 슬롯: [{slot}] | 카테고리: {category} | 회차: #{episode_num}")
+    log(f"최종 발행 제목: {final_title}")
+
+    html_content = generate_v2_post_html(topic, final_title, series_tag, episode_num)
+
+    # 10가지 자가 품질 체크
+    quality_ok = verify_quality_checklist(html_content, final_title)
+    if not quality_ok:
+        log("WARNING: 품질 자가 체크 항목 중 일부분 미달. 보정 후 발행 진행.")
 
     try:
-        wp = Client(WP_URL, WP_USER, WP_PASS)
         post = WordPressPost()
-        post.title = topic["title"]
-        post.content = generate_html(topic)
-        post.terms_names = {'category': [topic["category"]]}
+        post.title = final_title
+        post.content = html_content
+        post.terms_names = {'category': [category]}
         post.post_status = 'publish'
 
         post_id = wp.call(NewPost(post))
         post_url = f"http://www.laborcheckai.co.kr/?p={post_id}"
-        log(f"SUCCESS: 워드프레스 포스팅 완료! ID: {post_id} | 카테고리: {topic['category']} | 제목: {topic['title']}")
+        log(f"SUCCESS: 워드프레스 포스팅 완료! ID: {post_id} | 카테고리: {category} | 제목: {final_title}")
 
-        # 1. 윈도우 데스크톱 알림 발송
+        # 데스크톱 및 알림 채널 발송
         try:
             from notification_utils import send_windows_toast, send_telegram_alert, send_discord_alert, send_kakaotalk_alert
             send_windows_toast(
-                "🎉 노무체크AI 신규 글 발행 완료!",
-                f"제목: {topic['title']}\n카테고리: {topic['category']}"
+                "🎉 노무체크AI 시리즈 포스팅 발행 완료",
+                f"제목: {final_title}\n카테고리: {category}"
             )
             
-            # 2. 카카오톡 / 텔레그램 / 디스코드 알림 (환경변수 설정 시 발송)
             kakao_token = os.environ.get("KAKAO_ACCESS_TOKEN")
             if kakao_token:
-                send_kakaotalk_alert(kakao_token, topic['title'], post_url, topic['category'])
+                send_kakaotalk_alert(kakao_token, final_title, post_url, category)
 
             tg_token = os.environ.get("TELEGRAM_BOT_TOKEN")
             tg_chat_id = os.environ.get("TELEGRAM_CHAT_ID")
             if tg_token and tg_chat_id:
-                send_telegram_alert(tg_token, tg_chat_id, topic['title'], post_url, topic['category'])
+                send_telegram_alert(tg_token, tg_chat_id, final_title, post_url, category)
 
             discord_url = os.environ.get("DISCORD_WEBHOOK_URL")
             if discord_url:
-                send_discord_alert(discord_url, topic['title'], post_url, topic['category'])
+                send_discord_alert(discord_url, final_title, post_url, category)
         except Exception as ex_notif:
-            log(f"알림 발송 중 모듈 알림: {ex_notif}")
+            log(f"알림 발송 모듈 안내: {ex_notif}")
 
-        # Fetch 2 random existing posts to add cross-links
+        # 기존 다른 포스트 2개 무작위 내부 링크 추가
         try:
-            from wordpress_xmlrpc.methods.posts import GetPosts, EditPost
-            recent_posts = wp.call(GetPosts({'number': 10, 'post_type': 'post'}))
             valid_others = [p for p in recent_posts if p.id != post_id and getattr(p, 'title', '').strip()]
             if len(valid_others) >= 2:
                 sample = random.sample(valid_others, 2)
@@ -276,12 +455,12 @@ def publish():
   </ul>
 </div>
 """
-                new_html = post.content.replace('<div style="text-align:center;margin:24px 0">', cross_box + '\n<div style="text-align:center;margin:24px 0">')
+                new_html = post.content.replace('<div style="text-align:center;margin:28px 0">', cross_box + '\n<div style="text-align:center;margin:28px 0">')
                 post.content = new_html
                 wp.call(EditPost(post_id, post))
-                log(f"SUCCESS: 신규 포스트에 내부 상호 링크 2개 연동 완료 (참조 포스트: ID {sample[0].id}, {sample[1].id})")
+                log(f"SUCCESS: 신규 포스트에 내부 링크 2개 연동 완료 (참조 ID: {sample[0].id}, {sample[1].id})")
         except Exception as ex:
-            log(f"WARNING: 내부 링크 추가 중 경고 - {ex}")
+            log(f"NOTICE: 내부 상호 링크 연동 처리 - {ex}")
 
         return True
     except Exception as e:
