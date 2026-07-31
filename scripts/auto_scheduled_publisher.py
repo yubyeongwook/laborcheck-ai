@@ -470,7 +470,13 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 - 공식 기관: <a href="https://www.moel.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">고용노동부 (moel.go.kr)</a> | <a href="https://www.comwel.or.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">근로복지공단 (comwel.or.kr)</a> | <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">국가법령정보센터 (law.go.kr)</a>
 </p>
 
-</div>"""
+</div>
+
+<!-- 💬 블로그 우측 하단 컴팩트 1:1 노무상담요청 플로팅 버튼 -->
+<a href="https://laborcheck-ai.vercel.app/contact" target="_blank" rel="noopener" style="position:fixed;bottom:20px;right:20px;z-index:99999;background:linear-gradient(135deg, #0f172a, #1e293b);color:#ffffff;padding:7px 14px;border-radius:40px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid rgba(56,189,248,0.4);box-shadow:0 6px 18px rgba(0, 0, 0, 0.25);display:inline-flex;align-items:center;gap:5px;font-family:-apple-system,BlinkMacSystemFont,'Pretendard',sans-serif;letter-spacing:-0.02em;">
+  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 6px #38bdf8;"></span>
+  💬 1:1 노무상담요청
+</a>"""
     return html
 
 def verify_quality_checklist(html_content, title):
