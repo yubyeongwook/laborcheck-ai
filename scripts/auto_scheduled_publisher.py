@@ -9,8 +9,6 @@ import collections
 import collections.abc
 collections.Iterable = collections.abc.Iterable
 import xmlrpc.client
-from wordpress_xmlrpc import Client, WordPressPost
-from wordpress_xmlrpc.methods.posts import NewPost, GetPosts, EditPost
 
 # Windows CP949 인코딩 출력 방지
 if hasattr(sys.stdout, 'reconfigure'):
@@ -61,6 +59,58 @@ SERIES_MAP = {
     "근로계약": "근로계약·수습기간 해설",
     "해고분쟁": "해고분쟁 완벽 대응",
     "4대보험": "실업급여·4대보험 실무"
+}
+
+# 카테고리별 애드센스 고품질 FAQ 라이브러리
+CATEGORY_FAQS = {
+    "산재보상": [
+        ("Q1. 회사(사업주)가 산재 처리를 거부하거나 확인서 서명을 안 해주면 어떻게 되나요?",
+         "근로복지공단에 산재 요양급여 신청서 제출 시 사업주 확인서 없이도 '사업주 날인 거부 사유서'를 첨부하면 공단이 직권으로 사실관계를 조사하여 승인 여부를 결정합니다."),
+        ("Q2. 산재 휴업급여 70%는 세금이 공제되나요?",
+         "산업재해보상보험법 제91조에 따라 지급받는 산재 보험금(요양급여, 휴업급여, 장해급여 등)은 비과세 소득으로 소득세 및 4대보험료가 차감되지 않습니다."),
+        ("Q3. 기존 개인 실손보험(실비)과 중복으로 보상받을 수 있나요?",
+         "산재보험 처리 후 본인부담금으로 발생한 의료비에 대해서는 약관에 따라 실손보험 40% 내외의 보상이 가능한 경우가 있으므로 보험사에 확인이 필요합니다.")
+    ],
+    "임금체불": [
+        ("Q1. 회사에서 포괄임금제라며 연장·야간수당을 안 주는데 소급 청구가 가능한가요?",
+         "출퇴근 관리가 가능한 사무직이나 일반 매장 근로자의 포괄임금 약정은 대법원 판례상 무효입니다. 과거 3년 치 실제 일한 시간에 해당하는 수당 차액을 고용노동부 진정을 통해 소급하여 정산받을 수 있습니다."),
+        ("Q2. 최저임금 계산 시 식대나 복리후생비도 포함되나요?",
+         "최저임금법 개정에 따라 매월 현금으로 지급되는 식대 및 복리후생비는 법정 비산입 비율을 초과하는 금액에 한해 최저임금 산입 기본급에 합산됩니다."),
+        ("Q3. 임금체불 신고 후 회사가 돈이 없다고 배째라 나오면 어떻게 하나요?",
+         "고용노동부 체불 임금 등 봉급 확인서를 발급받아 근로복지공단의 '대지급금(구 체당금) 제도'를 활용하면 국가가 사업주 대신 최대 일정 금액까지 체불 임금을 선지급해 줍니다.")
+    ],
+    "휴가·연차": [
+        ("Q1. 입사 1년 미만 연차는 1년이 지나면 모두 소멸하나요?",
+         "입사 1년 미만 동안 매월 발생한 연차(최대 11개)는 입사일로부터 1년이 되는 시점까지 사용하지 않으면 수당 청구권으로 전환되므로 퇴직 또는 1년 도래 시 미사용 수당으로 정산받아야 합니다."),
+        ("Q2. 회사에서 구두로 연차 쓰라고 말한 것도 법적 연차 사용 촉진인가요?",
+         "아니요, 근로기준법 제60조 제7항에 따른 연차 사용 촉진은 반드시 서면으로 기한을 명시하여 개인별로 통보해야만 유효한 사용 촉진으로 인정됩니다."),
+        ("Q3. 5인 미만 사업장에서도 연차유급휴가가 발생하나요?",
+         "현재 근로기준법상 연차유급휴가(제60조) 규정은 상시 5인 이상 사업장에만 법적 의무로 적용됩니다.")
+    ],
+    "근로계약": [
+        ("Q1. 근로계약서를 작성하지 않고 일하면 어떤 처벌을 받나요?",
+         "근로기준법 제17조에 따라 서면 근로계약서를 작성 및 교부하지 않은 사업주는 500만원 이하의 벌금형 대상이 될 수 있습니다."),
+        ("Q2. 수습기간 3개월 동안 무조건 월급의 90%만 줘도 되나요?",
+         "1년 이상 근로계약을 체결한 경우에만 3개월 이내 최저임금 90% 감액이 허용되며, 1년 미만 단기 계약이나 단순 노무직종은 수습기간이라도 100% 최저임금을 지급해야 합니다."),
+        ("Q3. 수습기간 중에는 자유롭게 해고할 수 있나요?",
+         "수습 근로자라 하더라도 해고 시에는 객관적이고 정당한 사유가 존재해야 하며, 5인 이상 사업장은 서면 해고 통지 의무가 동일하게 적용됩니다.")
+    ],
+    "해고분쟁": [
+        ("Q1. 5인 미만 사업장에서 갑자기 해고 통보를 받았는데 예고수당을 받을 수 있나요?",
+         "네, 5인 미만 사업장이라 하더라도 30일 전 해고예고 의무(근로기준법 제26조)는 100% 적용되므로 예고 없이 해고 시 30일분 통상임금을 해고예고수당으로 청구할 수 있습니다."),
+        ("Q2. 회사가 권고사직서를 쓰라고 강요하는데 서명해야 하나요?",
+         "권고사직서에 서명하면 자발적 합의 해지로 간주되어 부당해고 구제신청 및 해고예고수당 청구가 불가능해집니다. 서명을 거부하고 해고 통보 증빙을 보존해야 합니다."),
+        ("Q3. 해고예고수당을 받아도 실업급여를 신청할 수 있나요?",
+         "해고예고수당 청구와 고용보험 실업급여(구직급여) 수급 자격은 별개의 법적 권리이므로 중복하여 혜택을 받으실 수 있습니다.")
+    ],
+    "4대보험": [
+        ("Q1. 주 15시간 미만 초단기 알바도 4대보험에 가입해야 하나요?",
+         "주 15시간 미만 근로자라도 3개월 이상 계속 근무 시 고용보험 가입 대상이 되며, 산재보험은 근무 시간과 상관없이 입사 첫날부터 100% 의무 적용됩니다."),
+        ("Q2. 실업급여 180일 요건에 주말 쉬는 날도 포함되나요?",
+         "무급 휴일(토요일 등)은 제외되며 실제 근무일과 유급 주휴일(일요일 등)만 합산하여 180일을 계산합니다."),
+        ("Q3. 사업주가 4대보험료를 공제하고 공단에 미납한 경우 어떻게 해결하나요?",
+         "급여명세서와 입금 내역을 지참하여 국민건강보험공단 및 근로복지공단에 체불 미납 신고를 접수하면 정산 처리가 진행됩니다.")
+    ]
 }
 
 # 다양한 노무 이슈 및 라이브러리 (오전, 점심, 저녁 슬롯별 주제)
@@ -257,6 +307,17 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
     fact = topic["fact"]
     img_url = topic["img"]
 
+    # 애드센스 고품질 FAQ 추출
+    faqs = CATEGORY_FAQS.get(category, CATEGORY_FAQS["산재보상"])
+    faq_html = ""
+    for q, a in faqs:
+        faq_html += f"""
+<div style="background:#f8fafc;border:1px solid #e2e8f0;padding:16px;border-radius:8px;margin-bottom:12px;">
+<strong style="color:#1e3a8a;font-size:15px;">{q}</strong>
+<p style="margin:8px 0 0 0;color:#334155;font-size:14.5px;line-height:1.7;">{a}</p>
+</div>
+"""
+
     html = f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Pretendard',sans-serif;color:#1a1a1a;line-height:1.95;max-width:780px;margin:0 auto;background:#fff;">
 
 <!-- 시리즈 명찰 헤더 -->
@@ -298,6 +359,10 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 □ 고용노동부 고객상담센터 1350 (국번없이) 전문 상담 활용
 </div>
 
+<!-- VI · 애드센스 고품질 자주 묻는 질문 (FAQ) 섹션 -->
+<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">VI · 자주 묻는 질문 (FAQ) — 현장 실무 Q&A</h2>
+{faq_html}
+
 <!-- ⚡ 노무체크 AI 3초 무료 진단 CTA -->
 <div style="text-align:center;margin:28px 0">
 <a href="{LABORCHECK_AI_URL}" target="_blank" rel="noopener" style="background:#1a7a4a;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(26,122,74,0.3);">
@@ -336,10 +401,11 @@ def verify_quality_checklist(html_content, title):
         "7. 체크리스트 포함": "체크리스트" in text_only,
         "8. 출처 표기 포함": "검증된 출처" in text_only or "출처:" in text_only,
         "9. Unsplash 히어로 이미지": "images.unsplash.com" in text_only,
-        "10. 근로자·사업주 양쪽 입장 반영": "근로자" in text_only and "사업주" in text_only
+        "10. 근로자·사업주 양쪽 입장 반영": "근로자" in text_only and "사업주" in text_only,
+        "11. 애드센스 고품질 FAQ 포함": "자주 묻는 질문" in text_only
     }
     
-    log("=== 발행 전 10가지 품질 자가 체크 결과 ===")
+    log("=== 발행 전 자가 품질 체크 결과 ===")
     all_passed = True
     for k, passed in checks.items():
         status = "PASS" if passed else "FAIL"
@@ -402,7 +468,7 @@ def publish():
 
     html_content = generate_v2_post_html(topic, final_title, series_tag, episode_num)
 
-    # 10가지 자가 품질 체크
+    # 자가 품질 체크
     quality_ok = verify_quality_checklist(html_content, final_title)
     if not quality_ok:
         log("WARNING: 품질 자가 체크 항목 중 일부분 미달. 보정 후 발행 진행.")
