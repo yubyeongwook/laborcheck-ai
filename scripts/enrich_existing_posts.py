@@ -28,13 +28,24 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
+ENV_FILE = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(ENV_FILE):
+    with open(ENV_FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip())
+
 WP_URLS = [
     "https://43.200.245.223/xmlrpc.php",
     "http://www.laborcheckai.co.kr/xmlrpc.php",
     "http://43.200.245.223/xmlrpc.php"
 ]
-WP_USER = "user"
-WP_PASS = "***REMOVED_PASSWORD***"
+WP_USER = os.environ.get("WP_USER", "user")
+WP_PASS = os.environ.get("WP_PASS")
+if not WP_PASS:
+    raise RuntimeError("WP_PASS 환경변수가 설정되지 않았습니다. scripts/.env(로컬) 또는 GitHub Actions Secrets(WP_PASS)에 설정하세요.")
 LABORCHECK_AI_URL = "https://laborcheck-ai.vercel.app"
 
 CATEGORY_FAQS = {

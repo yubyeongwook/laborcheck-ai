@@ -48,7 +48,9 @@ WP_URLS = [
     "http://43.200.245.223/xmlrpc.php"
 ]
 WP_USER = os.environ.get("WP_USER", "user")
-WP_PASS = os.environ.get("WP_PASS", "***REMOVED_PASSWORD***")
+WP_PASS = os.environ.get("WP_PASS")
+if not WP_PASS:
+    raise RuntimeError("WP_PASS 환경변수가 설정되지 않았습니다. scripts/.env(로컬) 또는 GitHub Actions Secrets(WP_PASS)에 설정하세요.")
 LABORCHECK_AI_URL = "https://laborcheck-ai.vercel.app"
 
 # 카테고리별 공식 시리즈명 매핑

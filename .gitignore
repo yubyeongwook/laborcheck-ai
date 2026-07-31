@@ -34,4 +34,6 @@ Thumbs.db
 .agents/
 scratch/
 tmp/
+__pycache__/
+*.pyc
 
