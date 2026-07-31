@@ -472,10 +472,15 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 
 </div>
 
-<!-- 💬 블로그 우측 하단 컴팩트 1:1 노무상담요청 플로팅 버튼 -->
-<a href="https://laborcheck-ai.vercel.app/contact" target="_blank" rel="noopener" style="position:fixed;bottom:20px;right:20px;z-index:99999;background:linear-gradient(135deg, #0f172a, #1e293b);color:#ffffff;padding:7px 14px;border-radius:40px;font-size:12px;font-weight:700;text-decoration:none;border:1px solid rgba(56,189,248,0.4);box-shadow:0 6px 18px rgba(0, 0, 0, 0.25);display:inline-flex;align-items:center;gap:5px;font-family:-apple-system,BlinkMacSystemFont,'Pretendard',sans-serif;letter-spacing:-0.02em;">
-  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 6px #38bdf8;"></span>
-  💬 1:1 노무상담요청
+<!-- 💬 블로그 우측 하단 상담문의 플로팅 버튼 -->
+<style>
+@keyframes lcBounce{{0%,100%{{transform:translateY(0);}}50%{{transform:translateY(-2px);}}}}
+.lc-consult-btn{{position:fixed;bottom:20px;right:20px;z-index:99999;background:linear-gradient(135deg,#6d5ffd,#a78bfa);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;font-weight:700;text-decoration:none;box-shadow:0 6px 18px rgba(109,95,253,0.4);display:inline-flex;align-items:center;gap:6px;font-family:-apple-system,BlinkMacSystemFont,'Pretendard',sans-serif;letter-spacing:-0.01em;transition:transform .15s ease,box-shadow .15s ease;}}
+.lc-consult-btn:hover{{transform:translateY(-2px);box-shadow:0 10px 24px rgba(109,95,253,0.5);}}
+.lc-consult-btn .lc-icon{{display:inline-block;animation:lcBounce 1.6s ease-in-out infinite;}}
+</style>
+<a href="https://laborcheck-ai.vercel.app/contact" target="_blank" rel="noopener" class="lc-consult-btn">
+  <span class="lc-icon">💬</span>상담문의
 </a>"""
     return html
 
