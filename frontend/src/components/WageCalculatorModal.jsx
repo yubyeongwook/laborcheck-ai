@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, X, CheckCircle, Sparkles, MessageSquare } from 'lucide-react';
+import { Calculator, X, CheckCircle, Sparkles, MessageSquare, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const TIME_OPTIONS_24H = (() => {
   const options = [];
