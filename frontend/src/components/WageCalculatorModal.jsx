@@ -163,9 +163,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       computedDailyNetWork = activeDays > 0 ? Math.round((computedWeeklyNetWork / activeDays) * 10) / 10 : 8;
     } else {
       computedActiveDaysCount = weeklyDays;
-      computedWeeklyNetWork = weeklyDays * dailyHours;
+      computedDailyNetWork = Math.max(0, dailyHours - breakHours);
+      computedWeeklyNetWork = weeklyDays * computedDailyNetWork;
       computedWeeklyNightWork = nightHoursWeekly;
-      computedDailyNetWork = dailyHours;
     }
 
     // 💡 근로 형태 및 근로시간에 따른 주휴수당 & 기본급 수식 정밀 판정
@@ -663,7 +663,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 실근로 (시간+5분)</label>
+                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 체류시간 (구속시간)</label>
                     <div style={{ display: 'flex', gap: '0.15rem' }}>
                       <select
                         value={dailyHour}
@@ -687,7 +687,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.2rem' }}>☕ 일일 휴게시간</label>
+                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.2rem' }}>☕ 휴게시간 (자동차감)</label>
                     <select
                       value={breakHours}
                       onChange={(e) => setBreakHours(Number(e.target.value))}
@@ -726,6 +726,11 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       </select>
                     </div>
                   </div>
+                </div>
+              )}
+              {workScheduleType === 'fixed' && (
+                <div style={{ fontSize: '0.7rem', color: '#38bdf8', marginTop: '0.3rem', fontWeight: 700 }}>
+                  💡 실근로 정산 안내: 하루 체류시간({dailyHour}시간 {dailyMin}분) - 휴게시간({breakHours > 0 ? `${breakHours * 60}분` : '0분'}) = <strong>순수 실근로시간({Math.max(0, dailyHour + (dailyMin/60) - breakHours)}시간)</strong>으로 수당이 자동 정확 계산됩니다!
                 </div>
               )}
 
