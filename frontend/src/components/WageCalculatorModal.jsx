@@ -31,7 +31,7 @@ const calculateNightHours = (startStr, endStr) => {
 };
 
 export default function WageCalculatorModal({ isOpen, onClose, calcData, onApplyChanges, isInline = false }) {
-  if (!isOpen) return null;
+  if (!isOpen && !isInline) return null;
 
   // 계산기 로컬 폼 상태
   const [hourlyRate, setHourlyRate] = useState(calcData?.hourlyRate || 10320);
