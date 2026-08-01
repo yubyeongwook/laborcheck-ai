@@ -1,6 +1,13 @@
 {
   "buildCommand": "cd frontend && npm install && npx vite build",
   "outputDirectory": "frontend/dist",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "destination": "https://노무체크ai.com/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
