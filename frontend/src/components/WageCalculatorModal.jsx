@@ -343,6 +343,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     }
 
     return {
+      computedDailyNetWork,
+      computedWeeklyNightWork,
       baseHoursMonthly,
       pureBaseHoursMonthly: displayBaseHoursStr,
       pureBasePay,
@@ -379,6 +381,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       dailyWorkHours: computedDailyNetWork
     };
   };
+
+  if (!isOpen && !isInline) return null;
 
   const calculated = computeSalary();
 
@@ -744,13 +748,13 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     </div>
                   </div>
 
-                  {/* 수동 커스텀 미세 조율용 수치 확인 */}
+                  {/* 시업/종업시간 자동 계산 피드백 라인 */}
                   <div style={{ marginTop: '0.45rem', padding: '0.35rem 0.5rem', background: '#1e293b', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem' }}>
                     <span style={{ color: '#34d399', fontWeight: 800 }}>
-                      ⚡ 자동 정산 실근로: 1일 {dailyHour}시간 {dailyMin}분 (휴게 {breakHours * 60}분 차감)
+                      ⚡ 자동 정산 실근로: 1일 {calculated.computedDailyNetWork}시간 (휴게 {breakHours * 60}분 차감)
                     </span>
-                    <span style={{ color: nightWeeklyHour > 0 || nightWeeklyMin > 0 ? '#38bdf8' : '#94a3b8', fontWeight: 800 }}>
-                      🌙 자동 정산 야간근로: 주당 {nightWeeklyHour}시간 {nightWeeklyMin}분
+                    <span style={{ color: calculated.computedWeeklyNightWork > 0 ? '#38bdf8' : '#94a3b8', fontWeight: 800 }}>
+                      🌙 자동 정산 야간근로: 주당 {calculated.computedWeeklyNightWork}시간
                     </span>
                   </div>
                 </div>
