@@ -46,10 +46,21 @@ export default function PayslipModal({ data = {}, onClose }) {
     employmentInsurance = 19410,
     incomeTax = 32350,
     localIncomeTax = 3230,
-    absenceDeduction = 0,
-    totalDeduction = 238400,
-    netPay = 2118480
+    absenceDeduction: propAbsenceDeduction,
+    totalDeduction: propTotalDeduction,
+    netPay: propNetPay
   } = data;
+
+  // 결근·조퇴 차감 공제 안전 보정 (직접 prop 또는 calculatedResult 내 수치 자동 도출)
+  const calcAbsenceDeduction = propAbsenceDeduction !== undefined 
+    ? propAbsenceDeduction 
+    : (data.calculatedResult?.absenceDeduction || 0);
+
+  // 공제액 계 자동 계산 (4대보험 + 세금 + 결근조퇴공제)
+  const calcTotalDeduction = nationalPension + healthInsurance + longtermCare + employmentInsurance + incomeTax + localIncomeTax + calcAbsenceDeduction;
+
+  // 실수령액 자동 계산 (지급 총액 - 총 공제액)
+  const calcNetPay = totalGrossSalary - calcTotalDeduction;
 
   // 주휴수당 분리 안전 보정 (209시간 이상일 때만 기본 174h, 주휴 35h 정수 표기!)
   const is209Over = (baseHours >= 209);
@@ -267,16 +278,16 @@ export default function PayslipModal({ data = {}, onClose }) {
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>10%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{localIncomeTax.toLocaleString()}</td>
                   </tr>
-                  {absenceDeduction > 0 && (
+                  {calcAbsenceDeduction > 0 && (
                     <tr style={{ background: '#fff1f2' }}>
                       <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', color: '#e11d48', fontWeight: 800 }}>🔻 결근·조퇴 차감 공제</td>
                       <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#e11d48' }}>실제 차감액</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', color: '#e11d48', fontWeight: 800 }}>- {absenceDeduction.toLocaleString()}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', color: '#e11d48', fontWeight: 800 }}>- {calcAbsenceDeduction.toLocaleString()}</td>
                     </tr>
                   )}
                   <tr style={{ background: '#fee2e2', fontWeight: 800 }}>
                     <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>공제액 계</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', textAlign: 'right', color: '#b91c1c' }}>{totalDeduction.toLocaleString()} 원</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', textAlign: 'right', color: '#b91c1c' }}>{calcTotalDeduction.toLocaleString()} 원</td>
                   </tr>
                 </tbody>
               </table>
@@ -291,7 +302,7 @@ export default function PayslipModal({ data = {}, onClose }) {
           }}>
             <span style={{ fontSize: '1.2rem', fontWeight: 700 }}>💰 실 수령액 (차인지급액)</span>
             <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#38bdf8' }}>
-              {netPay.toLocaleString()} 원
+              {calcNetPay.toLocaleString()} 원
             </span>
           </div>
 
