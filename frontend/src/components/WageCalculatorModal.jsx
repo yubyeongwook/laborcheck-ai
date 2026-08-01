@@ -37,6 +37,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [hourlyRate, setHourlyRate] = useState(calcData?.hourlyRate || 10320);
   const [is5Over, setIs5Over] = useState(calcData?.is5Over ?? true);
   
+  // 급여 지급 방식 선택 ('monthly': 월급제, 'weekly': 주급제, 'daily': 일급제, 'hourly': 시급제)
+  const [payType, setPayType] = useState('monthly');
+
   // 근무 형태 선택 ('fixed': 고정 근무, 'flexible': 요일별 변동 근무)
   const [workScheduleType, setWorkScheduleType] = useState('fixed');
 

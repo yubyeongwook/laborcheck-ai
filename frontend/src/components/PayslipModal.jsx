@@ -143,10 +143,13 @@ export default function PayslipModal({ data = {}, onClose }) {
         {/* 📄 정식 임금명세서 문서 서식 영역 */}
         <div id="print-area">
           <div style={{ textAlign: 'center', borderBottom: '2px solid #0f172a', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 0.5rem 0', letterSpacing: '4px' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: '0 0 0.25rem 0', letterSpacing: '4px' }}>
               임 금 명 세 서
             </h2>
-            <p style={{ fontSize: '0.9rem', color: '#64748b', margin: 0 }}>
+            <div style={{ fontSize: '0.85rem', color: '#0284c7', fontWeight: 800, marginBottom: '0.4rem' }}>
+              [2026년 법정 근로기준법 제48조 제2항 적용 전자 급여명세서]
+            </div>
+            <p style={{ fontSize: '0.88rem', color: '#64748b', margin: 0 }}>
               지급대상기간: {payPeriod} | 급여지급일: {payDate}
             </p>
           </div>
