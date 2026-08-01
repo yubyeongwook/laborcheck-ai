@@ -1529,13 +1529,20 @@ app.get('/', (req, res) => {
   `);
 });
 
-// 모든 기타 GET 요청은 React SPA index.html 또는 fallback 반환
+// 모든 기타 GET 요청은 React SPA index.html 서빙 또는 안전 리다이렉트
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API Not Found' });
+  }
   const indexPath = path.join(frontendDistPath, 'index.html');
   if (require('fs').existsSync(indexPath)) {
     return res.sendFile(indexPath);
   }
-  res.status(404).json({ error: 'Not Found' });
+  const altIndexPath = path.join(__dirname, 'dist', 'index.html');
+  if (require('fs').existsSync(altIndexPath)) {
+    return res.sendFile(altIndexPath);
+  }
+  return res.redirect('/');
 });
 
 if (require.main === module && !process.env.VERCEL) {
