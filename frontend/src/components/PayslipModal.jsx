@@ -17,6 +17,10 @@ export default function PayslipModal({ data = {}, onClose }) {
     payPeriod = `${currentYear}년 ${currentMonth}월 (01일~말일)`,
     payDate = `${currentYear}년 ${currentMonth}월 25일`,
     companyName = '노무체크 검증 사업장',
+    pureBaseHoursMonthly,
+    pureBasePay,
+    weeklyHolidayHoursMonthly,
+    weeklyHolidayPay,
     hourlyRate = 10320,
     baseHours = 209,
     baseSalary = 2156880,
@@ -45,6 +49,12 @@ export default function PayslipModal({ data = {}, onClose }) {
     totalDeduction = 238400,
     netPay = 2118480
   } = data;
+
+  // 주휴수당 분리 안전 보정
+  const calcWeeklyHolidayHours = weeklyHolidayHoursMonthly !== undefined ? weeklyHolidayHoursMonthly : 34.8;
+  const calcWeeklyHolidayPay = weeklyHolidayPay !== undefined ? weeklyHolidayPay : Math.round(calcWeeklyHolidayHours * (hourlyRate || 10320));
+  const calcPureBaseHours = pureBaseHoursMonthly !== undefined ? pureBaseHoursMonthly : Number((baseHours - calcWeeklyHolidayHours).toFixed(1));
+  const calcPureBasePay = pureBasePay !== undefined ? pureBasePay : (baseSalary - calcWeeklyHolidayPay);
 
   // 💡 금액은 존재하나 시간값이 0인 경우 통상시급 기준 산출시간 안전 보정 (Fallback)
   const displayHolidayHours = holidayHours > 0 
@@ -140,9 +150,14 @@ export default function PayslipModal({ data = {}, onClose }) {
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>기본급</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{baseHours}h</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{baseSalary.toLocaleString()}</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 600 }}>기본급 (순수 소정)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#64748b' }}>{calcPureBaseHours}h</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 700 }}>{calcPureBasePay.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 700, color: '#047857', background: '#ecfdf5' }}>주휴수당 (유급주휴)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#047857', fontWeight: 700, background: '#ecfdf5' }}>{calcWeeklyHolidayHours}h</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 800, color: '#047857', background: '#ecfdf5' }}>{calcWeeklyHolidayPay.toLocaleString()}</td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>연장근로수당 (1.5배)</td>

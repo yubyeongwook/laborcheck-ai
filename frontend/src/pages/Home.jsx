@@ -191,18 +191,22 @@ export default function Home() {
   // 💬 1:1 상담 문의 모달 팝업 상태
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
-  // 💡 명시적 링크 접속 시 최상단(0,0) 이동 및 모달 자동 활성화
+  // 💡 메인 접속 시 원래 화면으로 돌려놓고, 파라미터 또는 아래 클릭 시 팝업 렌더링
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     const searchParams = new URLSearchParams(window.location.search);
-    const hasCalcParam = searchParams.has('calc') || searchParams.has('mode') || searchParams.has('tool') || window.location.hash === '#calculator';
-    const hasContactParam = searchParams.has('contact') || searchParams.has('consult') || window.location.pathname.includes('/contact');
+    const hasCalcParam = searchParams.has('calc');
+    const hasContactParam = searchParams.has('contact');
     
     if (hasCalcParam) {
       setIsWageCalcOpen(true);
+    } else {
+      setIsWageCalcOpen(false);
     }
     if (hasContactParam) {
       setIsContactModalOpen(true);
+    } else {
+      setIsContactModalOpen(false);
     }
   }, []);
 
