@@ -232,13 +232,13 @@ export default function PayslipModal({ data = {}, onClose }) {
             {/* 공제 내역 */}
             <div>
               <h4 style={{ margin: '0 0 0.5rem 0', background: '#fee2e2', color: '#b91c1c', padding: '0.5rem', textAlign: 'center', fontSize: '0.95rem', fontWeight: 800 }}>
-                공 제 내 역 (2026년 법정 4대보험 요율)
+                공 제 내 역 (4대보험 & 세금)
               </h4>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ background: '#f1f5f9' }}>
                     <th style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>공제 항목</th>
-                    <th style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>2026 요율/기준</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>요율/기준</th>
                     <th style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>금액 (원)</th>
                   </tr>
                 </thead>
@@ -250,22 +250,22 @@ export default function PayslipModal({ data = {}, onClose }) {
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>국민연금 (근로자 부담)</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>4.5% (2026)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>4.75%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{nationalPension.toLocaleString()}</td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>건강보험 (근로자 부담)</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>3.545% (2026)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>3.595%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{healthInsurance.toLocaleString()}</td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>장기요양보험</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>12.95% (2026)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>13.14%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{longtermCare.toLocaleString()}</td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>고용보험 (근로자 부담)</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>0.9% (2026)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>0.9%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{employmentInsurance.toLocaleString()}</td>
                   </tr>
                   <tr>

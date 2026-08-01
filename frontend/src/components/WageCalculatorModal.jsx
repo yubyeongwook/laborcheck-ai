@@ -188,10 +188,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       ? Number(pensionBaseInput)
       : taxableTotal;
 
-    // 2026 4대보험 근로자 부담 요율 (국민연금 4.5%, 건강보험 3.545%, 장기요양 12.95%, 고용 0.9%)
-    const nationalPension = Math.round(pensionBase * 0.045 / 10) * 10;
-    const healthInsurance = Math.round(taxableTotal * 0.03545 / 10) * 10;
-    const longtermCare = Math.round(healthInsurance * 0.1295 / 10) * 10;
+    // 사장님 지정 2026 4대보험 요율 (국민연금 4.75%, 건강보험 3.595%, 장기요양 13.14%, 고용 0.9%)
+    const nationalPension = Math.round(pensionBase * 0.0475 / 10) * 10;
+    const healthInsurance = Math.round(taxableTotal * 0.03595 / 10) * 10;
+    const longtermCare = Math.round(healthInsurance * 0.1314 / 10) * 10;
     const employmentInsurance = Math.round(taxableTotal * 0.009 / 10) * 10;
     const incomeTax = Math.round(totalGross * 0.015 / 10) * 10;
     const localIncomeTax = Math.round(incomeTax * 0.1 / 10) * 10;
