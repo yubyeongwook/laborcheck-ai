@@ -799,95 +799,44 @@ export default function Home() {
       />
 
       {/* 👑 노무비서실장 메인 히어로 섹션 */}
-      <div style={{
-        textAlign: 'center',
-        padding: '3.5rem 1.5rem 3rem',
-        borderRadius: '24px',
-        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.98))',
-        border: '1px solid rgba(56, 189, 248, 0.25)',
-        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
-        marginBottom: '3rem',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-          padding: '0.4rem 1.2rem', borderRadius: '50px',
-          background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)',
-          color: '#38bdf8', fontWeight: 700, fontSize: '0.9rem', marginBottom: '1.25rem'
-        }}>
+      <div className="hero-section">
+        <div className="hero-badge">
           <Crown size={18} color="#fbbf24" /> AI 진단 리포트 · 서류 자동생성 SaaS
         </div>
 
-        <h1 style={{
-          fontSize: '2.5rem', fontWeight: 900, color: '#f8fafc',
-          lineHeight: 1.3, marginBottom: '1rem', wordBreak: 'keep-all'
-        }}>
-          우리 회사 근로계약서·급여명세서, <span style={{ color: '#38bdf8' }}>과태료 대상일까?</span>
+        <h1 className="hero-title">
+          우리 회사 근로계약서·급여명세서, <span className="hero-title-accent">과태료 대상일까?</span>
         </h1>
 
-        <p style={{
-          fontSize: '1.15rem', color: '#94a3b8', maxWidth: '750px', margin: '0 auto 2.5rem',
-          lineHeight: 1.6, wordBreak: 'keep-all'
-        }}>
+        <p className="hero-subtitle">
           노무체크 AI가 <strong style={{ color: '#38bdf8' }}>10초 만에 법정 과태료 및 임금 체불 리스크를 정밀 진단</strong>해 드립니다. <br />
           진단 후 서류 자동 생성, 법정의무교육 이수 관리, 검증된 노무사 정액제 배너 연결까지 한 번에 이용하세요.
         </p>
 
         {/* 🔍 노무비서실장 1:1 대화 시작 지휘창 */}
-        <form onSubmit={handleFormSubmit} style={{ maxWidth: '680px', margin: '0 auto 1.5rem', position: 'relative' }}>
-          <div style={{
-            position: 'relative', borderRadius: '18px', padding: '3px',
-            background: 'linear-gradient(135deg, #6366f1, #38bdf8, #f59e0b)',
-            boxShadow: '0 10px 30px rgba(56, 189, 248, 0.3)'
-          }}>
-            <Search size={22} color="#38bdf8" style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', zIndex: 2 }} />
+        <form onSubmit={handleFormSubmit} className="hero-search-wrap">
+          <div className="hero-search-gradient">
+            <Search size={22} color="#38bdf8" className="hero-search-icon" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="예: 월급계산해줘 / 산재 진단서 분석해줘 / 퇴직금 계산해줘..."
-              style={{
-                width: '100%', boxSizing: 'border-box', padding: '1.15rem 8.5rem 1.15rem 3.2rem',
-                fontSize: '1.05rem', borderRadius: '15px', border: 'none', outline: 'none',
-                background: '#0f172a', color: '#f8fafc', fontWeight: 500, fontFamily: 'inherit'
-              }}
+              className="hero-search-input"
             />
-            <button
-              type="submit"
-              style={{
-                position: 'absolute', right: '0.4rem', top: '50%', transform: 'translateY(-50%)',
-                padding: '0.75rem 1.4rem', borderRadius: '12px', border: 'none',
-                background: 'linear-gradient(135deg, #38bdf8, #6366f1)', color: '#ffffff',
-                fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '0.4rem',
-                boxShadow: '0 4px 12px rgba(56, 189, 248, 0.4)'
-              }}
-            >
+            <button type="submit" className="hero-search-btn">
               실장과 대화 <MessageSquare size={16} />
             </button>
           </div>
         </form>
 
         {/* 💡 빠른 질문 칩 (Quick Smart Chips) */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.6rem', maxWidth: '850px', margin: '0 auto' }}>
+        <div className="hero-chips">
           {SMART_QUICK_PROMPTS.map((promptText, idx) => (
             <button
               key={idx}
               onClick={() => startChatWithSecretary(promptText)}
-              style={{
-                background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(56, 189, 248, 0.2)',
-                borderRadius: '50px', padding: '0.5rem 1rem', color: '#cbd5e1', fontSize: '0.85rem',
-                cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#38bdf8';
-                e.currentTarget.style.color = '#38bdf8';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.2)';
-                e.currentTarget.style.color = '#cbd5e1';
-              }}
+              className="hero-chip"
             >
               {promptText}
             </button>
