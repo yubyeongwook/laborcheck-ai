@@ -40,6 +40,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   // 급여 지급 방식 선택 ('monthly': 월급제, 'weekly': 주급제, 'daily': 일급제, 'hourly': 시급제)
   const [payType, setPayType] = useState('monthly');
   const [isWeekly15Over, setIsWeekly15Over] = useState(true); // 주 15시간 이상 근로 여부 (체크박스)
+  // 근무 형태 선택 ('fixed': 고정 근무, 'shift': 퐁당퐁당 격일제, 'flexible': 요일별 변동 근무)
+  const [workScheduleType, setWorkScheduleType] = useState('fixed');
 
   // 💡 시업시간(출근) & 종업시간(퇴근) 기반 야간/실근로 100% 자동 계산 state
   const [fixedStartTime, setFixedStartTime] = useState('09:00');
