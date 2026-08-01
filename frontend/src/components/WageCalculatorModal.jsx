@@ -206,23 +206,23 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const netNightHoursStr = (finalMonthlyNightHours / (is5Over ? 0.5 : 1.0)).toFixed(2);
     const netHolidayHoursStr = (holidayDaysYear * computedDailyNetWork / 12).toFixed(2);
 
-    // 기본급 & 주휴수당 시간 산출 (사장님 지침 100% 반영)
-    // 1) 합산 209시간 이상 (주 40시간 이상 통상 근로자): 기본급 174h, 주휴수당 35h 정수 표기!
-    // 2) 합산 209시간 미만 (단시간/알바/시급/일급 근로자): 근로기준법 법정 정밀 산식 (소수점 2자리 .xx h)
+    // 기본급 & 주휴수당 시간 산출 (사장님 지침 100% 반영 철통 락)
+    // 주 5일 7~8시간 이상 통상 근로자: 무조건 기본급 174h, 주휴수당 35h 정수 표기!
+    // 35시간 미만 초단시간/알바 근로자: 근로기준법 소수점 2자리 계산
     let displayBaseHours = 174;
     let displayWeeklyHolidayHours = 35;
-    let pureBasePay = 0;
-    let weeklyHolidayPay = 0;
+    let pureBasePay = Math.round(174 * hourlyRate);
+    let weeklyHolidayPay = actualBasePay - pureBasePay;
 
-    const totalMonthlyWorkAndHoliday = baseHoursMonthly; // 209h
+    const isNormalStandardWorker = (workScheduleType === 'fixed' && weeklyDays >= 5 && dailyHours >= 7) || (baseHoursMonthly >= 209) || (computedWeeklyNetWork >= 35);
 
-    if (totalMonthlyWorkAndHoliday >= 209 && computedWeeklyNetWork >= 40) {
+    if (isNormalStandardWorker) {
       displayBaseHours = 174;
       displayWeeklyHolidayHours = 35;
       pureBasePay = Math.round(174 * hourlyRate);
       weeklyHolidayPay = actualBasePay - pureBasePay;
     } else {
-      // 209시간 미만: 근로기준법 기준 소수점 2자리 정밀 계산
+      // 35시간 미만 초단시간/알바 근로자: 근로기준법 소수점 2자리 정밀 계산
       const calcWeeklyHolidayHours = (computedWeeklyNetWork >= 15) ? Number(((computedWeeklyNetWork / 40) * 8 * 4.3452).toFixed(2)) : 0;
       const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.3452).toFixed(2));
       const calcPureBaseHours = Number(Math.max(0, calcTotalMonthlyHours - calcWeeklyHolidayHours).toFixed(2));
