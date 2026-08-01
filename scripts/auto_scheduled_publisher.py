@@ -124,7 +124,7 @@ HIGH_TRAFFIC_TOPICS = [
     {
         "slot": "morning",
         "category": "산재보상",
-        "base_title": "출퇴근길 교통사고 및 도보 재해 산재 승인 기준과 70% 휴업급여 신청 절차",
+        "base_title": "출퇴근길 교통사고·도보 재해 산재 승인 기준과 70% 휴업급여 신청 실무 절차",
         "img": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80",
         "law": "산업재해보상보험법 제37조 제1항 제3호",
         "fact": "대중교통 이용뿐만 아니라 자차 및 도보 출퇴근 중 발생한 사고도 통상적인 경로라면 업무상 재해로 인정받을 수 있습니다.",
@@ -143,7 +143,7 @@ HIGH_TRAFFIC_TOPICS = [
     {
         "slot": "evening",
         "category": "산재보상",
-        "base_title": "뇌심혈관계 질환 과로 산재 승인과 발병 전 12주 근로시간 입증법",
+        "base_title": "뇌심혈관계 질환 과로 산재 승인과 발병 전 12주 근로시간 정밀 입증법",
         "img": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80",
         "law": "산업재해보상보험법 제37조 제1항 제2호",
         "fact": "발병 전 12주간 주 평균 60시간 이상 근무하였거나 4주간 주 64시간을 초과한 경우 업무와 질병 간 연관성이 강하게 추정됩니다.",
@@ -164,7 +164,7 @@ HIGH_TRAFFIC_TOPICS = [
     {
         "slot": "morning",
         "category": "휴가·연차",
-        "base_title": "입사 1년 미만 신입사원 연차 발생 조건과 미사용 연차수당 정밀 산정법",
+        "base_title": "입사 1년 미만 신입사원 연차 발생 조건과 미사용 연차수당 정밀 산정 가이드",
         "img": "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1200&q=80",
         "law": "근로기준법 제60조 제2항",
         "fact": "1년 미만 근로자는 1개월 개근 시 1일씩 유급휴가가 발생하여 입사 후 1년간 최대 11개의 연차가 부여됩니다.",
@@ -206,7 +206,7 @@ HIGH_TRAFFIC_TOPICS = [
     {
         "slot": "noon",
         "category": "근로계약",
-        "base_title": "포괄임금제 무효 요건과 수습기간 3개월 최저임금 90% 감액의 정당한 적용 한계",
+        "base_title": "포괄임금제 무효 요건과 수습기간 3개월 최저임금 90% 감액의 정당한 적용 범위",
         "img": "https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80",
         "law": "최저임금법 제5조 제2항 및 근로기준법 제17조",
         "fact": "출퇴근 관리가 가능한 사무직의 포괄임금 약정은 법적으로 무효가 될 수 있으며, 1년 미만 계약직은 수습 감액이 금지됩니다.",
@@ -227,7 +227,7 @@ HIGH_TRAFFIC_TOPICS = [
     {
         "slot": "evening",
         "category": "해고분쟁",
-        "base_title": "5인 미만 사업장 부당해고 적용 한계와 30일 해고예고수당 청구 조건",
+        "base_title": "5인 미만 사업장 부당해고 적용 한계와 30일 해고예고수당 정산 실무 수칙",
         "img": "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1200&q=80",
         "law": "근로기준법 제23조 및 제26조",
         "fact": "5인 미만 사업장은 부당해고 구제신청 대상은 아니지만, 30일 전 해고예고 의무는 100% 동일하게 적용됩니다.",
@@ -248,7 +248,7 @@ HIGH_TRAFFIC_TOPICS = [
     {
         "slot": "evening",
         "category": "4대보험",
-        "base_title": "실업급여 수급자격 피보험단위기간 180일 계산법과 자진퇴사 예외 인정 사유",
+        "base_title": "실업급여 수급자격 피보험단위기간 180일 계산법과 정당한 이직 사유 구제 가이드",
         "img": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
         "law": "고용보험법 제40조 및 제58조",
         "fact": "퇴직 전 18개월 동안 피보험단위기간이 180일 이상이어야 하며, 자진퇴사이더라도 법정 예외 사유에 해당하면 수급이 가능합니다.",
