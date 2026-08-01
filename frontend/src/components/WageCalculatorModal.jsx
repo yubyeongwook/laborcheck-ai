@@ -39,6 +39,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   
   // 급여 지급 방식 선택 ('monthly': 월급제, 'weekly': 주급제, 'daily': 일급제, 'hourly': 시급제)
   const [payType, setPayType] = useState('monthly');
+  const [isWeekly15Over, setIsWeekly15Over] = useState(true); // 주 15시간 이상 근로 여부 (체크박스)
 
   // 근무 형태 선택 ('fixed': 고정 근무, 'flexible': 요일별 변동 근무)
   const [workScheduleType, setWorkScheduleType] = useState('fixed');
@@ -201,7 +202,11 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       monthlyOvertimePay = 131430;
       finalMonthlyNightHours = 6.52; // 13.04h × 0.5
       nightAllowance = 134570;
-      holidayPayMonthly = 206400;
+      holidayPayMonthly = isWeekly15Over ? 206400 : 0;
+    }
+
+    if (!isWeekly15Over) {
+      holidayPayMonthly = 0;
     }
 
     const subTotalGross = actualBasePay + monthlyOvertimePay + nightAllowance + holidayPayMonthly + annualLeaveMonthlyPay;
@@ -371,6 +376,22 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
           <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '14px', border: '1px solid #334155' }}>
             <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.85rem' }}>
               ⏱️ 1. 근무 조건 및 수당 파라미터 조율
+            </div>
+
+            {/* 시급제/주급제/일급제 선택 시 주 15시간 이상 여부 체크박스 */}
+            <div style={{ background: '#0f172a', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '-0.35rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.78rem', color: '#38bdf8', fontWeight: 800 }}>
+                <input
+                  type="checkbox"
+                  checked={isWeekly15Over}
+                  onChange={(e) => setIsWeekly15Over(e.target.checked)}
+                  style={{ width: '16px', height: '16px', accentColor: '#38bdf8', cursor: 'pointer' }}
+                />
+                <span>☑️ 주 15시간 이상 근로자 (주휴수당 지급 대상)</span>
+              </label>
+              <span style={{ fontSize: '0.7rem', color: isWeekly15Over ? '#34d399' : '#fb923c', fontWeight: 700 }}>
+                {isWeekly15Over ? '주휴수당 정상 포함' : '주 15h 미만 (주휴수당 0원)'}
+              </span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
