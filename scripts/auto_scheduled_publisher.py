@@ -394,8 +394,16 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
     category = topic["category"]
     law = topic["law"]
     fact = topic["fact"]
-    # 매 발행마다 다른 이미지 랜덤 선택 (topic["img"]는 fallback)
-    img_url = pick_random_image(category, exclude_url=topic.get("img"))
+    # 소제목 특수문자 (I ·, II ·, III ·, IV · 등) 제거 정제
+    def clean_title(t):
+        for prefix in ["I · ", "II · ", "III · ", "IV · ", "V · ", "VI · ", "I. ", "II. ", "III. ", "IV. "]:
+            t = t.replace(prefix, "")
+        return t.strip()
+
+    clean_h1 = clean_title(topic['h1'])
+    clean_h2 = clean_title(topic['h2'])
+    clean_h3 = clean_title(topic['h3'])
+    clean_h4 = clean_title(topic['h4'])
 
     # 애드센스 고품질 FAQ 추출
     faqs = CATEGORY_FAQS.get(category, CATEGORY_FAQS["산재보상"])
@@ -412,45 +420,46 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 
 <!-- 시리즈 명찰 헤더 -->
 <div style="background:#1a3a6b;color:#ffffff;padding:8px 14px;border-radius:4px;font-size:13px;font-weight:700;display:inline-block;margin-bottom:12px;">
-📌 {series_tag} #{episode_num}
+[{series_tag}]
 </div>
 
-<!-- 오늘의 핵심 3가지 박스 -->
+<!-- 오늘의 핵심 요약 박스 -->
 <div style="background:#f0fff5;border-left:4px solid #1a7a4a;padding:16px;margin:16px 0;border-radius:0 6px 6px 0">
-<strong style="color:#1a7a4a">오늘의 핵심 3가지 Summary</strong><br>
-1. 핵심 팩트: {topic['summary_1']}<br>
-2. 근거 법령: {topic['summary_2']}<br>
-3. 실전 활용: {topic['summary_3']}
+<strong style="color:#1a7a4a;font-size:15px;">핵심 요약</strong><br>
+1. {topic['summary_1']}<br>
+2. {topic['summary_2']}<br>
+3. {topic['summary_3']}
 </div>
 
 <!-- 히어로 이미지 -->
 <img src="{img_url}" alt="{final_title}" style="width:100%;border-radius:8px;margin:16px 0;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
 
-<!-- H2 소제목 I ~ V -->
-<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">{topic['h1']}</h2>
-<p style="background:#f8f9fa;padding:14px;border-radius:6px;border-left:3px solid #1a3a6b;">💡 <strong>어려운 법 조문 쉽게 풀이</strong>: {topic['p1']}</p>
+<!-- H2 소제목 1 ~ 6 -->
+<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">1. {clean_h1}</h2>
+<p style="background:#f8f9fa;padding:14px;border-radius:6px;border-left:3px solid #1a3a6b;"><strong>법 조문 쉬운 풀이</strong>: {topic['p1']}</p>
 
-<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">{topic['h2']}</h2>
+<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">2. {clean_h2}</h2>
 <p>{topic['p2']}</p>
 
-<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">{topic['h3']}</h2>
+<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">3. {clean_h3}</h2>
 <p>{topic['p3']}</p>
 
-<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">{topic['h4']}</h2>
+<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">4. {clean_h4}</h2>
 <p>{topic['p4']}</p>
 
-<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">V · 지금 당장 할 것 — 실전 체크리스트</h2>
+<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">5. 실전 점검 체크리스트</h2>
 
 <div style="background:#f0fff5;border-left:4px solid #1a7a4a;padding:16px;margin:16px 0">
 <strong style="color:#1a7a4a">현장 점검 필수 수칙</strong><br>
-□ {law} 관련 근로계약서, 임금명세서, 출퇴근 기록 보관 확인<br>
-□ 고용노동부 공식사이트(<a href="https://www.moel.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">moel.go.kr</a>) 또는 근로복지공단(<a href="https://www.comwel.or.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">comwel.or.kr</a>) 관련 양식 확인<br>
-□ 노무체크 AI 무료 3초 자가진단 리포트 검증<br>
-□ 고용노동부 고객상담센터 1350 (국번없이) 전문 상담 활용
+- {law} 관련 근로계약서, 임금명세서, 출퇴근 기록 보관 확인<br>
+- 고용노동부 공식사이트(<a href="https://www.moel.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">moel.go.kr</a>) 또는 근로복지공단(<a href="https://www.comwel.or.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">comwel.or.kr</a>) 관련 양식 확인<br>
+- 노무체크 AI 무료 자가진단 리포트 검증<br>
+- 고용노동부 고객상담센터 1350 (국번없이) 전문 상담 활용
 </div>
 
-<!-- VI · 애드센스 고품질 자주 묻는 질문 (FAQ) 섹션 -->
-<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">VI · 자주 묻는 질문 (FAQ) — 현장 실무 Q&A</h2>
+<!-- 자주 묻는 질문 (FAQ) 섹션 -->
+<h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">6. 자주 묻는 질문 (FAQ)</h2>
+
 {faq_html}
 
 <!-- ⚡ 노무체크 AI 3초 무료 진단 CTA -->
