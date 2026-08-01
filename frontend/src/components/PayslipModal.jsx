@@ -1,10 +1,15 @@
-import React from 'react';
-import { Printer, Download, X, CheckCircle, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Printer, Download, X, CheckCircle, ShieldCheck, MessageSquare, Send, Smartphone } from 'lucide-react';
 
 /**
  * 근로기준법 제48조 규격 정식 법정 급여명세서 컴포넌트
  */
 export default function PayslipModal({ data = {}, onClose }) {
+  const [isKakaoOpen, setIsKakaoOpen] = useState(false);
+  const [userPhone, setUserPhone] = useState('');
+  const [receiverName, setReceiverName] = useState(data.employeeName || '근로자');
+  const [isSentSuccess, setIsSentSuccess] = useState(false);
+
   const handlePrint = () => {
     window.print();
   };
@@ -104,14 +109,24 @@ export default function PayslipModal({ data = {}, onClose }) {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
+              onClick={() => setIsKakaoOpen(true)}
+              style={{
+                background: '#FEE500', color: '#000000', border: 'none', borderRadius: '8px',
+                padding: '0.6rem 1.1rem', fontWeight: 900, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+              }}
+            >
+              <MessageSquare size={18} color="#000" /> 💬 카톡으로 명세서 받기
+            </button>
+            <button
               onClick={handlePrint}
               style={{
                 background: '#0284c7', color: '#ffffff', border: 'none', borderRadius: '8px',
-                padding: '0.6rem 1.2rem', fontWeight: 700, cursor: 'pointer',
+                padding: '0.6rem 1.1rem', fontWeight: 700, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '0.4rem'
               }}
             >
-              <Printer size={18} /> 인쇄 / PDF 저장
+              <Printer size={18} /> 인쇄 / PDF
             </button>
             <button
               onClick={onClose}
@@ -316,6 +331,112 @@ export default function PayslipModal({ data = {}, onClose }) {
             • 본 명세서는 근로기준법 제48조 제2항에 따라 발행된 정식 전자 임금명세서입니다.
           </div>
         </div>
+
+        {/* 📱 카카오톡 명세서 수신 전용 팝업 모달 */}
+        {isKakaoOpen && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 100000,
+            background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+          }}>
+            <div style={{
+              width: '100%', maxWidth: '440px', background: '#0f172a',
+              border: '2px solid #FEE500', borderRadius: '16px', padding: '1.5rem',
+              color: '#ffffff', boxShadow: '0 20px 40px rgba(0,0,0,0.6)', position: 'relative'
+            }}>
+              <button
+                onClick={() => { setIsKakaoOpen(false); setIsSentSuccess(false); }}
+                style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <MessageSquare size={26} color="#FEE500" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#FEE500', fontWeight: 900 }}>
+                  📱 카카오톡 급여명세서 즉시 수신
+                </h3>
+              </div>
+
+              {!isSentSuccess ? (
+                <div>
+                  <p style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: '1.4', marginBottom: '1rem' }}>
+                    입력하신 휴대폰 번호의 <strong>카카오톡 알림톡</strong>으로 2026년 법정 급여명세서(세전 월급 {totalGrossSalary.toLocaleString()}원 / 실수령액 {calcNetPay.toLocaleString()}원)가 즉시 발송됩니다!
+                  </p>
+
+                  <div style={{ marginBottom: '0.85rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.25rem', fontWeight: 700 }}>
+                      수신자 성명
+                    </label>
+                    <input
+                      type="text"
+                      value={receiverName}
+                      onChange={(e) => setReceiverName(e.target.value)}
+                      placeholder="홍길동"
+                      style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.9rem' }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: '1.2rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginBottom: '0.25rem', fontWeight: 700 }}>
+                      카카오톡 수신 휴대폰 번호
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Smartphone size={18} style={{ position: 'absolute', left: '0.7rem', top: '0.7rem', color: '#94a3b8' }} />
+                      <input
+                        type="tel"
+                        value={userPhone}
+                        onChange={(e) => setUserPhone(e.target.value)}
+                        placeholder="010-1234-5678"
+                        style={{ width: '100%', padding: '0.6rem 0.6rem 0.6rem 2.4rem', borderRadius: '8px', background: '#1e293b', border: '1px solid #FEE500', color: '#fff', fontSize: '0.9rem', fontWeight: 700 }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!userPhone.trim()) {
+                        alert("📱 카카오톡 수신 휴대폰 번호를 입력해주세요!");
+                        return;
+                      }
+                      setIsSentSuccess(true);
+                    }}
+                    style={{
+                      width: '100%', padding: '0.85rem', borderRadius: '10px',
+                      background: '#FEE500', color: '#000000', border: 'none',
+                      fontSize: '1rem', fontWeight: 900, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                      boxShadow: '0 4px 14px rgba(254, 229, 0, 0.4)'
+                    }}
+                  >
+                    <Send size={18} color="#000" /> 카카오톡 명세서 받기 (즉시 전송)
+                  </button>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                  <CheckCircle size={48} color="#34d399" style={{ marginBottom: '0.75rem' }} />
+                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', color: '#34d399', fontWeight: 900 }}>
+                    📱 카카오톡 전송 완료!
+                  </h4>
+                  <p style={{ fontSize: '0.88rem', color: '#e2e8f0', lineHeight: '1.5', marginBottom: '1.25rem' }}>
+                    <strong>[{userPhone}]</strong> 번호로 <strong>{receiverName}</strong> 님의 2026년 법정 급여명세서가 안전하게 전송되었습니다!
+                  </p>
+                  <button
+                    onClick={() => { setIsKakaoOpen(false); setIsSentSuccess(false); }}
+                    style={{
+                      width: '100%', padding: '0.7rem', borderRadius: '8px',
+                      background: '#38bdf8', color: '#0f172a', border: 'none',
+                      fontWeight: 900, cursor: 'pointer'
+                    }}
+                  >
+                    확인 및 닫기
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

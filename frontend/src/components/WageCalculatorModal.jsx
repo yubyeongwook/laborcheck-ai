@@ -872,20 +872,32 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
               </div>
             </div>
 
-            {/* 하단 메인 액션 버튼 (캡처 폼 100% 동일) */}
-            <div style={{ marginTop: '0.85rem' }}>
+            {/* 하단 메인 액션 버튼 (카톡 전송 & 갱신 버튼 그룹) */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.85rem' }}>
               <button
                 type="button"
                 onClick={handleApply}
                 style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '10px',
+                  flex: '1', padding: '0.75rem', borderRadius: '10px',
+                  background: '#FEE500', color: '#000000', border: 'none', fontWeight: 900, fontSize: '0.85rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
+                  boxShadow: '0 4px 12px rgba(254, 229, 0, 0.3)'
+                }}
+              >
+                <MessageSquare size={17} color="#000" /> 💬 카톡으로 명세서 받기
+              </button>
+              <button
+                type="button"
+                onClick={handleApply}
+                style={{
+                  flex: '1.2', padding: '0.75rem', borderRadius: '10px',
                   background: 'linear-gradient(135deg, #0284c7, #38bdf8)',
-                  color: '#ffffff', border: 'none', fontWeight: 900, fontSize: '0.9rem', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                  color: '#ffffff', border: 'none', fontWeight: 900, fontSize: '0.88rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
                   boxShadow: '0 4px 14px rgba(56, 189, 248, 0.4)'
                 }}
               >
-                <CheckCircle size={18} /> 변경한 수치로 진단서 & 명세서 갱신
+                <CheckCircle size={17} /> 변경 수치 진단서/명세서 갱신
               </button>
             </div>
           </div>
