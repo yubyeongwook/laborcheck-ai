@@ -199,7 +199,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
     // 💡 근로 형태 및 근로시간에 따른 주휴수당 & 기본급 수식 정밀 판정
     const isNormalStandardWorker = (computedWeeklyNetWork >= 40) && (payType === 'monthly');
-    const is15HoursOver = computedWeeklyNetWork >= 15 && isWeekly15Over;
+    const is15HoursOver = computedWeeklyNetWork >= 15 && (payType === 'monthly' || isWeekly15Over);
 
     // 1) 기본급 산정
     let baseHoursMonthly = 209;
@@ -873,15 +873,19 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
               )}
 
-              {/* 연간 공휴일 근무일수 정밀 선택/입력 */}
+              {/* 연간 공휴일 근무일수 정밀 선택/입력 (100% 양방향 동기 연동) */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>
                   연간 공휴일/대체공휴일 근무일수 선택 및 직접 입력
                 </label>
                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                   <select
-                    value={holidayDaysYear}
-                    onChange={(e) => setHolidayDaysYear(Number(e.target.value))}
+                    value={[0, 4, 7, 10, 12, 15].includes(holidayDaysYear) ? holidayDaysYear : 'custom'}
+                    onChange={(e) => {
+                      if (e.target.value !== 'custom') {
+                        setHolidayDaysYear(Number(e.target.value));
+                      }
+                    }}
                     style={{ flex: 1, padding: '0.35rem 0.5rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
                   >
                     <option value={0}>0일 (공휴일 전일 휴무)</option>
@@ -890,6 +894,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     <option value={10}>연 10일 근무</option>
                     <option value={12}>연 12일 근무</option>
                     <option value={15}>연 15일 전일 (모든 공휴일 일함)</option>
+                    {!([0, 4, 7, 10, 12, 15].includes(holidayDaysYear)) && (
+                      <option value="custom">연 {holidayDaysYear}일 (직접입력 중)</option>
+                    )}
                   </select>
                   <input
                     type="number"
@@ -897,7 +904,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     max="365"
                     value={holidayDaysYear}
                     onChange={(e) => setHolidayDaysYear(Math.max(0, Number(e.target.value)))}
-                    style={{ width: '60px', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem', textAlign: 'center' }}
+                    style={{ width: '60px', padding: '0.35rem', background: '#0f172a', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 800, textAlign: 'center' }}
                   />
                   <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>일</span>
                 </div>
