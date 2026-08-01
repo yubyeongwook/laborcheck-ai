@@ -134,9 +134,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       }
 
       const nightPerShift = Math.min(8, Math.max(0, dailyNetWork - 10));
-      computedWeeklyNetWork = (totalShiftMonthlyHours / 4.3452);
-      computedWeeklyNightWork = (monthlyShiftDays * nightPerShift) / 4.3452;
-      computedActiveDaysCount = Math.round((monthlyShiftDays / 4.3452) * 10) / 10;
+      computedWeeklyNetWork = (totalShiftMonthlyHours / 4.345);
+      computedWeeklyNightWork = (monthlyShiftDays * nightPerShift) / 4.345;
+      computedActiveDaysCount = Math.round((monthlyShiftDays / 4.345) * 10) / 10;
       computedDailyNetWork = dailyNetWork;
     } else if (workScheduleType === 'flexible') {
       let activeDays = 0;
@@ -183,7 +183,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       displayBaseHours = '174h';
     } else {
       // 209시간 미만이거나 시급제/주 15h 미만 파트타임
-      const netMonthlyHours = Math.round((computedWeeklyNetWork * 4.3452) * 100) / 100;
+      const netMonthlyHours = Math.round((computedWeeklyNetWork * 4.345) * 100) / 100;
       actualBasePay = Math.round(netMonthlyHours * hourlyRate);
       displayBaseHours = `${netMonthlyHours}h`;
     }
@@ -207,8 +207,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
     // 주 40시간 초과 연장근로
     const weeklyOvertimeHours = Math.max(0, computedWeeklyNetWork - 40);
-    const monthlyOvertimeHours = weeklyOvertimeHours * 4.3452;
-    const monthlyNightHoursTotal = computedWeeklyNightWork * 4.3452;
+    const monthlyOvertimeHours = weeklyOvertimeHours * 4.345;
+    const monthlyNightHoursTotal = computedWeeklyNightWork * 4.345;
 
     // 수당 계산
     let monthlyOvertimePay = Math.round(monthlyOvertimeHours * hourlyRate * (is5Over ? 1.5 : 1.0));
@@ -284,7 +284,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       weeklyHolidayPay = 361200;
     } else {
       // 209시간 미만 또는 주 15시간 미만 파트타임/시급제
-      const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.3452).toFixed(2));
+      const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
       const calcWeeklyHolidayHours = is15HoursOver ? Number(((computedWeeklyNetWork / 40) * 35).toFixed(2)) : 0;
       
       displayBaseHoursStr = `${calcTotalMonthlyHours}`;
