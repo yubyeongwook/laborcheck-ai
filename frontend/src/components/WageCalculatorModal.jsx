@@ -1082,6 +1082,50 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
           }}>
             <div>
+              {/* 📊 월 근로시간 종합 대시보드 카드 (월 총 근로시간 / 기준시간 / 연장시간 / 야간시간) */}
+              <div style={{
+                background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                padding: '0.75rem',
+                borderRadius: '12px',
+                border: '1px solid #38bdf8',
+                marginBottom: '1rem',
+                boxShadow: '0 4px 12px rgba(56, 189, 248, 0.15)'
+              }}>
+                <div style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 900, marginBottom: '0.45rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>📊 월 근로시간 종합 대시보드</span>
+                  <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 500 }}>실시간 자동 정산</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.35rem' }}>
+                  <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>⏰ 월 총 근로</div>
+                    <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 900, marginTop: '0.1rem' }}>
+                      {(Number(calculated.pureBaseHoursMonthly) + (calculated.weeklyHolidayHoursMonthly === '주 15h 미만 0' ? 0 : Number(calculated.weeklyHolidayHoursMonthly)) + Number(calculated.netOvertimeHours) + Number(calculated.netNightHours)).toFixed(1)}h
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>📌 법정 기준시간</div>
+                    <div style={{ fontSize: '0.88rem', color: '#34d399', fontWeight: 900, marginTop: '0.1rem' }}>
+                      {(Number(calculated.pureBaseHoursMonthly) + (calculated.weeklyHolidayHoursMonthly === '주 15h 미만 0' ? 0 : Number(calculated.weeklyHolidayHoursMonthly))).toFixed(1)}h
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>⚡ 연장 근로시간</div>
+                    <div style={{ fontSize: '0.88rem', color: Number(calculated.netOvertimeHours) > 0 ? '#fb923c' : '#64748b', fontWeight: 900, marginTop: '0.1rem' }}>
+                      {Number(calculated.netOvertimeHours).toFixed(1)}h
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>🌙 야간 근로시간</div>
+                    <div style={{ fontSize: '0.88rem', color: Number(calculated.netNightHours) > 0 ? '#c084fc' : '#64748b', fontWeight: 900, marginTop: '0.1rem' }}>
+                      {Number(calculated.netNightHours).toFixed(1)}h
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* 섹션 타이틀 */}
               <div style={{ fontSize: '0.88rem', color: '#34d399', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 💲 2. 실시간 계산된 예상 세전 급여 & 실수령액
