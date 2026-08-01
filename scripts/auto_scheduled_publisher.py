@@ -51,7 +51,7 @@ WP_USER = os.environ.get("WP_USER", "user")
 WP_PASS = os.environ.get("WP_PASS")
 if not WP_PASS:
     raise RuntimeError("WP_PASS 환경변수가 설정되지 않았습니다. scripts/.env(로컬) 또는 GitHub Actions Secrets(WP_PASS)에 설정하세요.")
-LABORCHECK_AI_URL = "https://laborcheck-ai.vercel.app"
+LABORCHECK_AI_URL = "https://노무체크ai.com"
 
 # 카테고리별 공식 시리즈명 매핑
 SERIES_MAP = {
