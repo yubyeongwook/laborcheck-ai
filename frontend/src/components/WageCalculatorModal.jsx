@@ -163,9 +163,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       computedDailyNetWork = activeDays > 0 ? Math.round((computedWeeklyNetWork / activeDays) * 10) / 10 : 8;
     } else {
       computedActiveDaysCount = weeklyDays;
-      computedWeeklyNetWork = weeklyDays * Math.max(0, dailyHours - breakHours);
+      computedWeeklyNetWork = weeklyDays * dailyHours;
       computedWeeklyNightWork = nightHoursWeekly;
-      computedDailyNetWork = Math.max(0, dailyHours - breakHours);
+      computedDailyNetWork = dailyHours;
     }
 
     // 💡 근로 형태 및 근로시간에 따른 주휴수당 & 기본급 수식 정밀 판정
