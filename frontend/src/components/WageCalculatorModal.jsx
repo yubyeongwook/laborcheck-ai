@@ -672,8 +672,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 )}
 
               {/* ⚠️ 결근 / 조퇴·외출 정밀 공제 설정 */}
-              <div style={{ background: '#0f172a', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(244, 63, 94, 0.4)', marginTop: '0.4rem' }}>
-                <div style={{ fontSize: '0.74rem', color: '#f43f5e', fontWeight: 800, marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <div style={{ background: '#0f172a', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(251, 146, 60, 0.4)', marginTop: '0.4rem' }}>
+                <div style={{ fontSize: '0.74rem', color: '#fb923c', fontWeight: 800, marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                   ⚠️ 결근 / 조퇴·외출 정밀 공제 설정
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -702,7 +702,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   </div>
                 </div>
                 {calculated.absenceDeduction > 0 && (
-                  <div style={{ fontSize: '0.7rem', color: '#f43f5e', marginTop: '0.35rem', fontWeight: 800 }}>
+                  <div style={{ fontSize: '0.7rem', color: '#fb923c', marginTop: '0.35rem', fontWeight: 800 }}>
                     🔻 결근·조퇴 차감 공제액: 총 {calculated.absenceDeduction.toLocaleString()}원 이 급여명세서 공제 항목에 차감 반영됩니다.
                   </div>
                 )}
@@ -810,12 +810,12 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
                 {/* 4대보험 & 세금 공제액 */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.78rem', color: '#f43f5e', fontWeight: 700 }}>4대보험 & 세금 공제액</span>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#f43f5e' }}>- {calculated.totalDeductions.toLocaleString()} 원</span>
+                  <span style={{ fontSize: '0.78rem', color: '#fb923c', fontWeight: 700 }}>4대보험 & 세금 공제액</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#fb923c' }}>- {calculated.totalDeductions.toLocaleString()} 원</span>
                 </div>
 
                 {calculated.absenceDeduction > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#f43f5e', fontSize: '0.75rem', fontWeight: 700 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fb923c', fontSize: '0.75rem', fontWeight: 700 }}>
                     <span>🔻 결근·조퇴 차감 공제</span>
                     <span>- {calculated.absenceDeduction.toLocaleString()} 원</span>
                   </div>
@@ -839,8 +839,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
 
                 {/* 🔻 결근 / 조퇴·외출 차감 공제액 수치 직접 입력 및 반영 폼 카드 */}
-                <div style={{ background: '#1e293b', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid #f43f5e', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.35rem' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#f43f5e', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                <div style={{ background: '#1e293b', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid #fb923c', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.35rem' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#fb923c', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                     🔻 결근 / 조퇴·외출 차감 공제액 (직접 입력)
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
@@ -850,9 +850,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       value={customAbsenceDeduction}
                       onChange={(e) => setCustomAbsenceDeduction(Number(e.target.value))}
                       placeholder="0"
-                      style={{ width: '100px', padding: '0.2rem 0.3rem', background: '#0f172a', border: '1px solid #f43f5e', color: '#f43f5e', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 900, textAlign: 'right' }}
+                      style={{ width: '100px', padding: '0.2rem 0.3rem', background: '#0f172a', border: '1px solid #fb923c', color: '#fb923c', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 900, textAlign: 'right' }}
                     />
-                    <span style={{ fontSize: '0.72rem', color: '#f43f5e', fontWeight: 800 }}>원</span>
+                    <span style={{ fontSize: '0.72rem', color: '#fb923c', fontWeight: 800 }}>원</span>
                   </div>
                 </div>
 

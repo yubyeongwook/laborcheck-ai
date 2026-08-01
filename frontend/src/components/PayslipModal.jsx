@@ -246,7 +246,7 @@ export default function PayslipModal({ data = {}, onClose }) {
 
             {/* 공제 내역 */}
             <div>
-              <h4 style={{ margin: '0 0 0.5rem 0', background: '#fee2e2', color: '#b91c1c', padding: '0.5rem', textAlign: 'center', fontSize: '0.95rem', fontWeight: 800 }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', background: '#ffedd5', color: '#c2410c', padding: '0.5rem', textAlign: 'center', fontSize: '0.95rem', fontWeight: 800 }}>
                 공 제 내 역 (4대보험 & 세금)
               </h4>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
@@ -294,15 +294,15 @@ export default function PayslipModal({ data = {}, onClose }) {
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{localIncomeTax.toLocaleString()}</td>
                   </tr>
                   {calcAbsenceDeduction > 0 && (
-                    <tr style={{ background: '#fff1f2' }}>
-                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', color: '#e11d48', fontWeight: 800 }}>🔻 결근·조퇴 차감 공제</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#e11d48' }}>실제 차감액</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', color: '#e11d48', fontWeight: 800 }}>- {calcAbsenceDeduction.toLocaleString()}</td>
+                    <tr style={{ background: '#fff7ed' }}>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', color: '#ea580c', fontWeight: 800 }}>🔻 결근·조퇴 차감 공제</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#ea580c' }}>실제 차감액</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', color: '#ea580c', fontWeight: 800 }}>- {calcAbsenceDeduction.toLocaleString()}</td>
                     </tr>
                   )}
-                  <tr style={{ background: '#fee2e2', fontWeight: 800 }}>
+                  <tr style={{ background: '#ffedd5', fontWeight: 800 }}>
                     <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>공제액 계</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', textAlign: 'right', color: '#b91c1c' }}>{calcTotalDeduction.toLocaleString()} 원</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', textAlign: 'right', color: '#c2410c' }}>{calcTotalDeduction.toLocaleString()} 원</td>
                   </tr>
                 </tbody>
               </table>
