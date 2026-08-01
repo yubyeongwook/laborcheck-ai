@@ -282,6 +282,8 @@ export default function Home() {
       holidayAllowance: res.holidayPayMonthly,
       annualLeaveHours: res.annualLeaveMonthlyHours || (res.unusedAnnualLeaveDays ? Math.round((res.unusedAnnualLeaveDays / 12 * 8) * 100) / 100 : 0),
       annualLeaveAllowance: res.annualLeaveMonthlyPay,
+      dailyWorkHours: updatedCalc.dailyWorkHours || res.dailyWorkHours || 8,
+      weeklyDays: updatedCalc.weeklyDays || res.activeDaysCount || 5,
       extraOvertimeAllowance: res.extraOvertimeAllowance || 0,
       extraOvertimePay: res.extraOvertimeAllowance || 0,
       mealAllowanceTaxExempt: res.mealPay,
