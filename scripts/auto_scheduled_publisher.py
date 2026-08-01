@@ -584,9 +584,11 @@ def publish():
         log("WARNING: 품질 자가 체크 항목 중 일부분 미달. 보정 후 발행 진행.")
 
     try:
+        clean_excerpt = f"1. {raw_title}\n2. 근로기준법 및 관련 법령 조문 기반 정밀 해설 가이드"
         post = WordPressPost()
         post.title = final_title
         post.content = html_content
+        post.excerpt = clean_excerpt
         post.terms_names = {'category': [category]}
         post.post_status = 'publish'
 
