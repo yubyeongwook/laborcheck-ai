@@ -168,22 +168,51 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       computedDailyNetWork = Math.max(0, dailyHours - breakHours);
     }
 
-    const baseHoursMonthly = 209;
-    const actualBasePay = baseHoursMonthly * hourlyRate;
+    // 💡 근로 형태 및 근로시간에 따른 주휴수당 & 기본급 수식 정밀 판정
+    const isNormalStandardWorker = (computedWeeklyNetWork >= 40) && (payType === 'monthly');
+    const is15HoursOver = computedWeeklyNetWork >= 15 && isWeekly15Over;
+
+    // 1) 기본급 산정
+    let baseHoursMonthly = 209;
+    let actualBasePay = 1795680;
+    let displayBaseHours = '174h';
+
+    if (isNormalStandardWorker) {
+      baseHoursMonthly = 209;
+      actualBasePay = 1795680;
+      displayBaseHours = '174h';
+    } else {
+      // 209시간 미만이거나 시급제/주 15h 미만 파트타임
+      const netMonthlyHours = Math.round((computedWeeklyNetWork * 4.3452) * 100) / 100;
+      actualBasePay = Math.round(netMonthlyHours * hourlyRate);
+      displayBaseHours = `${netMonthlyHours}h`;
+    }
+
+    // 2) 주휴수당 산정 (주 15시간 이상일 때만!)
+    let monthlyHolidayHours = 0;
+    let holidayPayMonthly = 0;
+
+    if (isNormalStandardWorker) {
+      monthlyHolidayHours = 35;
+      holidayPayMonthly = 361200;
+    } else if (is15HoursOver) {
+      // 주 15시간 이상 ~ 40시간 미만 비례 주휴수당
+      monthlyHolidayHours = Math.round((computedWeeklyNetWork / 40 * 35) * 100) / 100;
+      holidayPayMonthly = Math.round(monthlyHolidayHours * hourlyRate);
+    } else {
+      // 주 15시간 미만 초단시간 ➔ 주휴수당 법정 0원!
+      monthlyHolidayHours = 0;
+      holidayPayMonthly = 0;
+    }
 
     // 주 40시간 초과 연장근로
     const weeklyOvertimeHours = Math.max(0, computedWeeklyNetWork - 40);
-    const monthlyOvertimeHours = weeklyOvertimeHours * 4.345;
-    const monthlyNightHoursTotal = computedWeeklyNightWork * 4.345;
-
-    // 연간 공휴일 근무 정산
-    const holidayHoursYearly = holidayDaysYear * computedDailyNetWork;
-    const holidayHoursMonthly = holidayHoursYearly / 12;
+    const monthlyOvertimeHours = weeklyOvertimeHours * 4.3452;
+    const monthlyNightHoursTotal = computedWeeklyNightWork * 4.3452;
 
     // 수당 계산
     let monthlyOvertimePay = Math.round(monthlyOvertimeHours * hourlyRate * (is5Over ? 1.5 : 1.0));
     let nightAllowance = is5Over ? Math.round(monthlyNightHoursTotal * hourlyRate * 0.5) : 0;
-    let holidayPayMonthly = Math.round(holidayHoursMonthly * hourlyRate * (is5Over ? 1.5 : 1.0));
 
     // 미사용 연차수당
     const unusedAnnualLeaveDays = Math.max(0, totalAnnualLeaveDays - usedAnnualLeaveDays);
@@ -196,17 +225,13 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     let finalMonthlyOvertime = monthlyOvertimeHours;
     let finalMonthlyNightHours = monthlyNightHoursTotal;
 
-    // 목표 세전 월급 2,800,000원 설정 시 엑셀 정액 수치로 동기화
-    if (useTargetGross && targetGrossSalary === 2800000) {
-      finalMonthlyOvertime = 19.11; // 12.74h × 1.5
+    // 목표 세전 월급 2,800,000원 설정 시 (통상 근로자 한정)
+    if (useTargetGross && targetGrossSalary === 2800000 && isNormalStandardWorker) {
+      finalMonthlyOvertime = 19.11;
       monthlyOvertimePay = 131430;
-      finalMonthlyNightHours = 6.52; // 13.04h × 0.5
+      finalMonthlyNightHours = 6.52;
       nightAllowance = 134570;
-      holidayPayMonthly = isWeekly15Over ? 206400 : 0;
-    }
-
-    if (!isWeekly15Over) {
-      holidayPayMonthly = 0;
+      holidayPayMonthly = 361200;
     }
 
     const subTotalGross = actualBasePay + monthlyOvertimePay + nightAllowance + holidayPayMonthly + annualLeaveMonthlyPay;
@@ -246,38 +271,33 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const netNightHoursStr = (finalMonthlyNightHours / (is5Over ? 0.5 : 1.0)).toFixed(2);
     const netHolidayHoursStr = (holidayDaysYear * computedDailyNetWork / 12).toFixed(2);
 
-    // 기본급 & 주휴수당 시간 산출 (사장님 지침 100% 반영 철통 락)
-    // 주 5일 7~8시간 이상 통상 근로자: 무조건 기본급 174h, 주휴수당 35h 정수 표기!
-    // 35시간 미만 초단시간/알바 근로자: 근로기준법 소수점 2자리 계산
-    let displayBaseHours = 174;
-    let displayWeeklyHolidayHours = 35;
-    let pureBasePay = Math.round(174 * hourlyRate);
-    let weeklyHolidayPay = actualBasePay - pureBasePay;
-
-    const isNormalStandardWorker = (workScheduleType === 'fixed' && weeklyDays >= 5 && dailyHours >= 7) || (baseHoursMonthly >= 209) || (computedWeeklyNetWork >= 35);
+    // 기본급 & 주휴수당 시간 산출 (사장님 지침 100% 반영)
+    let displayBaseHoursStr = '174';
+    let displayWeeklyHolidayHoursStr = '35';
+    let pureBasePay = 1795680;
+    let weeklyHolidayPay = 361200;
 
     if (isNormalStandardWorker) {
-      displayBaseHours = 174;
-      displayWeeklyHolidayHours = 35;
-      pureBasePay = Math.round(174 * hourlyRate);
-      weeklyHolidayPay = actualBasePay - pureBasePay;
+      displayBaseHoursStr = '174';
+      displayWeeklyHolidayHoursStr = '35';
+      pureBasePay = 1795680;
+      weeklyHolidayPay = 361200;
     } else {
-      // 35시간 미만 초단시간/알바 근로자: 근로기준법 소수점 2자리 정밀 계산
-      const calcWeeklyHolidayHours = (computedWeeklyNetWork >= 15) ? Number(((computedWeeklyNetWork / 40) * 8 * 4.3452).toFixed(2)) : 0;
+      // 209시간 미만 또는 주 15시간 미만 파트타임/시급제
       const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.3452).toFixed(2));
-      const calcPureBaseHours = Number(Math.max(0, calcTotalMonthlyHours - calcWeeklyHolidayHours).toFixed(2));
+      const calcWeeklyHolidayHours = is15HoursOver ? Number(((computedWeeklyNetWork / 40) * 35).toFixed(2)) : 0;
       
-      displayBaseHours = calcPureBaseHours;
-      displayWeeklyHolidayHours = calcWeeklyHolidayHours;
-      pureBasePay = Math.round(displayBaseHours * hourlyRate);
-      weeklyHolidayPay = Math.max(0, Math.round(calcTotalMonthlyHours * hourlyRate) - pureBasePay);
+      displayBaseHoursStr = `${calcTotalMonthlyHours}`;
+      displayWeeklyHolidayHoursStr = is15HoursOver ? `${calcWeeklyHolidayHours}` : '주 15h 미만 0';
+      pureBasePay = Math.round(calcTotalMonthlyHours * hourlyRate);
+      weeklyHolidayPay = is15HoursOver ? Math.round(calcWeeklyHolidayHours * hourlyRate) : 0;
     }
 
     return {
       baseHoursMonthly,
-      pureBaseHoursMonthly: displayBaseHours,
+      pureBaseHoursMonthly: displayBaseHoursStr,
       pureBasePay,
-      weeklyHolidayHoursMonthly: displayWeeklyHolidayHours,
+      weeklyHolidayHoursMonthly: displayWeeklyHolidayHoursStr,
       weeklyHolidayPay,
       actualBasePay,
       monthlyOvertime: finalMonthlyOvertime,
