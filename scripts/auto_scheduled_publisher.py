@@ -464,7 +464,7 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 
 <!-- ⚡ 노무체크 AI 3초 무료 진단 CTA -->
 <div style="text-align:center;margin:28px 0">
-<a href="{LABORCHECK_AI_URL}" target="_blank" rel="noopener" style="background:#1a7a4a;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(26,122,74,0.3);">
+<a href="https://노무체크ai.com/?calc=1" target="_blank" rel="noopener" style="background:#1a7a4a;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(26,122,74,0.3);">
 ⚡ 노무체크 AI 3초 무료 진단받기 →
 </a>
 </div>
@@ -491,7 +491,7 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 .lc-consult-btn:hover{{transform:translateY(-2px);box-shadow:0 10px 24px rgba(109,95,253,0.5);}}
 .lc-consult-btn .lc-icon{{display:inline-block;animation:lcBounce 1.6s ease-in-out infinite;}}
 </style>
-<a href="https://laborcheck-ai.vercel.app/contact" target="_blank" rel="noopener" class="lc-consult-btn">
+<a href="https://노무체크ai.com/?calc=1" target="_blank" rel="noopener" class="lc-consult-btn">
   <span class="lc-icon">💬</span>상담문의
 </a>"""
     return html

@@ -187,12 +187,15 @@ export default function Home() {
   const [editingStep, setEditingStep] = useState(null);
   const [isCalculatedOnce, setIsCalculatedOnce] = useState(false);
 
-  // 💡 블로그 및 외부 링크 접속 시 최상단(0,0) 강제 이동 및 계산기 자동 활성화
+  // 💡 블로그 및 상담문의/진단받기 링크 접속 시 최상단(0,0) 이동 및 대화형 진단 모달 100% 동기화 활성화
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     const searchParams = new URLSearchParams(window.location.search);
-    const hasCalcParam = searchParams.has('calc') || searchParams.has('from') || searchParams.has('mode') || searchParams.has('tool') || window.location.hash === '#calculator';
-    if (hasCalcParam) {
+    const hasCalcParam = searchParams.has('calc') || searchParams.has('from') || searchParams.has('mode') || searchParams.has('tool') || searchParams.has('consult') || window.location.hash === '#calculator';
+    const isFromBlog = typeof document !== 'undefined' && document.referrer && document.referrer.includes('laborcheckai.co.kr');
+    
+    // 진단받기와 상담문의 클릭 시 100% 동일하게 대화형 무료 진단 모달 팝업!
+    if (hasCalcParam || isFromBlog) {
       setIsWageCalcOpen(true);
     }
   }, []);
