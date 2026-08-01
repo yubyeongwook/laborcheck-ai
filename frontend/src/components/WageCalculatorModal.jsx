@@ -1099,14 +1099,14 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>⏰ 월 총 근로</div>
                     <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 900, marginTop: '0.1rem' }}>
-                      {(Number(calculated.pureBaseHoursMonthly) + (calculated.weeklyHolidayHoursMonthly === '주 15h 미만 0' ? 0 : Number(calculated.weeklyHolidayHoursMonthly)) + Number(calculated.netOvertimeHours) + Number(calculated.netNightHours)).toFixed(1)}h
+                      {(Number(calculated.pureBaseHoursMonthly) + Number(calculated.netOvertimeHours) + Number(calculated.netNightHours)).toFixed(1)}h
                     </div>
                   </div>
 
                   <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>📌 법정 기준시간</div>
                     <div style={{ fontSize: '0.88rem', color: '#34d399', fontWeight: 900, marginTop: '0.1rem' }}>
-                      {(Number(calculated.pureBaseHoursMonthly) + (calculated.weeklyHolidayHoursMonthly === '주 15h 미만 0' ? 0 : Number(calculated.weeklyHolidayHoursMonthly))).toFixed(1)}h
+                      {Number(calculated.pureBaseHoursMonthly).toFixed(1)}h
                     </div>
                   </div>
 
