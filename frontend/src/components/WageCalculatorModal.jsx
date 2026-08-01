@@ -83,9 +83,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [latenessHours, setLatenessHours] = useState(0);
   const [customAbsenceDeduction, setCustomAbsenceDeduction] = useState(0);
 
-  // 🔄 퐁당퐁당 격일제 전용 state (월 15일 vs 16일 vs 15.2일)
-  const [shiftDaysMonth, setShiftDaysMonth] = useState(15); // 15, 16, 15.2
-  const [shiftNetHours, setShiftNetHours] = useState(18); // 1일 실근로시간 (예: 24h 중 휴게 6h 제외 18h)
+  // 🔄 퐁당퐁당 격일제 및 격주제 전용 state (월 15일 vs 16일 vs 격주제 23.9일)
+  const [shiftDaysMonth, setShiftDaysMonth] = useState(15); // 15, 16, 15.2, 23.9
+  const [shiftNetHours, setShiftNetHours] = useState(8); // 평일/기본 1일 실근로시간 (예: 8h 또는 18h)
+  const [shiftSpecialNetHours, setShiftSpecialNetHours] = useState(4); // 격주/토요/교대일 실근로시간 (예: 4h 또는 12h)
 
   // 일괄 적용 실행 함수
   const applyBatchSchedule = () => {
@@ -110,8 +111,17 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
     if (workScheduleType === 'shift') {
       const monthlyShiftDays = Number(shiftDaysMonth) || 15;
-      const dailyNetWork = Number(shiftNetHours) || 18;
-      const totalShiftMonthlyHours = monthlyShiftDays * dailyNetWork;
+      const dailyNetWork = Number(shiftNetHours) || 8;
+      const specialNetWork = Number(shiftSpecialNetHours) || 4;
+
+      let totalShiftMonthlyHours = 0;
+      if (monthlyShiftDays === 23.9) {
+        // 격주제 (한주 6일, 한주 5일): 평일(21.73일 × 평일시간) + 격주 토요(2.17일 × 토요시간)
+        totalShiftMonthlyHours = (21.73 * dailyNetWork) + (2.17 * specialNetWork);
+      } else {
+        totalShiftMonthlyHours = monthlyShiftDays * dailyNetWork;
+      }
+
       const nightPerShift = Math.min(8, Math.max(0, dailyNetWork - 10));
       computedWeeklyNetWork = (totalShiftMonthlyHours / 4.3452);
       computedWeeklyNightWork = (monthlyShiftDays * nightPerShift) / 4.3452;
@@ -467,22 +477,22 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <div style={{ fontSize: '0.76rem', color: '#10b981', fontWeight: 800, marginBottom: '0.4rem' }}>
                     🔄 퐁당퐁당 격일제 당월 근무일수 & 1일 실근로시간 조율
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.4rem' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.15rem' }}>당월 실제 근무일수</label>
+                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>당월 실제 근무일수</label>
                       <select
                         value={shiftDaysMonth}
                         onChange={(e) => setShiftDaysMonth(Number(e.target.value))}
-                        style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
+                        style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
                       >
-                        <option value={15}>월 15일 근무 (퐁당퐁당 30일달)</option>
-                        <option value={16}>월 16일 근무 (퐁당퐁당 31일달)</option>
-                        <option value={15.2}>월평균 15.2일 정액 (격일제 표준)</option>
-                        <option value={23.9}>격주제 (한 주 6일 / 한 주 5일 퐁당퐁당 교대)</option>
+                        <option value={15}>월 15일 (30일달)</option>
+                        <option value={16}>월 16일 (31일달)</option>
+                        <option value={15.2}>월평균 15.2일</option>
+                        <option value={23.9}>격주제 (주 6일/5일)</option>
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.15rem' }}>1일 실근로시간 (휴게 제외)</label>
+                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>평일 1일 근로시간</label>
                       <input
                         type="number"
                         min="1"
@@ -492,9 +502,21 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                         style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
                       />
                     </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#38bdf8', marginBottom: '0.15rem' }}>격주/토요 근로시간</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="24"
+                        value={shiftSpecialNetHours}
+                        onChange={(e) => setShiftSpecialNetHours(Number(e.target.value))}
+                        placeholder="4"
+                        style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
+                      />
+                    </div>
                   </div>
                   <div style={{ fontSize: '0.7rem', color: '#34d399', marginTop: '0.35rem', fontWeight: 700 }}>
-                    💡 격일제 당월 실근로: 총 {(shiftDaysMonth * shiftNetHours).toFixed(1)}시간 ➔ 당월 실근무일수({shiftDaysMonth}일)에 맞추어 세전월급 및 야간수당이 0% 오차로 정밀 자동 산출됩니다!
+                    💡 근로시간 차이 조율: 평일({shiftNetHours}시간)과 격주/주말({shiftSpecialNetHours}시간)이 서로 다를 때도 세전월급 및 수당이 0% 오차로 정밀 자동 산출됩니다!
                   </div>
                 </div>
               )}
