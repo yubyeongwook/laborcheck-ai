@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import PayslipModal from '../components/PayslipModal';
 import WageCalculatorModal from '../components/WageCalculatorModal';
+import ContactForm from './ContactForm';
 
 const SMART_QUICK_PROMPTS = [
   '⚖️ 산재 불승인 시 이의신청 절차 & 판례 모음 알려줘',
@@ -187,14 +188,21 @@ export default function Home() {
   const [editingStep, setEditingStep] = useState(null);
   const [isCalculatedOnce, setIsCalculatedOnce] = useState(false);
 
-  // 💡 명시적 계산기 링크 접속 시 최상단(0,0) 이동 및 계산기 자동 활성화
+  // 💬 1:1 상담 문의 모달 팝업 상태
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
+  // 💡 명시적 링크 접속 시 최상단(0,0) 이동 및 모달 자동 활성화
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     const searchParams = new URLSearchParams(window.location.search);
     const hasCalcParam = searchParams.has('calc') || searchParams.has('mode') || searchParams.has('tool') || window.location.hash === '#calculator';
+    const hasContactParam = searchParams.has('contact') || searchParams.has('consult') || window.location.pathname.includes('/contact');
     
     if (hasCalcParam) {
       setIsWageCalcOpen(true);
+    }
+    if (hasContactParam) {
+      setIsContactModalOpen(true);
     }
   }, []);
 
@@ -1805,6 +1813,35 @@ export default function Home() {
         calcData={latestCalcResult}
         onApplyChanges={handleApplyCalcModalChanges}
       />
+
+      {/* 💬 1:1 노무상담 및 문의 접수 모달 */}
+      {isContactModalOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)',
+          zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1rem', overflowY: 'auto'
+        }}>
+          <div style={{
+            position: 'relative', width: '100%', maxWidth: '640px',
+            backgroundColor: '#0f172a', border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '16px', padding: '1.5rem', boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            maxHeight: '90vh', overflowY: 'auto'
+          }}>
+            <button
+              onClick={() => setIsContactModalOpen(false)}
+              style={{
+                position: 'absolute', top: '1rem', right: '1rem', background: 'none',
+                border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '0.4rem',
+                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <X size={22} />
+            </button>
+            <ContactForm />
+          </div>
+        </div>
+      )}
 
     </div>
   );
