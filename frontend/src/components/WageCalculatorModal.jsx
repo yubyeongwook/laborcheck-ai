@@ -495,10 +495,12 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>평일 1일 근로시간</label>
                       <input
                         type="number"
-                        min="1"
+                        min="0"
                         max="24"
+                        step="0.01"
                         value={shiftNetHours}
                         onChange={(e) => setShiftNetHours(Number(e.target.value))}
+                        placeholder="예: 7.75 (7시간45분)"
                         style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
                       />
                     </div>
@@ -508,15 +510,16 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                         type="number"
                         min="0"
                         max="24"
+                        step="0.01"
                         value={shiftSpecialNetHours}
                         onChange={(e) => setShiftSpecialNetHours(Number(e.target.value))}
-                        placeholder="4"
+                        placeholder="예: 4.25 (4시간15분)"
                         style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
                       />
                     </div>
                   </div>
                   <div style={{ fontSize: '0.7rem', color: '#34d399', marginTop: '0.35rem', fontWeight: 700 }}>
-                    💡 근로시간 차이 조율: 평일({shiftNetHours}시간)과 격주/주말({shiftSpecialNetHours}시간)이 서로 다를 때도 세전월급 및 수당이 0% 오차로 정밀 자동 산출됩니다!
+                    💡 5분·15분·30분 정밀 조율: 15분=0.25h, 30분=0.5h, 45분=0.75h, 5분=0.08h 형식으로 0% 오차 정밀 입력 및 즉시 반영됩니다!
                   </div>
                 </div>
               )}
@@ -539,9 +542,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 실근로시간</label>
                       <input
                         type="number"
-                        step="0.5"
+                        step="0.01"
                         value={dailyHours}
                         onChange={(e) => setDailyHours(Number(e.target.value))}
+                        placeholder="예: 7.75"
                         style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
                       />
                     </div>
@@ -549,9 +553,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 야간(22~06h)</label>
                       <input
                         type="number"
-                        step="0.5"
+                        step="0.01"
                         value={nightHoursWeekly}
                         onChange={(e) => setNightHoursWeekly(Number(e.target.value))}
+                        placeholder="예: 2.25"
                         style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
                       />
                     </div>
