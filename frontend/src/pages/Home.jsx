@@ -187,8 +187,9 @@ export default function Home() {
   const [editingStep, setEditingStep] = useState(null);
   const [isCalculatedOnce, setIsCalculatedOnce] = useState(false);
 
-  // 💡 블로그 및 외부 링크 접속 시 계산기 자동 활성화
+  // 💡 블로그 및 외부 링크 접속 시 최상단(0,0) 강제 이동 및 계산기 자동 활성화
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     const searchParams = new URLSearchParams(window.location.search);
     const hasCalcParam = searchParams.has('calc') || searchParams.has('from') || searchParams.has('mode') || searchParams.has('tool') || window.location.hash === '#calculator';
     if (hasCalcParam) {
