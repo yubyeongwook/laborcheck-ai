@@ -40,11 +40,13 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   // 근무 형태 선택 ('fixed': 고정 근무, 'flexible': 요일별 변동 근무)
   const [workScheduleType, setWorkScheduleType] = useState('fixed');
 
-  // 고정 근무용 state
+  // 고정 근무용 시간/분 분리 state (5분 단위)
   const [weeklyDays, setWeeklyDays] = useState(calcData?.weeklyDays || 5);
-  const [dailyHours, setDailyHours] = useState(calcData?.dailyWorkHours || 8);
+  const [dailyHour, setDailyHour] = useState(Math.floor(calcData?.dailyWorkHours || 8));
+  const [dailyMin, setDailyMin] = useState(Math.round(((calcData?.dailyWorkHours || 8) % 1) * 60 / 5) * 5);
   const [breakHours, setBreakHours] = useState(calcData?.breakHours || 1);
-  const [nightHoursWeekly, setNightHoursWeekly] = useState(calcData?.weeklyNightHours || 0);
+  const [nightWeeklyHour, setNightWeeklyHour] = useState(Math.floor(calcData?.weeklyNightHours || 0));
+  const [nightWeeklyMin, setNightWeeklyMin] = useState(Math.round(((calcData?.weeklyNightHours || 0) % 1) * 60 / 5) * 5);
 
   // 요일별 변동 근무용 state & 일괄 적용용 state
   const [batchDays, setBatchDays] = useState(['월', '화', '수', '목', '금']);
@@ -85,8 +87,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
   // 🔄 퐁당퐁당 격일제 및 격주제 전용 state (월 15일 vs 16일 vs 격주제 23.9일)
   const [shiftDaysMonth, setShiftDaysMonth] = useState(15); // 15, 16, 15.2, 23.9
-  const [shiftNetHours, setShiftNetHours] = useState(8); // 평일/기본 1일 실근로시간 (예: 8h 또는 18h)
-  const [shiftSpecialNetHours, setShiftSpecialNetHours] = useState(4); // 격주/토요/교대일 실근로시간 (예: 4h 또는 12h)
+  const [shiftHour, setShiftHour] = useState(8); // 평일 시간 (0~24)
+  const [shiftMin, setShiftMin] = useState(0); // 평일 5분단위 분 (0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+  const [shiftSpecialHour, setShiftSpecialHour] = useState(4); // 격주/토요 시간 (0~24)
+  const [shiftSpecialMin, setShiftSpecialMin] = useState(0); // 격주/토요 5분단위 분 (0, 5, 10, 15...)
 
   // 일괄 적용 실행 함수
   const applyBatchSchedule = () => {
@@ -104,6 +108,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
   // 실시간 급여 및 근로시간 역산 엔진
   const computeSalary = () => {
+    const dailyHours = dailyHour + (dailyMin / 60);
+    const nightHoursWeekly = nightWeeklyHour + (nightWeeklyMin / 60);
+
     let computedWeeklyNetWork = 0;
     let computedWeeklyNightWork = 0;
     let computedActiveDaysCount = 0;
@@ -111,8 +118,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
     if (workScheduleType === 'shift') {
       const monthlyShiftDays = Number(shiftDaysMonth) || 15;
-      const dailyNetWork = Number(shiftNetHours) || 8;
-      const specialNetWork = Number(shiftSpecialNetHours) || 4;
+      const dailyNetWork = Number(shiftHour) + (Number(shiftMin) / 60);
+      const specialNetWork = Number(shiftSpecialHour) + (Number(shiftSpecialMin) / 60);
 
       let totalShiftMonthlyHours = 0;
       if (monthlyShiftDays === 23.9) {
@@ -477,7 +484,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <div style={{ fontSize: '0.76rem', color: '#10b981', fontWeight: 800, marginBottom: '0.4rem' }}>
                     🔄 퐁당퐁당 격일제 당월 근무일수 & 1일 실근로시간 조율
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '0.4rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.15fr 1.15fr', gap: '0.4rem' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>당월 실제 근무일수</label>
                       <select
@@ -492,34 +499,54 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>평일 1일 근로시간</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="24"
-                        step="0.01"
-                        value={shiftNetHours}
-                        onChange={(e) => setShiftNetHours(Number(e.target.value))}
-                        placeholder="예: 7.75 (7시간45분)"
-                        style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
-                      />
+                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>평일 1일 근로시간 (5분단위)</label>
+                      <div style={{ display: 'flex', gap: '0.15rem' }}>
+                        <select
+                          value={shiftHour}
+                          onChange={(e) => setShiftHour(Number(e.target.value))}
+                          style={{ flex: 1, padding: '0.3rem 0.1rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        >
+                          {Array.from({ length: 25 }, (_, i) => i).map(h => (
+                            <option key={h} value={h}>{h}시간</option>
+                          ))}
+                        </select>
+                        <select
+                          value={shiftMin}
+                          onChange={(e) => setShiftMin(Number(e.target.value))}
+                          style={{ flex: 1, padding: '0.3rem 0.1rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        >
+                          {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
+                            <option key={m} value={m}>{m}분</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#38bdf8', marginBottom: '0.15rem' }}>격주/토요 근로시간</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="24"
-                        step="0.01"
-                        value={shiftSpecialNetHours}
-                        onChange={(e) => setShiftSpecialNetHours(Number(e.target.value))}
-                        placeholder="예: 4.25 (4시간15분)"
-                        style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
-                      />
+                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#38bdf8', marginBottom: '0.15rem' }}>격주/토요 근로시간 (5분단위)</label>
+                      <div style={{ display: 'flex', gap: '0.15rem' }}>
+                        <select
+                          value={shiftSpecialHour}
+                          onChange={(e) => setShiftSpecialHour(Number(e.target.value))}
+                          style={{ flex: 1, padding: '0.3rem 0.1rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        >
+                          {Array.from({ length: 25 }, (_, i) => i).map(h => (
+                            <option key={h} value={h}>{h}시간</option>
+                          ))}
+                        </select>
+                        <select
+                          value={shiftSpecialMin}
+                          onChange={(e) => setShiftSpecialMin(Number(e.target.value))}
+                          style={{ flex: 1, padding: '0.3rem 0.1rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        >
+                          {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
+                            <option key={m} value={m}>{m}분</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
                   <div style={{ fontSize: '0.7rem', color: '#34d399', marginTop: '0.35rem', fontWeight: 700 }}>
-                    💡 5분·15분·30분 정밀 조율: 15분=0.25h, 30분=0.5h, 45분=0.75h, 5분=0.08h 형식으로 0% 오차 정밀 입력 및 즉시 반영됩니다!
+                    💡 5분 단위 원클릭 조율: 평일({shiftHour}시간 {shiftMin}분) / 격주·토요({shiftSpecialHour}시간 {shiftSpecialMin}분) ➔ 소수점 계산 없이 5분 단위로 척척 선택 완료!
                   </div>
                 </div>
               )}
@@ -539,26 +566,50 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 실근로시간</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={dailyHours}
-                        onChange={(e) => setDailyHours(Number(e.target.value))}
-                        placeholder="예: 7.75"
-                        style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
-                      />
+                      <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 실근로 (시간+5분)</label>
+                      <div style={{ display: 'flex', gap: '0.15rem' }}>
+                        <select
+                          value={dailyHour}
+                          onChange={(e) => setDailyHour(Number(e.target.value))}
+                          style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        >
+                          {Array.from({ length: 25 }, (_, i) => i).map(h => (
+                            <option key={h} value={h}>{h}시간</option>
+                          ))}
+                        </select>
+                        <select
+                          value={dailyMin}
+                          onChange={(e) => setDailyMin(Number(e.target.value))}
+                          style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        >
+                          {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
+                            <option key={m} value={m}>{m}분</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 야간(22~06h)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={nightHoursWeekly}
-                        onChange={(e) => setNightHoursWeekly(Number(e.target.value))}
-                        placeholder="예: 2.25"
-                        style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
-                      />
+                      <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 야간 (시간+5분)</label>
+                      <div style={{ display: 'flex', gap: '0.15rem' }}>
+                        <select
+                          value={nightWeeklyHour}
+                          onChange={(e) => setNightWeeklyHour(Number(e.target.value))}
+                          style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        >
+                          {Array.from({ length: 25 }, (_, i) => i).map(h => (
+                            <option key={h} value={h}>{h}시간</option>
+                          ))}
+                        </select>
+                        <select
+                          value={nightWeeklyMin}
+                          onChange={(e) => setNightWeeklyMin(Number(e.target.value))}
+                          style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        >
+                          {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
+                            <option key={m} value={m}>{m}분</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
