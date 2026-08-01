@@ -972,6 +972,43 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 )}
               </div>
 
+            {/* ✅ 법정 주요 수당 실시간 적용여부 확인 박스 */}
+            <div style={{
+              background: '#0f172a', padding: '0.65rem 0.8rem', borderRadius: '10px',
+              border: '1px solid #34d399', marginTop: '0.75rem'
+            }}>
+              <div style={{ fontSize: '0.76rem', color: '#34d399', fontWeight: 900, marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <CheckCircle2 size={15} color="#34d399" /> 📋 실시간 법정 수당 적용여부 확인 (상태)
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.35rem', fontSize: '0.7rem' }}>
+                <div style={{ color: calculated.weeklyHolidayPay > 0 ? '#34d399' : '#94a3b8', fontWeight: 700 }}>
+                  {calculated.weeklyHolidayPay > 0 ? '✅ 주휴수당: 20% 분리 적용중' : '❌ 주휴수당: 0원 (미적용)'}
+                </div>
+                <div style={{ color: calculated.monthlyOvertimePay > 0 ? '#38bdf8' : '#94a3b8', fontWeight: 700 }}>
+                  {calculated.monthlyOvertimePay > 0 ? `✅ 연장수당: ${calculated.netOvertimeHours}h 적용중` : '⚪ 연장수당: 해당없음 (0원)'}
+                </div>
+                <div style={{ color: calculated.nightAllowance > 0 ? '#38bdf8' : '#94a3b8', fontWeight: 700 }}>
+                  {calculated.nightAllowance > 0 ? `✅ 야간수당: ${calculated.netNightHours}h 적용중` : '⚪ 야간수당: 해당없음 (0원)'}
+                </div>
+                <div style={{ color: holidayDaysYear > 0 ? '#fb923c' : '#94a3b8', fontWeight: 700 }}>
+                  {holidayDaysYear > 0 ? `✅ 공휴일수당: 연 ${holidayDaysYear}일 적용중` : '⚪ 공휴일수당: 0일 (미적용)'}
+                </div>
+              </div>
+            </div>
+
+            {/* ⚠️ 노무 법정 추가 지급 수당 체크 알림 카드 */}
+            <div style={{
+              background: '#0f172a', padding: '0.65rem 0.8rem', borderRadius: '10px',
+              border: '1.5px solid #fb923c', marginTop: '0.65rem', color: '#ffedd5'
+            }}>
+              <div style={{ fontSize: '0.76rem', color: '#fb923c', fontWeight: 900, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <AlertTriangle size={15} color="#fb923c" /> ⚠️ 법정 추가 가산수당 발생 체크 경고
+              </div>
+              <div style={{ fontSize: '0.69rem', color: '#cbd5e1', lineHeight: '1.45' }}>
+                본 시급/일급/주급 기본계산 외에 <strong>① 하루 8시간·주 40시간 초과 연장수당(1.5배)</strong>, <strong>② 밤 22시~06시 야간수당(0.5배가산)</strong>, <strong>③ 공휴일·주휴일 근로수당(1.5~2배)</strong> 발생 시 법정 가산수당을 추가 지급해야 임금체불을 예방할 수 있습니다!
+              </div>
+            </div>
+
             </div>
           </div>
 
