@@ -199,15 +199,13 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const netNightHoursStr = (finalMonthlyNightHours / (is5Over ? 0.5 : 1.0)).toFixed(2);
     const netHolidayHoursStr = (holidayDaysYear * computedDailyNetWork / 12).toFixed(2);
 
-    // 기본급 & 주휴수당 시간 산출 (사장님 지침 100% 반영)
-    // 기본급 + 주휴수당 합산이 209시간(주 40시간) 이상인 경우: 기본급 174h, 주휴수당 35h 정수 표기!
-    // 그 외 일급/시급/알바는 소수점 둘째 자리까지 정밀 계산!
+    // 기본급 & 주휴수당 시간 산출 (주 5일 8시간/월 209시간 통상인 경우 무조건 기본급 174h, 주휴수당 35h 정수 고정!)
     let displayBaseHours = 174;
     let displayWeeklyHolidayHours = 35;
-    let pureBasePay = 1843152;
-    let weeklyHolidayPay = 313728;
+    let pureBasePay = Math.round(174 * hourlyRate);
+    let weeklyHolidayPay = Math.round(35 * hourlyRate);
 
-    if (baseHoursMonthly >= 209 && computedWeeklyNetWork >= 40) {
+    if ((weeklyDays === 5 && dailyHours === 8) || (baseHoursMonthly >= 209 && computedWeeklyNetWork >= 40)) {
       displayBaseHours = 174;
       displayWeeklyHolidayHours = 35;
       pureBasePay = Math.round(174 * hourlyRate);
@@ -266,7 +264,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
         weeklyDays: calculated.activeDaysCount,
         dailyWorkHours: calculated.dailyWorkHours,
         breakHours,
-    weeklyNightHours: calculated.monthlyNightHours / 4.35,
+        weeklyNightHours: calculated.monthlyNightHours / 4.35,
         holidayDaysYear,
         totalAnnualLeaveDays,
         usedAnnualLeaveDays,
@@ -286,14 +284,24 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
   };
 
+  const modalBodyStyle = {
+    position: 'relative', width: '100%', maxWidth: '1150px',
+    background: '#0f172a', border: '1px solid #334155',
+    borderRadius: '18px', padding: '1.5rem',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+    maxHeight: isInline ? 'none' : '92vh', overflowY: 'auto',
+    display: 'flex', flexDirection: 'column'
+  };
+
   return (
     <div style={modalContainerStyle}>
-        {/* 헤더 */}
+      <div style={modalBodyStyle}>
+        {/* 모달 상단 타이틀 헤더 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.85rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Calculator size={22} color="#38bdf8" />
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#38bdf8' }}>
-              🧮 0% 오차 실시간 대화형 월급 계산기
+            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#38bdf8', letterSpacing: '-0.01em' }}>
+              🧮 🎛️ 0% 오차 실시간 대화형 월급 계산기 (직접 수치 만지고 맞추기)
             </h3>
           </div>
           <button
@@ -794,5 +802,6 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
         </div>
       </div>
+    </div>
   );
 }
