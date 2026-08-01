@@ -41,8 +41,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [payType, setPayType] = useState('monthly');
   const [isWeekly15Over, setIsWeekly15Over] = useState(true); // 주 15시간 이상 근로 여부 (체크박스)
 
-  // 근무 형태 선택 ('fixed': 고정 근무, 'flexible': 요일별 변동 근무)
-  const [workScheduleType, setWorkScheduleType] = useState('fixed');
+  // 💡 시업시간(출근) & 종업시간(퇴근) 기반 야간/실근로 100% 자동 계산 state
+  const [fixedStartTime, setFixedStartTime] = useState('09:00');
+  const [fixedEndTime, setFixedEndTime] = useState('18:00');
+  const [useAutoTimeCalc, setUseAutoTimeCalc] = useState(true);
 
   // 고정 근무용 시간/분 분리 state (5분 단위)
   const [weeklyDays, setWeeklyDays] = useState(calcData?.weeklyDays || 5);
@@ -95,6 +97,41 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [shiftMin, setShiftMin] = useState(0); // 평일 5분단위 분 (0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
   const [shiftSpecialHour, setShiftSpecialHour] = useState(4); // 격주/토요 시간 (0~24)
   const [shiftSpecialMin, setShiftSpecialMin] = useState(0); // 격주/토요 5분단위 분 (0, 5, 10, 15...)
+
+  // 💡 사장님 지침: 출근시간(시업)과 퇴근시간(종업) + 휴게시간 선택 시 100% 자동 야간/실근로시간 계산!
+  React.useEffect(() => {
+    if (useAutoTimeCalc && fixedStartTime && fixedEndTime) {
+      const [sH, sM] = fixedStartTime.split(':').map(Number);
+      const [eH, eM] = fixedEndTime.split(':').map(Number);
+      let startMin = sH * 60 + (sM || 0);
+      let endMin = eH * 60 + (eM || 0);
+      if (endMin <= startMin) endMin += 24 * 60; // 익일 퇴근
+
+      const totalStayMin = endMin - startMin;
+      const breakMin = breakHours * 60;
+      const netWorkMinTotal = Math.max(0, totalStayMin - breakMin);
+
+      const calculatedDailyHour = Math.floor(netWorkMinTotal / 60);
+      const calculatedDailyMin = Math.round((netWorkMinTotal % 60) / 5) * 5;
+
+      // 야간 근로시간 (밤 22:00 ~ 아침 06:00 사이 총 분)
+      let dailyNightMin = 0;
+      for (let m = startMin; m < endMin; m++) {
+        const clockM = m % (24 * 60);
+        if (clockM >= 22 * 60 || clockM < 6 * 60) {
+          dailyNightMin++;
+        }
+      }
+      const weeklyNightMinTotal = dailyNightMin * weeklyDays;
+      const calculatedNightHour = Math.floor(weeklyNightMinTotal / 60);
+      const calculatedNightMin = Math.round((weeklyNightMinTotal % 60) / 5) * 5;
+
+      setDailyHour(calculatedDailyHour);
+      setDailyMin(calculatedDailyMin);
+      setNightWeeklyHour(calculatedNightHour);
+      setNightWeeklyMin(calculatedNightMin);
+    }
+  }, [useAutoTimeCalc, fixedStartTime, fixedEndTime, breakHours, weeklyDays]);
 
   // 일괄 적용 실행 함수
   const applyBatchSchedule = () => {
@@ -648,89 +685,84 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
               )}
 
-              {/* A. 고정 근무 모드 선택 파라미터 (주당 근무일수 / 하루 실근로 / ☕ 일일 휴게시간 / 주당 야간) */}
+              {/* A. 고정 근무 모드 선택 파라미터 (시업/종업시간 기반 100% 자동 야간/실근로시간 계산) */}
               {workScheduleType === 'fixed' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.25fr 1fr 1.25fr', gap: '0.45rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 근무일수</label>
-                    <select
-                      value={weeklyDays}
-                      onChange={(e) => setWeeklyDays(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>주 {d}일 근무</option>)}
-                    </select>
+                <div style={{ background: '#0f172a', padding: '0.75rem', borderRadius: '10px', border: '1.5px solid #38bdf8', marginTop: '0.35rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 900 }}>
+                      ⚡ 출근(시업) & 퇴근(종업) 시간 입력 ➔ 야간/실근로시간 100% 자동 정밀 계산
+                    </span>
+                    <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={useAutoTimeCalc}
+                        onChange={(e) => setUseAutoTimeCalc(e.target.checked)}
+                      />
+                      자동 계산 사용
+                    </label>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 체류시간 (구속시간)</label>
-                    <div style={{ display: 'flex', gap: '0.15rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.45rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.15rem' }}>⏰ 출근 (시업시각)</label>
                       <select
-                        value={dailyHour}
-                        onChange={(e) => setDailyHour(Number(e.target.value))}
-                        style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        value={fixedStartTime}
+                        onChange={(e) => setFixedStartTime(e.target.value)}
+                        style={{ width: '100%', padding: '0.35rem 0.1rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
                       >
-                        {Array.from({ length: 25 }, (_, i) => i).map(h => (
-                          <option key={h} value={h}>{h}시간</option>
-                        ))}
+                        {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.15rem' }}>⏰ 퇴근 (종업시각)</label>
                       <select
-                        value={dailyMin}
-                        onChange={(e) => setDailyMin(Number(e.target.value))}
-                        style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                        value={fixedEndTime}
+                        onChange={(e) => setFixedEndTime(e.target.value)}
+                        style={{ width: '100%', padding: '0.35rem 0.1rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
                       >
-                        {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
-                          <option key={m} value={m}>{m}분</option>
-                        ))}
+                        {TIME_OPTIONS_24H.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.15rem' }}>☕ 일일 휴게시간</label>
+                      <select
+                        value={breakHours}
+                        onChange={(e) => setBreakHours(Number(e.target.value))}
+                        style={{ width: '100%', padding: '0.35rem 0.1rem', background: '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                      >
+                        <option value={0}>0분 (무휴게)</option>
+                        <option value={0.5}>30분 (4h 기준)</option>
+                        <option value={1}>1시간 (8h 기준)</option>
+                        <option value={1.5}>1시간 30분</option>
+                        <option value={2}>2시간</option>
+                        <option value={2.5}>2시간 30분</option>
+                        <option value={3}>3시간</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.15rem' }}>주당 근무일수</label>
+                      <select
+                        value={weeklyDays}
+                        onChange={(e) => setWeeklyDays(Number(e.target.value))}
+                        style={{ width: '100%', padding: '0.35rem', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>주 {d}일 근무</option>)}
                       </select>
                     </div>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.2rem' }}>☕ 휴게시간 (자동차감)</label>
-                    <select
-                      value={breakHours}
-                      onChange={(e) => setBreakHours(Number(e.target.value))}
-                      style={{ width: '100%', padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
-                    >
-                      <option value={0}>휴게 0분 (무휴게)</option>
-                      <option value={0.5}>휴게 30분 (법정 4h)</option>
-                      <option value={1}>휴게 1시간 (법정 8h)</option>
-                      <option value={1.5}>휴게 1시간 30분</option>
-                      <option value={2}>휴게 2시간</option>
-                      <option value={2.5}>휴게 2시간 30분</option>
-                      <option value={3}>휴게 3시간</option>
-                    </select>
+                  {/* 수동 커스텀 미세 조율용 수치 확인 */}
+                  <div style={{ marginTop: '0.45rem', padding: '0.35rem 0.5rem', background: '#1e293b', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem' }}>
+                    <span style={{ color: '#34d399', fontWeight: 800 }}>
+                      ⚡ 자동 정산 실근로: 1일 {dailyHour}시간 {dailyMin}분 (휴게 {breakHours * 60}분 차감)
+                    </span>
+                    <span style={{ color: nightWeeklyHour > 0 || nightWeeklyMin > 0 ? '#38bdf8' : '#94a3b8', fontWeight: 800 }}>
+                      🌙 자동 정산 야간근로: 주당 {nightWeeklyHour}시간 {nightWeeklyMin}분
+                    </span>
                   </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 야간 (시간+5분)</label>
-                    <div style={{ display: 'flex', gap: '0.15rem' }}>
-                      <select
-                        value={nightWeeklyHour}
-                        onChange={(e) => setNightWeeklyHour(Number(e.target.value))}
-                        style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
-                      >
-                        {Array.from({ length: 25 }, (_, i) => i).map(h => (
-                          <option key={h} value={h}>{h}시간</option>
-                        ))}
-                      </select>
-                      <select
-                        value={nightWeeklyMin}
-                        onChange={(e) => setNightWeeklyMin(Number(e.target.value))}
-                        style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
-                      >
-                        {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
-                          <option key={m} value={m}>{m}분</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {workScheduleType === 'fixed' && (
-                <div style={{ fontSize: '0.7rem', color: '#38bdf8', marginTop: '0.3rem', fontWeight: 700 }}>
-                  💡 실근로 정산 안내: 하루 체류시간({dailyHour}시간 {dailyMin}분) - 휴게시간({breakHours > 0 ? `${breakHours * 60}분` : '0분'}) = <strong>순수 실근로시간({Math.max(0, dailyHour + (dailyMin/60) - breakHours)}시간)</strong>으로 수당이 자동 정확 계산됩니다!
                 </div>
               )}
 
