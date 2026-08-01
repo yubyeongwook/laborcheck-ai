@@ -302,13 +302,14 @@ export default function Home() {
     };
 
     setLatestCalcResult(newResultObj);
+    setShowPayslipModal(true); // 📄 사장님 요구사항: 아래 갱신 버튼 클릭 시 급여명세서 모달 짠 노출!
 
     // 챗봇 메시지에 변경사항 안내 메시지 추가
     setMessages(prev => [
       ...prev,
       {
         sender: 'secretary',
-        text: `🧮 **[월급 계산기 수치 직접 수정 반영 완료]**\n\n월급 계산기에서 수정하신 조건(**시급 ${updatedCalc.hourlyRate.toLocaleString()}원, 주 ${updatedCalc.weeklyDays}일 근무, 하루 ${updatedCalc.dailyWorkHours}시간**)이 0% 오차로 정밀 반영되었습니다! 💡\n\n---\n\n- 💰 **세전 월급 총액**: **${res.totalGross.toLocaleString()}원**\n- 💵 **예상 실수령액**: **${res.netPay.toLocaleString()}원**\n- 📄 아래 **[급여명세서 보기/출력]** 및 **[실시간 계산기 수정]** 버튼을 통해 언제든지 수치를 자유롭게 재조정하실 수 있습니다!`
+        text: `🧮 **[월급 계산기 수치 직접 수정 반영 완료]**\n\n월급 계산기에서 수정하신 조건(**시급 ${updatedCalc.hourlyRate.toLocaleString()}원, 주 ${updatedCalc.weeklyDays}일 근무, 하루 ${updatedCalc.dailyWorkHours}시간**)이 0% 오차로 정밀 반영되었습니다! 💡\n\n---\n\n- 💰 **세전 월급 총액**: **${res.totalGross.toLocaleString()}원**\n- 💵 **예상 실수령액**: **${res.netPay.toLocaleString()}원**\n- 📄 법정 급여명세서 팝업이 활성화되었습니다. [인쇄 / PDF 저장 / 카톡 발송]을 이용하실 수 있습니다!`
       }
     ]);
   };

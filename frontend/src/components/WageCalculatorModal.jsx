@@ -76,7 +76,11 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [targetGrossSalary, setTargetGrossSalary] = useState(2800000);
 
   // 💡 국민연금 부과 대상 소득월액 (적용액) 직접 입력 상태 (기본 260만원)
-  const [pensionBaseInput, setPensionBaseInput] = useState(2600000);
+  const [pensionBaseInput, setPensionBaseInput] = useState(calcData?.pensionBase || 2600000);
+
+  // ⚠️ 결근 / 조퇴·외출 정밀 공제 state
+  const [absentDays, setAbsentDays] = useState(0);
+  const [latenessHours, setLatenessHours] = useState(0);
 
   // 일괄 적용 실행 함수
   const applyBatchSchedule = () => {
@@ -191,7 +195,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const incomeTax = Math.round(totalGross * 0.015 / 10) * 10;
     const localIncomeTax = Math.round(incomeTax * 0.1 / 10) * 10;
 
-    const totalDeductions = nationalPension + healthInsurance + longtermCare + employmentInsurance + incomeTax + localIncomeTax;
+    // 결근 및 조퇴·외출 정밀 공제액 ((결근일수 × 일일실근로시간 + 조퇴시간) × 통상시급)
+    const absenceDeduction = Math.round(((absentDays * computedDailyNetWork) + latenessHours) * hourlyRate);
+
+    const totalDeductions = nationalPension + healthInsurance + longtermCare + employmentInsurance + incomeTax + localIncomeTax + absenceDeduction;
     const netPay = totalGross - totalDeductions;
 
     // 산출시간 (가산율 적용 전 진짜 일한 실제시간)
@@ -247,6 +254,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       mealPay,
       pensionBase,
       totalGross,
+      absentDays,
+      latenessHours,
+      absenceDeduction,
       totalDeductions,
       extraOvertimeAllowance,
       nationalPension,
@@ -658,9 +668,46 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     </div>
                   </div>
                 )}
-              </div>
 
-              {/* 사업주 약정 세전 월급 정액 세팅 */}
+              {/* ⚠️ 결근 / 조퇴·외출 정밀 공제 설정 */}
+              <div style={{ background: '#0f172a', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(244, 63, 94, 0.4)', marginTop: '0.4rem' }}>
+                <div style={{ fontSize: '0.74rem', color: '#f43f5e', fontWeight: 800, marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  ⚠️ 결근 / 조퇴·외출 정밀 공제 설정
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>무단/미유급 결근일수 (일)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="31"
+                      value={absentDays}
+                      onChange={(e) => setAbsentDays(Math.max(0, Number(e.target.value)))}
+                      style={{ width: '100%', padding: '0.25rem', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', fontSize: '0.75rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>조퇴·외출 시간 (시간)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value={latenessHours}
+                      onChange={(e) => setLatenessHours(Math.max(0, Number(e.target.value)))}
+                      style={{ width: '100%', padding: '0.25rem', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', fontSize: '0.75rem' }}
+                    />
+                  </div>
+                </div>
+                {calculated.absenceDeduction > 0 && (
+                  <div style={{ fontSize: '0.7rem', color: '#f43f5e', marginTop: '0.35rem', fontWeight: 800 }}>
+                    🔻 결근·조퇴 차감 공제액: 총 {calculated.absenceDeduction.toLocaleString()}원 이 급여명세서 공제 항목에 차감 반영됩니다.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 사업주 약정 세전 월급 정액 세팅 */}
               <div style={{ background: '#0f172a', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.3)', marginTop: '0.2rem' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#38bdf8', fontWeight: 800, cursor: 'pointer', marginBottom: '0.3rem' }}>
                   <input
@@ -765,12 +812,28 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#f43f5e' }}>- {calculated.totalDeductions.toLocaleString()} 원</span>
                 </div>
 
-                {/* 국민연금 과세표준액 */}
-                <div style={{ background: '#1e293b', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
+                {calculated.absenceDeduction > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#f43f5e', fontSize: '0.75rem', fontWeight: 700 }}>
+                    <span>🔻 결근·조퇴 차감 공제</span>
+                    <span>- {calculated.absenceDeduction.toLocaleString()} 원</span>
+                  </div>
+                )}
+
+                {/* 💡 국민연금 부과 대상 금액 (과세표준액) 수치 직접 변경 인풋 폼 */}
+                <div style={{ background: '#1e293b', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid #0284c7', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
                   <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                     💡 국민연금 부과 대상 금액 (과세표준액)
                   </span>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 900, color: '#38bdf8' }}>{calculated.pensionBase.toLocaleString()} 원</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                    <input
+                      type="number"
+                      step="10000"
+                      value={pensionBaseInput}
+                      onChange={(e) => setPensionBaseInput(Number(e.target.value))}
+                      style={{ width: '100px', padding: '0.2rem 0.3rem', background: '#0f172a', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 900, textAlign: 'right' }}
+                    />
+                    <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 800 }}>원</span>
+                  </div>
                 </div>
 
               </div>
