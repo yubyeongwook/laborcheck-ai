@@ -394,8 +394,39 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
           
           {/* 1) 좌측: 입력 컨트롤러 */}
           <div style={{ background: '#1e293b', padding: '1.2rem', borderRadius: '14px', border: '1px solid #334155' }}>
-            <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.85rem' }}>
+            <div style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.65rem' }}>
               ⏱️ 1. 근무 조건 및 수당 파라미터 조율
+            </div>
+
+            {/* 💰 급여 지급 형태 선택 (월급제 vs 주급제 vs 일급제 vs 시급제) 최상단 1순위 탑재 */}
+            <div style={{ background: '#0f172a', padding: '0.65rem 0.8rem', borderRadius: '10px', border: '1.5px solid #38bdf8', marginBottom: '0.75rem' }}>
+              <label style={{ display: 'block', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 900, marginBottom: '0.35rem' }}>
+                💰 급여 지급 형태 선택 (클릭하여 자유 변경)
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.3rem' }}>
+                {[
+                  { id: 'monthly', label: '📅 월급제' },
+                  { id: 'weekly', label: '🗓️ 주급제' },
+                  { id: 'daily', label: '📆 일급제' },
+                  { id: 'hourly', label: '⏱️ 시급제' }
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setPayType(t.id)}
+                    style={{
+                      padding: '0.5rem 0.2rem', borderRadius: '6px',
+                      background: payType === t.id ? 'linear-gradient(135deg, #0284c7, #38bdf8)' : '#1e293b',
+                      color: payType === t.id ? '#ffffff' : '#94a3b8',
+                      border: payType === t.id ? '1px solid #38bdf8' : '1px solid #334155',
+                      fontWeight: 900, fontSize: '0.78rem', cursor: 'pointer',
+                      boxShadow: payType === t.id ? '0 2px 8px rgba(56, 189, 248, 0.4)' : 'none'
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* 시급제/주급제/일급제 선택 시 주 15시간 이상 여부 체크박스 */}
