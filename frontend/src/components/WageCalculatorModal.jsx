@@ -475,9 +475,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                         onChange={(e) => setShiftDaysMonth(Number(e.target.value))}
                         style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
                       >
-                        <option value={15}>월 15일 근무 (30일달)</option>
-                        <option value={16}>월 16일 근무 (31일달)</option>
-                        <option value={15.2}>월평균 15.2일 정액 (표준)</option>
+                        <option value={15}>월 15일 근무 (퐁당퐁당 30일달)</option>
+                        <option value={16}>월 16일 근무 (퐁당퐁당 31일달)</option>
+                        <option value={15.2}>월평균 15.2일 정액 (격일제 표준)</option>
+                        <option value={23.9}>격주제 (한 주 6일 / 한 주 5일 퐁당퐁당 교대)</option>
                       </select>
                     </div>
                     <div>
