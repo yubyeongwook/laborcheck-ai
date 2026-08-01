@@ -1805,6 +1805,26 @@ export default function Home() {
         </div>
       )}
 
+      {/* 🧮 메인 본문 인라인 실시간 월급 계산기 & 법정 명세서 섹션 (원래 화면 복원) */}
+      <section style={{ marginTop: '3rem', marginBottom: '2rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+          <h2 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#f8fafc', margin: '0 0 0.4rem 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <Wallet size={26} color="#38bdf8" /> 0% 오차 실시간 대화형 월급 계산기 & 명세서
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0 }}>
+            아래 조율 패널에서 수치(시급, 5인 이상/미만, 식대 비과세 등)를 직접 수정하시면, 우측 2026 최신 법정 임금명세서와 주휴수당 분리 내역이 실시간으로 짠 반영됩니다.
+          </p>
+        </div>
+
+        <WageCalculatorModal
+          isOpen={true}
+          isInline={true}
+          onClose={() => {}}
+          calcData={latestCalcResult}
+          onApplyChanges={handleApplyCalcModalChanges}
+        />
+      </section>
+
       {/* 📄 법정 급여명세서 인쇄/PDF 팝업 */}
       {showPayslipModal && (
         <PayslipModal data={latestCalcResult || {}} onClose={() => setShowPayslipModal(false)} />

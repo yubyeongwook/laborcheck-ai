@@ -30,7 +30,7 @@ const calculateNightHours = (startStr, endStr) => {
   return Math.round((nightMin / 60) * 10) / 10;
 };
 
-export default function WageCalculatorModal({ isOpen, onClose, calcData, onApplyChanges }) {
+export default function WageCalculatorModal({ isOpen, onClose, calcData, onApplyChanges, isInline = false }) {
   if (!isOpen) return null;
 
   // 계산기 로컬 폼 상태
@@ -250,7 +250,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
         weeklyDays: calculated.activeDaysCount,
         dailyWorkHours: calculated.dailyWorkHours,
         breakHours,
-        weeklyNightHours: calculated.monthlyNightHours / 4.35,
+    weeklyNightHours: calculated.monthlyNightHours / 4.35,
         holidayDaysYear,
         totalAnnualLeaveDays,
         usedAnnualLeaveDays,
@@ -262,18 +262,16 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     onClose();
   };
 
+  const modalContainerStyle = isInline ? {
+    width: '100%', margin: '1rem 0'
+  } : {
+    position: 'fixed', inset: 0, zIndex: 99999,
+    background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+  };
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 99999,
-      background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
-    }}>
-      <div style={{
-        background: '#0f172a', color: '#f8fafc', width: '100%', maxWidth: '1040px',
-        maxHeight: '94vh', overflowY: 'auto', borderRadius: '20px', padding: '1.5rem 1.75rem',
-        border: '1px solid rgba(56, 189, 248, 0.3)',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)'
-      }}>
+    <div style={modalContainerStyle}>
         {/* 헤더 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #1e293b', paddingBottom: '0.85rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -899,6 +897,5 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
         </div>
       </div>
-    </div>
   );
 }
