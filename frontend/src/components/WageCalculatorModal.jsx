@@ -200,7 +200,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const netHolidayHoursStr = (holidayDaysYear * computedDailyNetWork / 12).toFixed(2);
 
     // 주휴수당 분리 산출 (주 15시간 이상 시 유급 주휴 반영)
-    const weeklyHolidayHoursMonthly = (computedWeeklyWorkHours >= 15) ? Number(((computedWeeklyWorkHours / 40) * 8 * 4.3452).toFixed(1)) : 0;
+    const weeklyHolidayHoursMonthly = (computedWeeklyNetWork >= 15) ? Number(((computedWeeklyNetWork / 40) * 8 * 4.3452).toFixed(1)) : 0;
     const pureBaseHoursMonthly = Math.max(0, Number((baseHoursMonthly - weeklyHolidayHoursMonthly).toFixed(1)));
     const pureBasePay = Math.round(pureBaseHoursMonthly * hourlyRate);
     const weeklyHolidayPay = Math.max(0, actualBasePay - pureBasePay);
