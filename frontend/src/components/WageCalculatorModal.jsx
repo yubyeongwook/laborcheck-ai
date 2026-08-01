@@ -98,41 +98,6 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [shiftSpecialHour, setShiftSpecialHour] = useState(4); // 격주/토요 시간 (0~24)
   const [shiftSpecialMin, setShiftSpecialMin] = useState(0); // 격주/토요 5분단위 분 (0, 5, 10, 15...)
 
-  // 💡 사장님 지침: 출근시간(시업)과 퇴근시간(종업) + 휴게시간 선택 시 100% 자동 야간/실근로시간 계산!
-  React.useEffect(() => {
-    if (useAutoTimeCalc && fixedStartTime && fixedEndTime) {
-      const [sH, sM] = fixedStartTime.split(':').map(Number);
-      const [eH, eM] = fixedEndTime.split(':').map(Number);
-      let startMin = sH * 60 + (sM || 0);
-      let endMin = eH * 60 + (eM || 0);
-      if (endMin <= startMin) endMin += 24 * 60; // 익일 퇴근
-
-      const totalStayMin = endMin - startMin;
-      const breakMin = breakHours * 60;
-      const netWorkMinTotal = Math.max(0, totalStayMin - breakMin);
-
-      const calculatedDailyHour = Math.floor(netWorkMinTotal / 60);
-      const calculatedDailyMin = Math.round((netWorkMinTotal % 60) / 5) * 5;
-
-      // 야간 근로시간 (밤 22:00 ~ 아침 06:00 사이 총 분)
-      let dailyNightMin = 0;
-      for (let m = startMin; m < endMin; m++) {
-        const clockM = m % (24 * 60);
-        if (clockM >= 22 * 60 || clockM < 6 * 60) {
-          dailyNightMin++;
-        }
-      }
-      const weeklyNightMinTotal = dailyNightMin * weeklyDays;
-      const calculatedNightHour = Math.floor(weeklyNightMinTotal / 60);
-      const calculatedNightMin = Math.round((weeklyNightMinTotal % 60) / 5) * 5;
-
-      setDailyHour(calculatedDailyHour);
-      setDailyMin(calculatedDailyMin);
-      setNightWeeklyHour(calculatedNightHour);
-      setNightWeeklyMin(calculatedNightMin);
-    }
-  }, [useAutoTimeCalc, fixedStartTime, fixedEndTime, breakHours, weeklyDays]);
-
   // 일괄 적용 실행 함수
   const applyBatchSchedule = () => {
     const bHours = parseFloat(batchBreak.replace('h', '')) || 0;
@@ -149,8 +114,33 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
   // 실시간 급여 및 근로시간 역산 엔진
   const computeSalary = () => {
-    const dailyHours = dailyHour + (dailyMin / 60);
-    const nightHoursWeekly = nightWeeklyHour + (nightWeeklyMin / 60);
+    let dailyHours = dailyHour + (dailyMin / 60);
+    let nightHoursWeekly = nightWeeklyHour + (nightWeeklyMin / 60);
+
+    // 💡 시업(출근) & 종업(퇴근) 시간 기반 100% 야간/실근로시간 실시간 정밀 계산 (무한루프 0% 안심 설계)
+    if (workScheduleType === 'fixed' && useAutoTimeCalc && fixedStartTime && fixedEndTime) {
+      const [sH, sM] = fixedStartTime.split(':').map(Number);
+      const [eH, eM] = fixedEndTime.split(':').map(Number);
+      let startMin = sH * 60 + (sM || 0);
+      let endMin = eH * 60 + (eM || 0);
+      if (endMin <= startMin) endMin += 24 * 60; // 익일 퇴근
+
+      const totalStayMin = endMin - startMin;
+      const breakMin = breakHours * 60;
+      const netWorkMinTotal = Math.max(0, totalStayMin - breakMin);
+
+      dailyHours = netWorkMinTotal / 60;
+
+      // 야간 근로시간 (밤 22:00 ~ 아침 06:00 사이 총 분)
+      let dailyNightMin = 0;
+      for (let m = startMin; m < endMin; m++) {
+        const clockM = m % (24 * 60);
+        if (clockM >= 22 * 60 || clockM < 6 * 60) {
+          dailyNightMin++;
+        }
+      }
+      nightHoursWeekly = (dailyNightMin * weeklyDays) / 60;
+    }
 
     let computedWeeklyNetWork = 0;
     let computedWeeklyNightWork = 0;
