@@ -657,26 +657,26 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
             </div>
           </div>
 
-          {/* 2) 우측: 실시간 정식 법정 임금명세서 (첫 번째 스크린샷 PayslipModal과 100% 동일한 2열 문서 서식) */}
+          {/* 2) 우측: 실시간 정식 법정 임금명세서 (좌측 패널과 100% 동일한 다크 네이비 럭셔리 디자인) */}
           <div style={{
-            background: '#ffffff',
-            color: '#0f172a',
+            background: '#0f172a',
+            color: '#f8fafc',
             padding: '1.1rem',
             borderRadius: '14px',
-            border: '1px solid #cbd5e1',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
             display: 'flex',
             flexDirection: 'column',
-            justify: 'space-between',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)'
+            justifyContent: 'space-between',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
           }}>
             <div>
               {/* 문서 헤더 & 카톡 전송 퀵버튼 */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', borderBottom: '2px solid #0f172a', paddingBottom: '0.4rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', borderBottom: '2px solid #38bdf8', paddingBottom: '0.4rem' }}>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0f172a', letterSpacing: '0.05em' }}>
+                  <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '0.05em' }}>
                     임 금 명 세 서 (2026 최신 법정)
                   </h4>
-                  <span style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 600 }}>지급대상기간: 2026년 07월 (01일~말일) | 급여지급일: 2026년 07월 25일</span>
+                  <span style={{ fontSize: '0.62rem', color: '#94a3b8', fontWeight: 600 }}>지급대상기간: 2026년 07월 (01일~말일) | 급여지급일: 2026년 07월 25일</span>
                 </div>
                 <button
                   type="button"
@@ -695,7 +695,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.25rem',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
                   }}
                 >
                   <MessageSquare size={13} color="#000" /> 💬 카톡 전송
@@ -703,19 +703,19 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
               </div>
 
               {/* 사원 & 사업장 개요 상단 표 */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.68rem', marginBottom: '0.65rem', border: '1px solid #cbd5e1' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.68rem', marginBottom: '0.65rem', border: '1px solid #334155' }}>
                 <tbody>
                   <tr>
-                    <td style={{ background: '#f8fafc', padding: '0.25rem 0.35rem', fontWeight: 700, border: '1px solid #cbd5e1', width: '20%' }}>성 명</td>
-                    <td style={{ padding: '0.25rem 0.35rem', border: '1px solid #cbd5e1', width: '30%', fontWeight: 600 }}>신청 근로자</td>
-                    <td style={{ background: '#f8fafc', padding: '0.25rem 0.35rem', fontWeight: 700, border: '1px solid #cbd5e1', width: '20%' }}>사업장명</td>
-                    <td style={{ padding: '0.25rem 0.35rem', border: '1px solid #cbd5e1', width: '30%', fontWeight: 600 }}>노무체크 검증 사업장</td>
+                    <td style={{ background: '#1e293b', padding: '0.25rem 0.35rem', fontWeight: 700, border: '1px solid #334155', color: '#94a3b8', width: '20%' }}>성 명</td>
+                    <td style={{ padding: '0.25rem 0.35rem', border: '1px solid #334155', width: '30%', fontWeight: 600, color: '#f8fafc' }}>신청 근로자</td>
+                    <td style={{ background: '#1e293b', padding: '0.25rem 0.35rem', fontWeight: 700, border: '1px solid #334155', color: '#94a3b8', width: '20%' }}>사업장명</td>
+                    <td style={{ padding: '0.25rem 0.35rem', border: '1px solid #334155', width: '30%', fontWeight: 600, color: '#f8fafc' }}>노무체크 검증 사업장</td>
                   </tr>
                   <tr>
-                    <td style={{ background: '#f8fafc', padding: '0.25rem 0.35rem', fontWeight: 700, border: '1px solid #cbd5e1' }}>통상 시급</td>
-                    <td style={{ padding: '0.25rem 0.35rem', border: '1px solid #cbd5e1', fontWeight: 700, color: '#0369a1' }}>{hourlyRate.toLocaleString()} 원</td>
-                    <td style={{ background: '#f8fafc', padding: '0.25rem 0.35rem', fontWeight: 700, border: '1px solid #cbd5e1' }}>기본 산정시간</td>
-                    <td style={{ padding: '0.25rem 0.35rem', border: '1px solid #cbd5e1', fontWeight: 600 }}>209 시간 (주 40시간 기준)</td>
+                    <td style={{ background: '#1e293b', padding: '0.25rem 0.35rem', fontWeight: 700, border: '1px solid #334155', color: '#94a3b8' }}>통상 시급</td>
+                    <td style={{ padding: '0.25rem 0.35rem', border: '1px solid #334155', fontWeight: 700, color: '#38bdf8' }}>{hourlyRate.toLocaleString()} 원</td>
+                    <td style={{ background: '#1e293b', padding: '0.25rem 0.35rem', fontWeight: 700, border: '1px solid #334155', color: '#94a3b8' }}>기본 산정시간</td>
+                    <td style={{ padding: '0.25rem 0.35rem', border: '1px solid #334155', fontWeight: 600, color: '#e2e8f0' }}>209 시간 (주 40시간 기준)</td>
                   </tr>
                 </tbody>
               </table>
@@ -725,141 +725,139 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 
                 {/* 좌측: 지급 내역 (세전) */}
                 <div>
-                  <div style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.25rem', textAlign: 'center', fontWeight: 800, fontSize: '0.72rem', borderRadius: '4px 4px 0 0', border: '1px solid #bae6fd', borderBottom: 'none' }}>
+                  <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '0.25rem', textAlign: 'center', fontWeight: 800, fontSize: '0.72rem', borderRadius: '4px 4px 0 0', border: '1px solid rgba(56, 189, 248, 0.3)', borderBottom: 'none' }}>
                     지 급 내 역 (세전)
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.66rem', border: '1px solid #cbd5e1', background: '#ffffff' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.66rem', border: '1px solid #334155', background: '#0f172a' }}>
                     <thead>
-                      <tr style={{ background: '#f8fafc', color: '#475569' }}>
-                        <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center' }}>지급 항목</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center' }}>산출시간</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'right' }}>금액 (원)</th>
+                      <tr style={{ background: '#1e293b', color: '#94a3b8' }}>
+                        <th style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center' }}>지급 항목</th>
+                        <th style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center' }}>산출시간</th>
+                        <th style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'right' }}>금액 (원)</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', fontWeight: 600 }}>기본급 (순수 소정)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#64748b' }}>{calculated.pureBaseHoursMonthly}h</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700 }}>{calculated.pureBasePay.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#e2e8f0' }}>기본급 (순수 소정)</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#94a3b8' }}>{calculated.pureBaseHoursMonthly}h</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#f8fafc' }}>{calculated.pureBasePay.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', fontWeight: 700, color: '#047857', background: '#ecfdf5' }}>주휴수당 (유급주휴)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#047857', fontWeight: 700, background: '#ecfdf5' }}>{calculated.weeklyHolidayHoursMonthly}h</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 800, color: '#047857', background: '#ecfdf5' }}>{calculated.weeklyHolidayPay.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 700, color: '#34d399', background: 'rgba(16, 185, 129, 0.15)' }}>주휴수당 (유급주휴)</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#34d399', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)' }}>{calculated.weeklyHolidayHoursMonthly}h</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 800, color: '#34d399', background: 'rgba(16, 185, 129, 0.15)' }}>{calculated.weeklyHolidayPay.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', fontWeight: 600 }}>연장근로수당 (1.5배)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>{calculated.netOvertimeHours}h</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700 }}>{calculated.monthlyOvertimePay.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#e2e8f0' }}>연장근로수당 (1.5배)</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#38bdf8', fontWeight: 700 }}>{calculated.netOvertimeHours}h</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#f8fafc' }}>{calculated.monthlyOvertimePay.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', fontWeight: 600 }}>야간근로수당 (0.5배 가산)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>{calculated.netNightHours}h</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{calculated.nightAllowance.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#e2e8f0' }}>야간근로수당 (0.5배 가산)</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#38bdf8', fontWeight: 700 }}>{calculated.netNightHours}h</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#38bdf8' }}>{calculated.nightAllowance.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', fontWeight: 600 }}>휴일근로수당 (1.5배 가산)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#0369a1', fontWeight: 700 }}>{calculated.netHolidayHours}h</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#0369a1' }}>{calculated.holidayPayMonthly.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#e2e8f0' }}>휴일근로수당 (1.5배 가산)</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#38bdf8', fontWeight: 700 }}>{calculated.netHolidayHours}h</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#38bdf8' }}>{calculated.holidayPayMonthly.toLocaleString()}</td>
                       </tr>
                       {includeAnnualLeave && (
                         <tr>
-                          <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', fontWeight: 600 }}>연차휴가수당</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#6d28d9', fontWeight: 700 }}>{calculated.annualLeaveMonthlyHours}h</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#6d28d9' }}>{calculated.annualLeaveMonthlyPay.toLocaleString()}</td>
+                          <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#e2e8f0' }}>연차휴가수당</td>
+                          <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#c084fc', fontWeight: 700 }}>{calculated.annualLeaveMonthlyHours}h</td>
+                          <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#c084fc' }}>{calculated.annualLeaveMonthlyPay.toLocaleString()}</td>
                         </tr>
                       )}
                       {calculated.extraOvertimeAllowance > 0 && (
-                        <tr style={{ background: '#f0f9ff' }}>
-                          <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', fontWeight: 800, color: '#0369a1' }}>➕ 추가 연장 수당</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#0369a1' }}>약정차액조정</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 800, color: '#0369a1' }}>{calculated.extraOvertimeAllowance.toLocaleString()}</td>
+                        <tr>
+                          <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', color: '#38bdf8', fontWeight: 700 }}>➕ 추가 연장 수당</td>
+                          <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', fontSize: '0.62rem', color: '#38bdf8' }}>약정차액조정</td>
+                          <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 800, color: '#38bdf8' }}>{calculated.extraOvertimeAllowance.toLocaleString()}</td>
                         </tr>
                       )}
-                      <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#16a34a' }}>🍚 식대 (비과세)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#64748b' }}>-</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#16a34a' }}>{calculated.mealPay.toLocaleString()}</td>
-                      </tr>
-                      <tr style={{ background: '#e0f2fe', color: '#0369a1' }}>
-                        <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.25rem', fontWeight: 900 }}>지급액 계</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.25rem 0.25rem', textAlign: 'right', fontWeight: 900, fontSize: '0.75rem' }}>{calculated.totalGross.toLocaleString()} 원</td>
-                      </tr>
+                      {includeMeal && (
+                        <tr>
+                          <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', color: '#34d399', fontWeight: 700 }}>🍚 식대 (비과세)</td>
+                          <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#94a3b8' }}>-</td>
+                          <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#34d399' }}>{calculated.mealPay.toLocaleString()}</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
+                  <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '0.35rem 0.45rem', fontSize: '0.7rem', fontWeight: 900, border: '1px solid rgba(56, 189, 248, 0.3)', borderTop: 'none', display: 'flex', justifyContent: 'space-between', borderRadius: '0 0 4px 4px', color: '#38bdf8' }}>
+                    <span>지급액 계</span>
+                    <span>{calculated.totalGross.toLocaleString()} 원</span>
+                  </div>
                 </div>
 
-                {/* 우측: 공제 내역 (2026 최신 4대보험 & 세금) */}
+                {/* 우측: 공제 내역 (2026 최신 4대보험) */}
                 <div>
-                  <div style={{ background: '#fee2e2', color: '#991b1b', padding: '0.25rem', textAlign: 'center', fontWeight: 800, fontSize: '0.72rem', borderRadius: '4px 4px 0 0', border: '1px solid #fca5a5', borderBottom: 'none' }}>
+                  <div style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e', padding: '0.25rem', textAlign: 'center', fontWeight: 800, fontSize: '0.72rem', borderRadius: '4px 4px 0 0', border: '1px solid rgba(244, 63, 94, 0.3)', borderBottom: 'none' }}>
                     공 제 내 역 (2026 최신 4대보험)
                   </div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.65rem', border: '1px solid #cbd5e1', background: '#ffffff' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.66rem', border: '1px solid #334155', background: '#0f172a' }}>
                     <thead>
-                      <tr style={{ background: '#f8fafc', color: '#475569' }}>
-                        <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center' }}>공제 항목</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'center' }}>2026 요율</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.15rem', textAlign: 'right' }}>금액 (원)</th>
+                      <tr style={{ background: '#1e293b', color: '#94a3b8' }}>
+                        <th style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center' }}>공제 항목</th>
+                        <th style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center' }}>2026 요율</th>
+                        <th style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'right' }}>금액 (원)</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr style={{ background: '#f0f9ff' }}>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 700, color: '#0369a1', fontSize: '0.6rem' }}>💡 국민연금 부과 과세소득</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', color: '#0369a1', fontSize: '0.6rem' }}>
-                          적용 소득월액
-                        </td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', fontWeight: 800, color: '#0369a1', fontSize: '0.63rem' }}>
-                          {calculated.pensionBase.toLocaleString()} 원
-                        </td>
+                      <tr style={{ background: 'rgba(56, 189, 248, 0.05)' }}>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', fontSize: '0.6rem', color: '#38bdf8', fontWeight: 800 }}>💡 국민연금 부과 과세소득</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', fontSize: '0.58rem', color: '#38bdf8' }}>적용 소득월액</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'right', fontWeight: 900, color: '#38bdf8' }}>{calculated.pensionBase.toLocaleString()} 원</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>국민연금 (근로자 부담)</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', fontWeight: 700 }}>4.5%</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', fontWeight: 700, color: '#dc2626' }}>{calculated.nationalPension.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#e2e8f0' }}>국민연금 (근로자부담)</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', fontWeight: 800, color: '#f43f5e' }}>4.5%</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 700, color: '#f43f5e' }}>{calculated.nationalPension.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>건강보험</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', fontWeight: 700 }}>3.545%</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', color: '#dc2626' }}>{calculated.healthInsurance.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#e2e8f0' }}>건강보험</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', fontWeight: 700, color: '#f43f5e' }}>3.545%</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', color: '#f43f5e' }}>{calculated.healthInsurance.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>장기요양보험</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', fontWeight: 700 }}>12.95%</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', color: '#dc2626' }}>{calculated.longtermCare.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#e2e8f0' }}>장기요양보험</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#94a3b8' }}>12.95%</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', color: '#f43f5e' }}>{calculated.longtermCare.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>고용보험</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center', fontWeight: 700 }}>0.9%</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', color: '#dc2626' }}>{calculated.employmentInsurance.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', fontWeight: 600, color: '#e2e8f0' }}>고용보험</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', fontWeight: 700, color: '#f43f5e' }}>0.9%</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', color: '#f43f5e' }}>{calculated.employmentInsurance.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>근로소득세</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center' }}>간이세액표</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', color: '#dc2626' }}>{calculated.incomeTax.toLocaleString()}</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', color: '#94a3b8' }}>근로소득세</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#94a3b8' }}>간이세액표</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', textAlign: 'right', color: '#f43f5e' }}>{calculated.incomeTax.toLocaleString()}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', fontWeight: 600 }}>지방소득세</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.1rem', textAlign: 'center' }}>10%</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.18rem 0.15rem', textAlign: 'right', color: '#dc2626' }}>{calculated.localIncomeTax.toLocaleString()}</td>
-                      </tr>
-                      <tr style={{ background: '#fee2e2' }}>
-                        <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', fontWeight: 900, color: '#991b1b' }}>공제액 계</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: '0.2rem 0.25rem', textAlign: 'right', fontWeight: 900, color: '#991b1b', fontSize: '0.72rem' }}>- {calculated.totalDeductions.toLocaleString()} 원</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.25rem', color: '#94a3b8' }}>지방소득세</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'center', color: '#94a3b8' }}>10%</td>
+                        <td style={{ border: '1px solid #334155', padding: '0.2rem 0.15rem', textAlign: 'right', color: '#f43f5e' }}>{calculated.localIncomeTax.toLocaleString()}</td>
                       </tr>
                     </tbody>
                   </table>
+                  <div style={{ background: 'rgba(244, 63, 94, 0.1)', padding: '0.35rem 0.45rem', fontSize: '0.7rem', fontWeight: 900, border: '1px solid rgba(244, 63, 94, 0.3)', borderTop: 'none', display: 'flex', justifyContent: 'space-between', borderRadius: '0 0 4px 4px', color: '#f43f5e' }}>
+                    <span>공제액 계</span>
+                    <span>- {calculated.totalDeductions.toLocaleString()} 원</span>
+                  </div>
                 </div>
 
               </div>
 
-              {/* 3. 최종 실수령액 인장 박스 */}
+              {/* 하단 실수령액 박스 */}
               <div style={{
-                padding: '0.55rem 0.75rem', borderRadius: '8px',
+                padding: '0.6rem 0.75rem', borderRadius: '10px',
                 background: 'linear-gradient(135deg, #0f172a, #1e293b)',
-                color: '#ffffff', textAlign: 'center', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.3)'
+                color: '#ffffff', textAlign: 'center', boxShadow: 'inset 0 2px 6px rgba(0, 0, 0, 0.6)', border: '1px solid rgba(56, 189, 248, 0.4)'
               }}>
-                <div style={{ fontSize: '0.65rem', color: '#38bdf8', marginBottom: '0.1rem', fontWeight: 700 }}>💰 실 수 령 액 (차 인 지 급 액)</div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#38bdf8' }}>
+                <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600 }}>💰 실수령액 (차인지급액)</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#38bdf8', letterSpacing: '-0.02em', margin: '0.1rem 0' }}>
                   {calculated.netPay.toLocaleString()} 원
                 </div>
               </div>
