@@ -199,24 +199,31 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const netNightHoursStr = (finalMonthlyNightHours / (is5Over ? 0.5 : 1.0)).toFixed(2);
     const netHolidayHoursStr = (holidayDaysYear * computedDailyNetWork / 12).toFixed(2);
 
-    // 기본급 & 주휴수당 시간 산출 (주 5일 8시간/월 209시간 통상인 경우 무조건 기본급 174h, 주휴수당 35h 정수 고정!)
+    // 기본급 & 주휴수당 시간 산출 (사장님 지침 100% 반영)
+    // 1) 합산 209시간 이상 (주 40시간 이상 통상 근로자): 기본급 174h, 주휴수당 35h 정수 표기!
+    // 2) 합산 209시간 미만 (단시간/알바/시급/일급 근로자): 근로기준법 법정 정밀 산식 (소수점 2자리 .xx h)
     let displayBaseHours = 174;
     let displayWeeklyHolidayHours = 35;
-    let pureBasePay = Math.round(174 * hourlyRate);
-    let weeklyHolidayPay = Math.round(35 * hourlyRate);
+    let pureBasePay = 0;
+    let weeklyHolidayPay = 0;
 
-    if ((weeklyDays === 5 && dailyHours === 8) || (baseHoursMonthly >= 209 && computedWeeklyNetWork >= 40)) {
+    const totalMonthlyWorkAndHoliday = baseHoursMonthly; // 209h
+
+    if (totalMonthlyWorkAndHoliday >= 209 && computedWeeklyNetWork >= 40) {
       displayBaseHours = 174;
       displayWeeklyHolidayHours = 35;
       pureBasePay = Math.round(174 * hourlyRate);
       weeklyHolidayPay = actualBasePay - pureBasePay;
     } else {
-      const weeklyHolidayHoursMonthly = (computedWeeklyNetWork >= 15) ? Number(((computedWeeklyNetWork / 40) * 8 * 4.3452).toFixed(2)) : 0;
-      const pureBaseHoursMonthly = Number(Math.max(0, baseHoursMonthly - weeklyHolidayHoursMonthly).toFixed(2));
-      displayBaseHours = pureBaseHoursMonthly;
-      displayWeeklyHolidayHours = weeklyHolidayHoursMonthly;
+      // 209시간 미만: 근로기준법 기준 소수점 2자리 정밀 계산
+      const calcWeeklyHolidayHours = (computedWeeklyNetWork >= 15) ? Number(((computedWeeklyNetWork / 40) * 8 * 4.3452).toFixed(2)) : 0;
+      const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.3452).toFixed(2));
+      const calcPureBaseHours = Number(Math.max(0, calcTotalMonthlyHours - calcWeeklyHolidayHours).toFixed(2));
+      
+      displayBaseHours = calcPureBaseHours;
+      displayWeeklyHolidayHours = calcWeeklyHolidayHours;
       pureBasePay = Math.round(displayBaseHours * hourlyRate);
-      weeklyHolidayPay = Math.max(0, actualBasePay - pureBasePay);
+      weeklyHolidayPay = Math.max(0, Math.round(calcTotalMonthlyHours * hourlyRate) - pureBasePay);
     }
 
     return {

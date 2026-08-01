@@ -50,11 +50,20 @@ export default function PayslipModal({ data = {}, onClose }) {
     netPay = 2118480
   } = data;
 
-  // 주휴수당 분리 안전 보정
-  const calcWeeklyHolidayHours = weeklyHolidayHoursMonthly !== undefined ? weeklyHolidayHoursMonthly : 34.8;
-  const calcWeeklyHolidayPay = weeklyHolidayPay !== undefined ? weeklyHolidayPay : Math.round(calcWeeklyHolidayHours * (hourlyRate || 10320));
-  const calcPureBaseHours = pureBaseHoursMonthly !== undefined ? pureBaseHoursMonthly : Number((baseHours - calcWeeklyHolidayHours).toFixed(1));
-  const calcPureBasePay = pureBasePay !== undefined ? pureBasePay : (baseSalary - calcWeeklyHolidayPay);
+  // 주휴수당 분리 안전 보정 (209시간 이상일 때만 기본 174h, 주휴 35h 정수 표기!)
+  const is209Over = (baseHours >= 209);
+  const calcWeeklyHolidayHours = weeklyHolidayHoursMonthly !== undefined 
+    ? weeklyHolidayHoursMonthly 
+    : (is209Over ? 35 : 34.8);
+  const calcWeeklyHolidayPay = weeklyHolidayPay !== undefined 
+    ? weeklyHolidayPay 
+    : Math.round(calcWeeklyHolidayHours * (hourlyRate || 10320));
+  const calcPureBaseHours = pureBaseHoursMonthly !== undefined 
+    ? pureBaseHoursMonthly 
+    : (is209Over ? 174 : Number((baseHours - calcWeeklyHolidayHours).toFixed(2)));
+  const calcPureBasePay = pureBasePay !== undefined 
+    ? pureBasePay 
+    : (baseSalary - calcWeeklyHolidayPay);
 
   // 💡 금액은 존재하나 시간값이 0인 경우 통상시급 기준 산출시간 안전 보정 (Fallback)
   const displayHolidayHours = holidayHours > 0 
