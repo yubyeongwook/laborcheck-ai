@@ -48,6 +48,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// 브라우저 및 CDN 캐시 방지 미들웨어 (항상 최신 빌드 화면만 서빙)
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // 프론트엔드 정적 번들 자산 (JS, CSS) 우선 서빙
 const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
 app.use(express.static(frontendDistPath));
