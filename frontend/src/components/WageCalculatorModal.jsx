@@ -177,12 +177,21 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     let actualBasePay = 1795680;
     let displayBaseHours = '174h';
 
+    // 💡 주급제/일급제/시급제 여부 판정 (* 1.2배 적용)
+    const isFlexPayType = (payType === 'weekly' || payType === 'daily' || payType === 'hourly');
+
     if (isNormalStandardWorker) {
       baseHoursMonthly = 209;
       actualBasePay = 1795680;
       displayBaseHours = '174h';
+    } else if (isFlexPayType) {
+      // 💡 사장님 지침: 주급제, 일급제, 시급제는 기본급시간에 * 1.2 적용!
+      const flexFactor = is15HoursOver ? 1.2 : 1.0;
+      const netMonthlyHours = Math.round((computedWeeklyNetWork * 4.345 * flexFactor) * 100) / 100;
+      actualBasePay = Math.round(netMonthlyHours * hourlyRate);
+      displayBaseHours = `${netMonthlyHours}h`;
     } else {
-      // 209시간 미만이거나 시급제/주 15h 미만 파트타임
+      // 209시간 미만이거나 파트타임
       const netMonthlyHours = Math.round((computedWeeklyNetWork * 4.345) * 100) / 100;
       actualBasePay = Math.round(netMonthlyHours * hourlyRate);
       displayBaseHours = `${netMonthlyHours}h`;
@@ -195,6 +204,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     if (isNormalStandardWorker) {
       monthlyHolidayHours = 35;
       holidayPayMonthly = 361200;
+    } else if (isFlexPayType && is15HoursOver) {
+      // 주급/일급/시급제는 기본급시간에 * 1.2 가 가산 포함되었으므로 중복 가산 방지
+      monthlyHolidayHours = 0;
+      holidayPayMonthly = 0;
     } else if (is15HoursOver) {
       // 주 15시간 이상 ~ 40시간 미만 비례 주휴수당
       monthlyHolidayHours = Math.round((computedWeeklyNetWork / 40 * 35) * 100) / 100;
@@ -283,14 +296,15 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       pureBasePay = 1795680;
       weeklyHolidayPay = 361200;
     } else {
-      // 209시간 미만 또는 주 15시간 미만 파트타임/시급제
-      const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
+      // 209시간 미만 또는 주급/일급/시급 파트타임 (* 1.2 적용)
+      const flexFactor = (isFlexPayType && is15HoursOver) ? 1.2 : 1.0;
+      const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.345 * flexFactor).toFixed(2));
       const calcWeeklyHolidayHours = is15HoursOver ? Number(((computedWeeklyNetWork / 40) * 35).toFixed(2)) : 0;
       
       displayBaseHoursStr = `${calcTotalMonthlyHours}`;
-      displayWeeklyHolidayHoursStr = is15HoursOver ? `${calcWeeklyHolidayHours}` : '주 15h 미만 0';
+      displayWeeklyHolidayHoursStr = (isFlexPayType && is15HoursOver) ? '기본급 * 1.2 포함' : (is15HoursOver ? `${calcWeeklyHolidayHours}` : '주 15h 미만 0');
       pureBasePay = Math.round(calcTotalMonthlyHours * hourlyRate);
-      weeklyHolidayPay = is15HoursOver ? Math.round(calcWeeklyHolidayHours * hourlyRate) : 0;
+      weeklyHolidayPay = (isFlexPayType && is15HoursOver) ? 0 : (is15HoursOver ? Math.round(calcWeeklyHolidayHours * hourlyRate) : 0);
     }
 
     return {
