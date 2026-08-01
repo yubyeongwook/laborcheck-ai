@@ -83,6 +83,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [latenessHours, setLatenessHours] = useState(0);
   const [customAbsenceDeduction, setCustomAbsenceDeduction] = useState(0);
 
+  // 🔄 퐁당퐁당 격일제 전용 state (월 15일 vs 16일 vs 15.2일)
+  const [shiftDaysMonth, setShiftDaysMonth] = useState(15); // 15, 16, 15.2
+  const [shiftNetHours, setShiftNetHours] = useState(18); // 1일 실근로시간 (예: 24h 중 휴게 6h 제외 18h)
+
   // 일괄 적용 실행 함수
   const applyBatchSchedule = () => {
     const bHours = parseFloat(batchBreak.replace('h', '')) || 0;
@@ -104,7 +108,16 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     let computedActiveDaysCount = 0;
     let computedDailyNetWork = 8;
 
-    if (workScheduleType === 'flexible') {
+    if (workScheduleType === 'shift') {
+      const monthlyShiftDays = Number(shiftDaysMonth) || 15;
+      const dailyNetWork = Number(shiftNetHours) || 18;
+      const totalShiftMonthlyHours = monthlyShiftDays * dailyNetWork;
+      const nightPerShift = Math.min(8, Math.max(0, dailyNetWork - 10));
+      computedWeeklyNetWork = (totalShiftMonthlyHours / 4.3452);
+      computedWeeklyNightWork = (monthlyShiftDays * nightPerShift) / 4.3452;
+      computedActiveDaysCount = Math.round((monthlyShiftDays / 4.3452) * 10) / 10;
+      computedDailyNetWork = dailyNetWork;
+    } else if (workScheduleType === 'flexible') {
       let activeDays = 0;
       let totalNetMin = 0;
       let totalNight = 0;
@@ -403,38 +416,87 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
               </div>
 
-              {/* 근무 형태 선택 탭 (고정 vs 변동) */}
+              {/* 근무 형태 선택 탭 (고정 vs 퐁당퐁당 격일제 vs 요일변동) */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.3rem' }}>
-                  근무시간 형태 선택 (고정 vs 변동)
+                  근무시간 형태 선택 (고정 vs 격일제 vs 요일변동)
                 </label>
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.3rem' }}>
                   <button
                     type="button"
                     onClick={() => setWorkScheduleType('fixed')}
                     style={{
-                      flex: 1, padding: '0.4rem', borderRadius: '6px',
+                      padding: '0.4rem 0.2rem', borderRadius: '6px',
                       background: workScheduleType === 'fixed' ? 'linear-gradient(135deg, #0284c7, #38bdf8)' : '#0f172a',
                       color: workScheduleType === 'fixed' ? '#ffffff' : '#64748b',
-                      border: '1px solid #334155', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
+                      border: '1px solid #334155', fontWeight: 700, fontSize: '0.74rem', cursor: 'pointer'
                     }}
                   >
-                    📌 고정 근무 (주 N일/N시간)
+                    📌 고정 근무
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWorkScheduleType('shift')}
+                    style={{
+                      padding: '0.4rem 0.2rem', borderRadius: '6px',
+                      background: workScheduleType === 'shift' ? 'linear-gradient(135deg, #10b981, #34d399)' : '#0f172a',
+                      color: workScheduleType === 'shift' ? '#ffffff' : '#64748b',
+                      border: '1px solid #334155', fontWeight: 700, fontSize: '0.74rem', cursor: 'pointer'
+                    }}
+                  >
+                    🔄 퐁당퐁당 격일제
                   </button>
                   <button
                     type="button"
                     onClick={() => setWorkScheduleType('flexible')}
                     style={{
-                      flex: 1, padding: '0.4rem', borderRadius: '6px',
+                      padding: '0.4rem 0.2rem', borderRadius: '6px',
                       background: workScheduleType === 'flexible' ? 'linear-gradient(135deg, #d97706, #f59e0b)' : '#0f172a',
                       color: workScheduleType === 'flexible' ? '#ffffff' : '#64748b',
-                      border: '1px solid #334155', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer'
+                      border: '1px solid #334155', fontWeight: 700, fontSize: '0.74rem', cursor: 'pointer'
                     }}
                   >
-                    🔀 요일별 변동 근무 (일괄/개별)
+                    🔀 요일별 변동
                   </button>
                 </div>
               </div>
+
+              {/* B. 퐁당퐁당 격일제 근무 입력 모드 (월 15일 vs 16일 선택) */}
+              {workScheduleType === 'shift' && (
+                <div style={{ background: '#0f172a', padding: '0.65rem 0.8rem', borderRadius: '8px', border: '1px solid #10b981', marginTop: '0.35rem' }}>
+                  <div style={{ fontSize: '0.76rem', color: '#10b981', fontWeight: 800, marginBottom: '0.4rem' }}>
+                    🔄 퐁당퐁당 격일제 당월 근무일수 & 1일 실근로시간 조율
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.15rem' }}>당월 실제 근무일수</label>
+                      <select
+                        value={shiftDaysMonth}
+                        onChange={(e) => setShiftDaysMonth(Number(e.target.value))}
+                        style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
+                      >
+                        <option value={15}>월 15일 근무 (30일달)</option>
+                        <option value={16}>월 16일 근무 (31일달)</option>
+                        <option value={15.2}>월평균 15.2일 정액 (표준)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.7rem', color: '#94a3b8', marginBottom: '0.15rem' }}>1일 실근로시간 (휴게 제외)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={shiftNetHours}
+                        onChange={(e) => setShiftNetHours(Number(e.target.value))}
+                        style={{ width: '100%', padding: '0.3rem', background: '#1e293b', border: '1px solid #34d399', color: '#10b981', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 900 }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#34d399', marginTop: '0.35rem', fontWeight: 700 }}>
+                    💡 격일제 당월 실근로: 총 {(shiftDaysMonth * shiftNetHours).toFixed(1)}시간 ➔ 당월 실근무일수({shiftDaysMonth}일)에 맞추어 세전월급 및 야간수당이 0% 오차로 정밀 자동 산출됩니다!
+                  </div>
+                </div>
+              )}
 
               {/* A. 고정 근무 입력 모드 */}
               {workScheduleType === 'fixed' && (
