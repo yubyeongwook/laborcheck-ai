@@ -81,6 +81,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   // ⚠️ 결근 / 조퇴·외출 정밀 공제 state
   const [absentDays, setAbsentDays] = useState(0);
   const [latenessHours, setLatenessHours] = useState(0);
+  const [customAbsenceDeduction, setCustomAbsenceDeduction] = useState(0);
 
   // 일괄 적용 실행 함수
   const applyBatchSchedule = () => {
@@ -195,8 +196,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const incomeTax = Math.round(totalGross * 0.015 / 10) * 10;
     const localIncomeTax = Math.round(incomeTax * 0.1 / 10) * 10;
 
-    // 결근 및 조퇴·외출 정밀 공제액 ((결근일수 × 일일실근로시간 + 조퇴시간) × 통상시급)
-    const absenceDeduction = Math.round(((absentDays * computedDailyNetWork) + latenessHours) * hourlyRate);
+    // 결근 및 조퇴·외출 정밀 공제액 ((결근일수 × 일일실근로시간 + 조퇴시간) × 통상시급 또는 수동 직접 입력)
+    const calcAbsence = Math.round(((absentDays * computedDailyNetWork) + latenessHours) * hourlyRate);
+    const absenceDeduction = customAbsenceDeduction > 0 ? customAbsenceDeduction : calcAbsence;
 
     const totalDeductions = nationalPension + healthInsurance + longtermCare + employmentInsurance + incomeTax + localIncomeTax + absenceDeduction;
     const netPay = totalGross - totalDeductions;
@@ -833,6 +835,24 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       style={{ width: '100px', padding: '0.2rem 0.3rem', background: '#0f172a', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 900, textAlign: 'right' }}
                     />
                     <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 800 }}>원</span>
+                  </div>
+                </div>
+
+                {/* 🔻 결근 / 조퇴·외출 차감 공제액 수치 직접 입력 및 반영 폼 카드 */}
+                <div style={{ background: '#1e293b', padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid #f43f5e', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.35rem' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#f43f5e', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                    🔻 결근 / 조퇴·외출 차감 공제액 (직접 입력)
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                    <input
+                      type="number"
+                      step="1000"
+                      value={customAbsenceDeduction}
+                      onChange={(e) => setCustomAbsenceDeduction(Number(e.target.value))}
+                      placeholder="0"
+                      style={{ width: '100px', padding: '0.2rem 0.3rem', background: '#0f172a', border: '1px solid #f43f5e', color: '#f43f5e', borderRadius: '4px', fontSize: '0.78rem', fontWeight: 900, textAlign: 'right' }}
+                    />
+                    <span style={{ fontSize: '0.72rem', color: '#f43f5e', fontWeight: 800 }}>원</span>
                   </div>
                 </div>
 

@@ -46,6 +46,7 @@ export default function PayslipModal({ data = {}, onClose }) {
     employmentInsurance = 19410,
     incomeTax = 32350,
     localIncomeTax = 3230,
+    absenceDeduction = 0,
     totalDeduction = 238400,
     netPay = 2118480
   } = data;
@@ -266,6 +267,13 @@ export default function PayslipModal({ data = {}, onClose }) {
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>10%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{localIncomeTax.toLocaleString()}</td>
                   </tr>
+                  {absenceDeduction > 0 && (
+                    <tr style={{ background: '#fff1f2' }}>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', color: '#e11d48', fontWeight: 800 }}>🔻 결근·조퇴 차감 공제</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#e11d48' }}>실제 차감액</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', color: '#e11d48', fontWeight: 800 }}>- {absenceDeduction.toLocaleString()}</td>
+                    </tr>
+                  )}
                   <tr style={{ background: '#fee2e2', fontWeight: 800 }}>
                     <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>공제액 계</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', textAlign: 'right', color: '#b91c1c' }}>{totalDeduction.toLocaleString()} 원</td>

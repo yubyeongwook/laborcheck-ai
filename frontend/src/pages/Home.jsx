@@ -297,6 +297,7 @@ export default function Home() {
       employmentInsurance: res.employmentInsurance,
       incomeTax: res.incomeTax,
       localIncomeTax: res.localIncomeTax,
+      absenceDeduction: res.absenceDeduction || 0,
       totalDeduction: res.totalDeductions,
       netPay: res.netPay
     };
