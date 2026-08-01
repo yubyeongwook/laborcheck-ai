@@ -9,6 +9,8 @@ import collections
 import collections.abc
 collections.Iterable = collections.abc.Iterable
 import xmlrpc.client
+from wordpress_xmlrpc import Client, WordPressPost
+from wordpress_xmlrpc.methods.posts import GetPosts, NewPost, EditPost
 
 # Windows CP949 인코딩 출력 방지
 if hasattr(sys.stdout, 'reconfigure'):
@@ -43,6 +45,7 @@ def log(msg):
         pass
 
 WP_URLS = [
+    "https://www.laborcheckai.co.kr/xmlrpc.php",
     "https://43.200.245.223/xmlrpc.php",
     "http://www.laborcheckai.co.kr/xmlrpc.php",
     "http://43.200.245.223/xmlrpc.php"
