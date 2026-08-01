@@ -192,7 +192,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       computedDailyNetWork = activeDays > 0 ? Math.round((computedWeeklyNetWork / activeDays) * 10) / 10 : 8;
     } else {
       computedActiveDaysCount = weeklyDays;
-      computedDailyNetWork = Math.max(0, dailyHours - breakHours);
+      computedDailyNetWork = dailyHours;
       computedWeeklyNetWork = weeklyDays * computedDailyNetWork;
       computedWeeklyNightWork = nightHoursWeekly;
     }
