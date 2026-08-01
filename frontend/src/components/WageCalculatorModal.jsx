@@ -648,65 +648,82 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
               )}
 
-              {/* A. 고정 근무 입력 모드 */}
+              {/* A. 고정 근무 모드 선택 파라미터 (주당 근무일수 / 하루 실근로 / ☕ 일일 휴게시간 / 주당 야간) */}
               {workScheduleType === 'fixed' && (
-                <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.4rem', marginBottom: '0.85rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 근무일수</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.25fr 1fr 1.25fr', gap: '0.45rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 근무일수</label>
+                    <select
+                      value={weeklyDays}
+                      onChange={(e) => setWeeklyDays(Number(e.target.value))}
+                      style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>주 {d}일 근무</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 실근로 (시간+5분)</label>
+                    <div style={{ display: 'flex', gap: '0.15rem' }}>
                       <select
-                        value={weeklyDays}
-                        onChange={(e) => setWeeklyDays(Number(e.target.value))}
-                        style={{ width: '100%', padding: '0.35rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.78rem' }}
+                        value={dailyHour}
+                        onChange={(e) => setDailyHour(Number(e.target.value))}
+                        style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
                       >
-                        {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>주 {d}일 근무</option>)}
+                        {Array.from({ length: 25 }, (_, i) => i).map(h => (
+                          <option key={h} value={h}>{h}시간</option>
+                        ))}
+                      </select>
+                      <select
+                        value={dailyMin}
+                        onChange={(e) => setDailyMin(Number(e.target.value))}
+                        style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                      >
+                        {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
+                          <option key={m} value={m}>{m}분</option>
+                        ))}
                       </select>
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>하루 실근로 (시간+5분)</label>
-                      <div style={{ display: 'flex', gap: '0.15rem' }}>
-                        <select
-                          value={dailyHour}
-                          onChange={(e) => setDailyHour(Number(e.target.value))}
-                          style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
-                        >
-                          {Array.from({ length: 25 }, (_, i) => i).map(h => (
-                            <option key={h} value={h}>{h}시간</option>
-                          ))}
-                        </select>
-                        <select
-                          value={dailyMin}
-                          onChange={(e) => setDailyMin(Number(e.target.value))}
-                          style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
-                        >
-                          {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
-                            <option key={m} value={m}>{m}분</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 야간 (시간+5분)</label>
-                      <div style={{ display: 'flex', gap: '0.15rem' }}>
-                        <select
-                          value={nightWeeklyHour}
-                          onChange={(e) => setNightWeeklyHour(Number(e.target.value))}
-                          style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
-                        >
-                          {Array.from({ length: 25 }, (_, i) => i).map(h => (
-                            <option key={h} value={h}>{h}시간</option>
-                          ))}
-                        </select>
-                        <select
-                          value={nightWeeklyMin}
-                          onChange={(e) => setNightWeeklyMin(Number(e.target.value))}
-                          style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
-                        >
-                          {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
-                            <option key={m} value={m}>{m}분</option>
-                          ))}
-                        </select>
-                      </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, marginBottom: '0.2rem' }}>☕ 일일 휴게시간</label>
+                    <select
+                      value={breakHours}
+                      onChange={(e) => setBreakHours(Number(e.target.value))}
+                      style={{ width: '100%', padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                    >
+                      <option value={0}>휴게 0분 (무휴게)</option>
+                      <option value={0.5}>휴게 30분 (법정 4h)</option>
+                      <option value={1}>휴게 1시간 (법정 8h)</option>
+                      <option value={1.5}>휴게 1시간 30분</option>
+                      <option value={2}>휴게 2시간</option>
+                      <option value={2.5}>휴게 2시간 30분</option>
+                      <option value={3}>휴게 3시간</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginBottom: '0.2rem' }}>주당 야간 (시간+5분)</label>
+                    <div style={{ display: 'flex', gap: '0.15rem' }}>
+                      <select
+                        value={nightWeeklyHour}
+                        onChange={(e) => setNightWeeklyHour(Number(e.target.value))}
+                        style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                      >
+                        {Array.from({ length: 25 }, (_, i) => i).map(h => (
+                          <option key={h} value={h}>{h}시간</option>
+                        ))}
+                      </select>
+                      <select
+                        value={nightWeeklyMin}
+                        onChange={(e) => setNightWeeklyMin(Number(e.target.value))}
+                        style={{ flex: 1, padding: '0.35rem 0.1rem', background: '#0f172a', border: '1px solid #334155', color: '#fff', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900 }}
+                      >
+                        {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
+                          <option key={m} value={m}>{m}분</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
