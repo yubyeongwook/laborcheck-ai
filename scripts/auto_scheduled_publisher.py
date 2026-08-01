@@ -491,7 +491,7 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 .lc-consult-btn:hover{{transform:translateY(-2px);box-shadow:0 10px 24px rgba(109,95,253,0.5);}}
 .lc-consult-btn .lc-icon{{display:inline-block;animation:lcBounce 1.6s ease-in-out infinite;}}
 </style>
-<a href="https://노무체크ai.com/?calc=1" target="_blank" rel="noopener" class="lc-consult-btn">
+<a href="https://노무체크ai.com/contact" target="_blank" rel="noopener" class="lc-consult-btn">
   <span class="lc-icon">💬</span>상담문의
 </a>"""
     return html

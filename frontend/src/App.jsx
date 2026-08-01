@@ -116,7 +116,7 @@ function App() {
         <Route path="/employer/injury" element={<InjuryGuideEmployer />} />
 
         <Route path="/education" element={<EducationCenter />} />
-        <Route path="/contact" element={<Navigate to="/" replace />} />
+        <Route path="/contact" element={<ContactForm />} />
         <Route path="/admin/inquiries" element={<AdminInquiries />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
 
