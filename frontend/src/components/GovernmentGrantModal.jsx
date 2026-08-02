@@ -8,31 +8,73 @@ const GRANT_PROGRAMS = [
     target: '5인 이상 사업장 (우대업종 1인 이상)',
     amount: '최대 1,200만원 / 1인당',
     desc: '취업애로청년을 정규직으로 채용하여 6개월 이상 고용 유지 시, 1년간 월 60만원 + 2년차 480만원 일시지급',
-    badge: '👑 대표 추천'
+    badge: '👑 대표 추천',
+    criteria: '만 15~34세 미취업 청년 정규직 채용, 고용보험 피보험자 수 5인 이상 (지식서비스/제조업 1인 이상 특례)',
+    documents: [
+      '① 표준 서면 근로계약서 사본 (주 30시간 이상)',
+      '② 월별 임금명세서 및 금융기관 이체확인증',
+      '③ 4대보험 사업장 가입자 명부',
+      '④ 고용보험 피보험자 수 증빙 서류'
+    ],
+    checklist: [
+      '□ 채용 전 3개월 및 채용 후 고용유지 기간 중 인원 감원(권고사직) 없을 것',
+      '□ 2026 최저임금(10,320원) 및 209시간 월급 법정 기준 준수',
+      '□ 주 30시간 이상 정규직 근로계약 체결'
+    ]
   },
   {
     id: 'senior',
     title: '고령자 고용촉진장려금',
     target: '전 사업장 (60세 이상 채용)',
     amount: '최대 240만원 / 1인당',
-    desc: '60세 이상 고령자를 1년 이상 정규직으로 신규 채용 시 분기별 30만원씩 2년간 지원',
-    badge: '👴 고령자 채용'
+    desc: '60세 이상 고령자를 1년 이상 정규직 또는 1년 이상 계약직으로 신규 채용 시 분기별 30만원씩 2년간 지원',
+    badge: '👴 고령자 채용',
+    criteria: '채용일 기준 만 60세 이상 미취업 고령자 채용, 1년 이상 고용계약 체결',
+    documents: [
+      '① 근로계약서 사본 (1년 이상 계약)',
+      '② 주민등록등본 또는 신분증 사본 (연령 증빙)',
+      '③ 월별 급여 입금 내역서 및 임금명세서'
+    ],
+    checklist: [
+      '□ 채용 전 3개월 간 인원 감원(권고사직) 부존재',
+      '□ 사업주의 배우자, 4촌 이내 혈족·인척 채용 시 대상 제외'
+    ]
   },
   {
     id: 'flexible',
     title: '유연근무 활용 장려금',
     target: '전 사업장 (재택/시차출퇴근)',
     amount: '월 30~50만원 / 1인당',
-    desc: '재택근무, 시차출퇴근, 선택근무제 도입 및 활용 사업주에게 1년간 장려금 지급',
-    badge: '💻 유연근무'
+    desc: '재택근무, 시차출퇴근, 선택근무제 등 유연근무제를 도입하고 전자·기계적 출퇴근을 기록한 사업주 지원',
+    badge: '💻 유연근무',
+    criteria: '취업규칙/근로계약서상 유연근무제 명시, 지문·카드·앱 등 전자·기계적 출퇴근 기록 보관',
+    documents: [
+      '① 유연근무제 도입 취업규칙 또는 노사합의서',
+      '② 전자·기계적 출퇴근 타임스탬프 기록지',
+      '③ 유연근무 근로계약서 사본'
+    ],
+    checklist: [
+      '□ 수기 출퇴근부는 인정 불가 (전자적 태그 기록 필수)',
+      '□ 주 1~2회 이상 유연근무 이행 실적 보관'
+    ]
   },
   {
     id: 'middle',
     title: '신중년 적합직무 고용장려금',
     target: '전 사업장 (50세 이상 채용)',
     amount: '최대 960만원 / 1인당',
-    desc: '50세 이상 미취업자를 신중년 적합직무에 정규직 채용 시 1년간 월 40~80만원 지원',
-    badge: '👔 신중년'
+    desc: '50세 이상 미취업자를 신중년 적합직무(기술·경영·전문 직종)에 정규직 채용 시 1년간 월 40~80만원 지원',
+    badge: '👔 신중년',
+    criteria: '만 50세 이상 미취업자 채용, 고용노동부 지정 신중년 적합직무 분야 수불 채용',
+    documents: [
+      '① 정규직 근로계약서 사본',
+      '② 담당 업무 직무설명서 (적합직무 입증)',
+      '③ 급여 이체증 및 4대보험 명부'
+    ],
+    checklist: [
+      '□ 채용 후 3개월 고용 유지 후 1차 지원금 신청 가능',
+      '□ 최저임금 100% 이상 지급'
+    ]
   }
 ];
 
@@ -42,6 +84,7 @@ export default function GovernmentGrantModal({ isOpen, onClose }) {
   const [companyName, setCompanyName] = useState('');
   const [phone, setPhone] = useState('');
   const [applied, setApplied] = useState(false);
+  const [expandedId, setExpandedId] = useState('youth');
 
   if (!isOpen) return null;
 
@@ -64,7 +107,7 @@ export default function GovernmentGrantModal({ isOpen, onClose }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
     }}>
       <div style={{
-        position: 'relative', width: '100%', maxWidth: '750px', maxHeight: '90vh',
+        position: 'relative', width: '100%', maxWidth: '780px', maxHeight: '90vh',
         background: '#0f172a', border: '1px solid rgba(52, 211, 153, 0.4)',
         borderRadius: '24px', padding: '2rem', color: '#f8fafc',
         boxShadow: '0 25px 60px rgba(0,0,0,0.8)', overflowY: 'auto', display: 'flex', flexDirection: 'column'
@@ -77,10 +120,10 @@ export default function GovernmentGrantModal({ isOpen, onClose }) {
             </div>
             <div>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34d399', margin: 0 }}>
-                💼 사업주 2026 고용지원금 & 정책자금 맞춤 매칭
+                💼 사업주 2026 고용지원금 수령 자격 & 필수 서류 자가진단
               </h3>
               <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>
-                우리 사업장에 맞는 2026년 정부 고용장려금 지원액을 추정하고 무료 진단을 신청하세요.
+                지원 대상 여부, 자격 기준, 필수 제출 서류 목록 및 사전 점검 체크리스트를 1초 만에 확인하세요.
               </p>
             </div>
           </div>
@@ -113,23 +156,73 @@ export default function GovernmentGrantModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* 📚 2026 4대 주요 고용장려금 프로그램 카드 그리드 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-          {GRANT_PROGRAMS.map((p) => (
-            <div key={p.id} style={{
-              background: '#1e293b', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1rem',
-              display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
-            }}>
-              <div>
+        {/* 📚 2026 4대 주요 고용장려금 프로그램 상세 자격 & 필수 서류 카드 그리드 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+          {GRANT_PROGRAMS.map((p) => {
+            const isExp = expandedId === p.id;
+            return (
+              <div key={p.id} style={{
+                background: '#1e293b', border: `1px solid ${isExp ? '#34d399' : 'rgba(255,255,255,0.08)'}`, borderRadius: '14px', padding: '1.2rem',
+                transition: 'all 0.2s ease'
+              }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                  <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>{p.badge}</span>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 900, color: '#fbbf24' }}>{p.amount}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800 }}>{p.badge}</span>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>{p.title}</h4>
+                  </div>
+                  <span style={{ fontSize: '1rem', fontWeight: 900, color: '#fbbf24' }}>{p.amount}</span>
                 </div>
-                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', margin: '0 0 0.3rem' }}>{p.title}</h4>
-                <p style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>{p.desc}</p>
+                
+                <p style={{ fontSize: '0.84rem', color: '#cbd5e1', lineHeight: 1.5, margin: '0 0 0.8rem 0' }}>{p.desc}</p>
+
+                {/* 필수 수령 자격 & 제출 서류 토글 버튼 */}
+                <button
+                  type="button"
+                  onClick={() => setExpandedId(isExp ? null : p.id)}
+                  style={{
+                    width: '100%', padding: '0.45rem 0.8rem', borderRadius: '8px',
+                    background: isExp ? 'rgba(52, 211, 153, 0.2)' : 'rgba(255,255,255,0.05)',
+                    color: isExp ? '#34d399' : '#94a3b8', border: `1px solid ${isExp ? '#34d399' : '#334155'}`,
+                    fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                  }}
+                >
+                  <span>📋 수령 자격 기준, 필수 제출 서류 및 체크리스트 {isExp ? '접기 ▲' : '상세보기 ▼'}</span>
+                  <ArrowRight size={14} style={{ transform: isExp ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.2s ease' }} />
+                </button>
+
+                {/* 상세 자격 & 제출 서류 & 체크리스트 리포트 */}
+                {isExp && (
+                  <div style={{ marginTop: '0.85rem', paddingTop: '0.85rem', borderTop: '1px dashed rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* 1. 수령 자격 기준 */}
+                    <div style={{ background: '#0f172a', padding: '0.75rem 1rem', borderRadius: '8px', borderLeft: '3px solid #34d399' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#34d399', marginBottom: '0.2rem' }}>🎯 법적 수령 자격 기준</div>
+                      <div style={{ fontSize: '0.82rem', color: '#e2e8f0', lineHeight: 1.5 }}>{p.criteria}</div>
+                    </div>
+
+                    {/* 2. 필수 제출 서류 목록 */}
+                    <div style={{ background: '#0f172a', padding: '0.75rem 1rem', borderRadius: '8px', borderLeft: '3px solid #38bdf8' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38bdf8', marginBottom: '0.3rem' }}>📂 필수 제출 서류 목록</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        {p.documents.map((doc, dIdx) => (
+                          <div key={dIdx} style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{doc}</div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 3. 사전 점검 체크리스트 */}
+                    <div style={{ background: '#0f172a', padding: '0.75rem 1rem', borderRadius: '8px', borderLeft: '3px solid #fbbf24' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fbbf24', marginBottom: '0.3rem' }}>✅ 사전 점검 체크리스트</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        {p.checklist.map((chk, cIdx) => (
+                          <div key={cIdx} style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{chk}</div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* 📝 지원금 무료 자격 심사 신청 폼 */}
