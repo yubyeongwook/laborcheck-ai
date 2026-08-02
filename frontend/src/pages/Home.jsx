@@ -21,13 +21,55 @@ const SMART_QUICK_PROMPTS = [
 ];
 
 const AGENT_TEAM = [
-  { name: '근로기준법 AI 분석 에이전트', role: '209시간·중복가산 정밀 계산 및 근로계약서 양식 검증', icon: <Coins size={24} color="#38bdf8" /> },
-  { name: '산재보상 AI 시뮬레이터', role: '요양/휴업급여 산정 및 산재 승인 확률 자가진단 리포트', icon: <HeartPulse size={24} color="#f87171" /> },
-  { name: '대법원 판례 대조 에이전트', role: '주요 노동 판례 텍스트 대조 및 법리 분석 자가진단', icon: <Scale size={24} color="#a5b4fc" /> },
-  { name: '의학용어·진단서 AI 분석 에이전트', role: '진단서 및 의무기록 의학 용어 텍스트 표준 추출 분석', icon: <Stethoscope size={24} color="#f43f5e" /> },
-  { name: '근로감독 자율점검 에이전트', role: '노동청 지침 기반 사업장 자율 점검 및 4대보험 리스크 분석', icon: <ShieldAlert size={24} color="#fbbf24" /> },
-  { name: '정부지원금 맞춤매칭 에이전트', role: '2026 고용장려금, R&D 출연금, 융자 지원금 시뮬레이션', icon: <PiggyBank size={24} color="#34d399" /> },
-  { name: '기업재무 AI 진단 에이전트', role: '재무제표 항목 분석 및 신보/기보 보증 승인 가이드', icon: <Wallet size={24} color="#a78bfa" /> }
+  {
+    name: '근로기준법 AI 분석 에이전트',
+    role: '209시간·중복가산 정밀 계산 및 근로계약서 양식 검증',
+    icon: <Coins size={24} color="#38bdf8" />,
+    checks: ['2026년 209시간 월급 미달 여부', '포괄임금제 수당 차액 1.5배 산출', '5인 이상/미만 사업장 수당 판정'],
+    prompt: '⚖️ 2026년 내 월급이 209시간 최저임금에 미달하는지 정밀 점검해 줘'
+  },
+  {
+    name: '산재보상 AI 시뮬레이터',
+    role: '요양/휴업급여 산정 및 산재 승인 확률 자가진단 리포트',
+    icon: <HeartPulse size={24} color="#f87171" />,
+    checks: ['출퇴근길 사고 산재 승인 대상 점검', '과로성 뇌심혈관 질환 산재 요건', '평균임금 70% 휴업급여 실시간 계산'],
+    prompt: '🩺 출퇴근 사고/과로 산재 승인 대상인지 자가진단해 줘'
+  },
+  {
+    name: '대법원 판례 대조 에이전트',
+    role: '주요 노동 판례 텍스트 대조 및 법리 분석 자가진단',
+    icon: <Scale size={24} color="#a5b4fc" />,
+    checks: ['주 15시간 미만 퇴직금 인정 판례', '신입사원 연차 11개 정산 판례', '수습 3개월 90% 감액 합법성 대조'],
+    prompt: '⚖️ 주 15시간 미만 및 신입사원 연차 대법원 판례 대조해 줘'
+  },
+  {
+    name: '의학용어·진단서 AI 분석 에이전트',
+    role: '진단서 및 의무기록 의학 용어 텍스트 표준 추출 분석',
+    icon: <Stethoscope size={24} color="#f43f5e" />,
+    checks: ['병원 진단서 한글/영문 의학용어 스캔', '상병명(질병코드) 산재 요건 대조', '입원·통원 치료기간 휴업급여 일수'],
+    prompt: '🩺 진단서 및 의무기록 용어 스캔하여 산재 서류 점검해 줘'
+  },
+  {
+    name: '근로감독 자율점검 에이전트',
+    role: '노동청 지침 기반 사업장 자율 점검 및 4대보험 리스크 분석',
+    icon: <ShieldAlert size={24} color="#fbbf24" />,
+    checks: ['노동청 근로감독 14개 항목 자율점검', '임금명세서 미교부 과태료 예방', '4대보험 가입 누락 및 서면 계약서'],
+    prompt: '🛡️ 노동청 근로감독 점검 대비 14개 항목 자율점검해 줘'
+  },
+  {
+    name: '정부지원금 맞춤매칭 에이전트',
+    role: '2026 고용장려금, R&D 출연금, 융자 지원금 시뮬레이션',
+    icon: <PiggyBank size={24} color="#34d399" />,
+    checks: ['2026 고용창출·안정 장려금 (월60~80만)', '청년 일자리 도약 및 육아휴직 대체지원', 'R&D 출연금 및 정부 융자 지원금'],
+    prompt: '💰 2026년 우리 회사에 맞는 고용장려금·정부지원금 매칭해 줘'
+  },
+  {
+    name: '기업재무 AI 진단 에이전트',
+    role: '재무제표 항목 분석 및 신보/기보 보증 승인 가이드',
+    icon: <Wallet size={24} color="#a78bfa" />,
+    checks: ['신용보증기금/기술보증기금 승인 시뮬레이션', '재무제표 부채비율 및 차입금 안전도', '중소기업 정책자금 융자 자격 진단'],
+    prompt: '🏢 재무제표 항목 분석 및 신보/기보 보증 승인 가능성 진단해 줘'
+  }
 ];
 
 const LEGAL_FAQS = [
@@ -1976,24 +2018,56 @@ export default function Home() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.2rem' }}>
           {AGENT_TEAM.map((agent, idx) => (
             <div
               key={idx}
               className="agent-card"
-              onClick={() => startChatWithSecretary(`${agent.name} 분석 요청`)}
+              onClick={() => startChatWithSecretary(agent.prompt)}
+              style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}
             >
-              <div className="agent-avatar">
-                {agent.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>{agent.name}</h4>
-                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, background: 'rgba(56, 189, 248, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>AI 리포트 분석</span>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem', marginBottom: '0.6rem' }}>
+                  <div className="agent-avatar">
+                    {agent.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>{agent.name}</h4>
+                      <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, background: 'rgba(56, 189, 248, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>AI 자가진단</span>
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                      {agent.role}
+                    </p>
+                  </div>
                 </div>
-                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
-                  {agent.role}
-                </p>
+
+                {/* 📌 대표 자가진단 항목 1초 선택 버튼 칩 (일반인 용 쉬운 선택) */}
+                <div style={{ marginTop: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', marginBottom: '0.1rem' }}>
+                    💡 대표 자가진단 항목 (클릭 시 1초 즉시 점검)
+                  </div>
+                  {agent.checks.map((chk, cIdx) => (
+                    <div
+                      key={cIdx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startChatWithSecretary(`[${agent.name}] ${chk} 항목 정밀 자가진단 해 줘`);
+                      }}
+                      style={{
+                        fontSize: '0.78rem', color: '#cbd5e1', background: 'rgba(30, 41, 59, 0.7)',
+                        padding: '0.35rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.2)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#38bdf8'; e.currentTarget.style.color = '#38bdf8'; e.currentTarget.style.background = 'rgba(56, 189, 248, 0.12)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.2)'; e.currentTarget.style.color = '#cbd5e1'; e.currentTarget.style.background = 'rgba(30, 41, 59, 0.7)'; }}
+                    >
+                      <span>✓ {chk}</span>
+                      <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 700 }}>진단 →</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           ))}
