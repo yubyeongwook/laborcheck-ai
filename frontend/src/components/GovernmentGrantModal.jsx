@@ -165,10 +165,10 @@ export default function GovernmentGrantModal({ isOpen, onClose }) {
             </div>
             <div>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#34d399', margin: 0 }}>
-                💼 사업주 2026 고용지원금 수령 자격 & 필수 서류 자가진단
+                사업주 및 창업자 지원금 100퍼센트 수령 필수 사전 준비 수칙
               </h3>
               <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>
-                지원 대상 여부, 자격 기준, 필수 제출 서류 목록 및 사전 점검 체크리스트를 1초 만에 확인하세요.
+                제출 전 국세 체불 0원, 209시간 근로계약서, 권고사직 이력 방지 필수 체크리스트
               </p>
             </div>
           </div>
