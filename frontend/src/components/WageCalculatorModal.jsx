@@ -219,10 +219,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       actualBasePay = Math.round(174 * hourlyRate);
       displayBaseHours = '174h';
     } else {
-      // 209시간 미만이거나 파트타임 (174시간 비례)
-      const netMonthlyHours = Math.round((computedWeeklyNetWork / 40 * 174) * 100) / 100;
+      // 174시간 미만 파트타임: 주 실근로시간 * 4.345주 (소수점 둘째 자리 유지, 예: 95.59h)
+      const netMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
       actualBasePay = Math.round(netMonthlyHours * hourlyRate);
-      displayBaseHours = `${netMonthlyHours}h`;
+      displayBaseHours = `${netMonthlyHours.toFixed(2)}h`;
     }
 
     // 2) 주휴수당 산정 (주 15시간 이상일 때만!)
@@ -233,8 +233,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       monthlyHolidayHours = 35;
       weeklyHolidayPay = Math.round(35 * hourlyRate);
     } else if (is15HoursOver) {
-      // 주 15시간 이상 ~ 40시간 미만 비례 주휴수당 (35시간 기준 비례)
-      monthlyHolidayHours = Math.round((computedWeeklyNetWork / 40 * 35) * 100) / 100;
+      // 주 15시간 이상 ~ 40시간 미만 비례 주휴수당 (35시간 기준 비례, 소수점 둘째 자리 유지, 예: 19.25h)
+      monthlyHolidayHours = Number((computedWeeklyNetWork / 40 * 35).toFixed(2));
       weeklyHolidayPay = Math.round(monthlyHolidayHours * hourlyRate);
     } else {
       // 주 15시간 미만 초단시간 ➔ 주휴수당 법정 0원!
@@ -268,11 +268,11 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     let finalMonthlyNightHours = monthlyNightHoursTotal;
 
     // 산출시간 (가산율 적용 전 진짜 일한 실제시간)
-    const netOvertimeHoursStr = monthlyOvertimeHours.toFixed(1);
-    const netNightHoursStr = monthlyNightHoursTotal.toFixed(1);
-    const netHolidayHoursStr = (holidayDaysYear * computedDailyNetWork / 12).toFixed(1);
+    const netOvertimeHoursStr = monthlyOvertimeHours.toFixed(2);
+    const netNightHoursStr = monthlyNightHoursTotal.toFixed(2);
+    const netHolidayHoursStr = (holidayDaysYear * computedDailyNetWork / 12).toFixed(2);
 
-    // 기본급 & 주휴수당 시간 및 금액 산출 (사장님 지침 100% 반영)
+    // 기본급 & 주휴수당 시간 및 금액 산출 (소수점 둘째 자리 정밀 보장)
     let displayBaseHoursStr = '174';
     let displayWeeklyHolidayHoursStr = '35';
     let pureBasePay = 1795680;
@@ -283,12 +283,12 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       pureBasePay = Math.round(174 * hourlyRate);
       weeklyHolidayPay = Math.round(35 * hourlyRate);
     } else {
-      // 209시간 미만 또는 주 15시간 미만 파트타임/시급제
-      const calcTotalMonthlyHours = Math.round((computedWeeklyNetWork / 40 * 174) * 100) / 100;
-      const calcWeeklyHolidayHours = is15HoursOver ? Math.round((computedWeeklyNetWork / 40 * 35) * 100) / 100 : 0;
+      // 174시간 미만 파트타임/시급제: 소수점 둘째 자리 유지
+      const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
+      const calcWeeklyHolidayHours = is15HoursOver ? Number((computedWeeklyNetWork / 40 * 35).toFixed(2)) : 0;
       
-      displayBaseHoursStr = `${calcTotalMonthlyHours}`;
-      displayWeeklyHolidayHoursStr = is15HoursOver ? `${calcWeeklyHolidayHours}` : '주 15h 미만 0';
+      displayBaseHoursStr = calcTotalMonthlyHours.toFixed(2);
+      displayWeeklyHolidayHoursStr = is15HoursOver ? calcWeeklyHolidayHours.toFixed(2) : '주 15h 미만 0';
       pureBasePay = Math.round(calcTotalMonthlyHours * hourlyRate);
       weeklyHolidayPay = is15HoursOver ? Math.round(calcWeeklyHolidayHours * hourlyRate) : 0;
     }
@@ -1213,14 +1213,18 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>⏰ 월 총 근로</div>
                     <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 900, marginTop: '0.1rem' }}>
-                      {(Number(calculated.pureBaseHoursMonthly) + (calculated.weeklyHolidayPay > 0 ? Number(calculated.weeklyHolidayHoursMonthly) : 0) + Number(calculated.netOvertimeHours)).toFixed(1)}h
+                      {(Number(calculated.pureBaseHoursMonthly) + Number(calculated.netOvertimeHours)) >= 174 
+                        ? '174h' 
+                        : (Number(calculated.pureBaseHoursMonthly) + Number(calculated.netOvertimeHours)).toFixed(2) + 'h'}
                     </div>
                   </div>
 
                   <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>📌 법정 기준시간</div>
                     <div style={{ fontSize: '0.88rem', color: '#34d399', fontWeight: 900, marginTop: '0.1rem' }}>
-                      {Number(calculated.pureBaseHoursMonthly).toFixed(1)}h
+                      {Number(calculated.pureBaseHoursMonthly) >= 174 
+                        ? '174h' 
+                        : Number(calculated.pureBaseHoursMonthly).toFixed(2) + 'h'}
                     </div>
                   </div>
 
