@@ -34,7 +34,7 @@ function TimeSelectInput({ value, onChange }) {
 }
 
 function WeeklyHolidayCalculator() {
-  const [hourlyWage, setHourlyWage] = useState('10030');
+  const [hourlyWage, setHourlyWage] = useState('10320');
   const [weeklyWorkDays, setWeeklyWorkDays] = useState('5');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('18:00');

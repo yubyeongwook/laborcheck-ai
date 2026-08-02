@@ -19,12 +19,12 @@ export function generateClientSideReport(payload) {
   const numSalary = parseFloat(salary_amount) || 0;
   const is5More = company_size.includes('5인 이상');
   
-  // 1. 소정근로시간 & 최저임금 산정 (2026년 최저시급 10,030원)
+  // 1. 소정근로시간 & 최저임금 산정 (2026년 최저시급 10,320원)
   const monthlyHours = 209;
-  const minHourly = 10030;
-  const minMonthly = monthlyHours * minHourly; // 2,096,270원
+  const minHourly = 10320;
+  const minMonthly = monthlyHours * minHourly; // 2,156,880원
   
-  const estimatedHourly = salary_type === '시급' ? numSalary : (salary_type === '월급' ? Math.round(numSalary / monthlyHours) : 10030);
+  const estimatedHourly = salary_type === '시급' ? numSalary : (salary_type === '월급' ? Math.round(numSalary / monthlyHours) : 10320);
   const isBelowMin = estimatedHourly < minHourly;
 
   // 2. 가산수당 대상 판별
@@ -37,14 +37,14 @@ export function generateClientSideReport(payload) {
 - **진단 대상자 구별**: ${user_type}
 - **사업장 규모**: ${company_size} (${is5More ? '근로기준법 전체 조항 적용' : '5인 미만 사업장: 해고 제한 및 가산수당 일부 예외'})
 - **급여 책정 방식**: ${salary_type} (${numSalary.toLocaleString()}원)
-- **추정 환산 시급**: 약 ${estimatedHourly.toLocaleString()}원 (${isBelowMin ? '⚠️ 최저임금 미달 우려' : '✅ 2026년 최저시급 10,030원 이상 준수'})
+- **추정 환산 시급**: 약 ${estimatedHourly.toLocaleString()}원 (${isBelowMin ? '⚠️ 최저임금 미달 우려' : '✅ 2026년 최저시급 10,320원 이상 준수'})
 
 ---
 
 ## ⚖️ 2. 법적 리포트 및 핵심 쟁점 분석
 
 ### 🔍 [쟁점 1] 최저임금 및 주휴수당 적법성
-- **2026년 법정 최저시급**: 시간당 **10,030원** (주 40시간 소정근로 월 환산 209시간 기준 최저 기본월급 **2,096,270원**)
+- **2026년 법정 최저시급**: 시간당 **10,320원** (주 40시간 소정근로 월 환산 209시간 기준 최저 기본월급 **2,156,880원**)
 - **진단 결과**: ${isBelowMin ? `입력하신 급여(${numSalary.toLocaleString()}원)는 2026년 법정 최저임금에 미달할 위험이 큽니다. 미달된 차액은 최저임금법 제6조 위반으로 최근 3년 치 소급 청구가 가능합니다.` : '현재 설정된 급여 기준은 2026년 최저임금 법정 기준을 충족하고 있습니다.'}
 - **주휴수당 법적 기준**: 주 소정근로시간이 15시간 이상이고 소정근로일을 개근한 경우 주 1회 이상의 유급휴일(8시간분 주휴수당)을 반드시 지급해야 합니다 (근로기준법 제55조).
 
