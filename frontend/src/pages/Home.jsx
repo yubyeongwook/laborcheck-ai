@@ -22,7 +22,7 @@ const SMART_QUICK_PROMPTS = [
 
 const AGENT_TEAM = [
   {
-    name: '근로기준법 AI 분석 에이전트',
+    name: '근로기준법 AI 분석',
     role: '209시간·중복가산 정밀 계산 및 근로계약서 양식 검증',
     icon: <Coins size={24} color="#38bdf8" />,
     checks: ['2026년 209시간 월급 미달 여부', '포괄임금제 수당 차액 1.5배 산출', '5인 이상/미만 사업장 수당 판정'],
@@ -36,35 +36,35 @@ const AGENT_TEAM = [
     prompt: '🩺 출퇴근 사고/과로 산재 승인 대상인지 자가진단해 줘'
   },
   {
-    name: '대법원 판례 대조 에이전트',
+    name: '대법원 판례 AI 대조',
     role: '주요 노동 판례 텍스트 대조 및 법리 분석 자가진단',
     icon: <Scale size={24} color="#a5b4fc" />,
     checks: ['주 15시간 미만 퇴직금 인정 판례', '신입사원 연차 11개 정산 판례', '수습 3개월 90% 감액 합법성 대조'],
     prompt: '⚖️ 주 15시간 미만 및 신입사원 연차 대법원 판례 대조해 줘'
   },
   {
-    name: '의학용어·진단서 AI 분석 에이전트',
+    name: '의학용어·진단서 AI 분석',
     role: '진단서 및 의무기록 의학 용어 텍스트 표준 추출 분석',
     icon: <Stethoscope size={24} color="#f43f5e" />,
     checks: ['병원 진단서 한글/영문 의학용어 스캔', '상병명(질병코드) 산재 요건 대조', '입원·통원 치료기간 휴업급여 일수'],
     prompt: '🩺 진단서 및 의무기록 용어 스캔하여 산재 서류 점검해 줘'
   },
   {
-    name: '근로감독 자율점검 에이전트',
+    name: '근로감독 AI 자율점검',
     role: '노동청 지침 기반 사업장 자율 점검 및 4대보험 리스크 분석',
     icon: <ShieldAlert size={24} color="#fbbf24" />,
     checks: ['노동청 근로감독 14개 항목 자율점검', '임금명세서 미교부 과태료 예방', '4대보험 가입 누락 및 서면 계약서'],
     prompt: '🛡️ 노동청 근로감독 점검 대비 14개 항목 자율점검해 줘'
   },
   {
-    name: '정부지원금 맞춤매칭 에이전트',
+    name: '정부지원금 AI 맞춤매칭',
     role: '2026 고용장려금, R&D 출연금, 융자 지원금 시뮬레이션',
     icon: <PiggyBank size={24} color="#34d399" />,
     checks: ['2026 고용창출·안정 장려금 (월60~80만)', '청년 일자리 도약 및 육아휴직 대체지원', 'R&D 출연금 및 정부 융자 지원금'],
     prompt: '💰 2026년 우리 회사에 맞는 고용장려금·정부지원금 매칭해 줘'
   },
   {
-    name: '기업재무 AI 진단 에이전트',
+    name: '기업재무 AI 진단',
     role: '재무제표 항목 분석 및 신보/기보 보증 승인 가이드',
     icon: <Wallet size={24} color="#a78bfa" />,
     checks: ['신용보증기금/기술보증기금 승인 시뮬레이션', '재무제표 부채비율 및 차입금 안전도', '중소기업 정책자금 융자 자격 진단'],
@@ -2008,10 +2008,10 @@ export default function Home() {
       <section style={{ marginBottom: '3.5rem', background: 'rgba(15, 23, 42, 0.5)', padding: '2.5rem 1.8rem', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div className="glow-badge" style={{ marginBottom: '0.75rem', borderColor: '#a5b4fc', color: '#a5b4fc', background: 'rgba(165, 180, 252, 0.12)' }}>
-            <Users size={15} color="#a5b4fc" /> 노무 BigData AI 자가진단 에이전트
+            <Users size={15} color="#a5b4fc" /> 노무 BigData AI 자가진단 시스템
           </div>
           <h2 style={{ fontSize: '1.7rem', fontWeight: 900, color: '#f8fafc', margin: '0 0 0.5rem 0' }}>
-            노무체크 AI <span style={{ color: '#38bdf8' }}>7대 전용 분석 에이전트</span>
+            노무체크 AI <span style={{ color: '#38bdf8' }}>7대 전용 분석 모듈</span>
           </h2>
           <p style={{ color: '#94a3b8', fontSize: '0.92rem', margin: 0 }}>
             근로기준법, 산재의학, 대법원 판례, 노동청 지침 BigData를 AI 알고리즘이 24시간 교차 분석합니다.
