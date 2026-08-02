@@ -952,6 +952,7 @@ export const calculate4ComponentsBreakdown = ({
   holidayWorkDaysYear = 0,
   is5Over = true,
   includeAnnualLeave = true,
+  weeklyNightHours = 0,
   payType = 'monthly'
 } = {}) => {
   const hourly = Math.max(0, parseFloat(effectiveHourlyRate) || 10320);
@@ -959,7 +960,8 @@ export const calculate4ComponentsBreakdown = ({
   const dailyH = Math.max(0, parseFloat(dailyHours) || 8);
   const is15Over = workHoursWeekly >= 15;
 
-  // 1. 기본급 (주 40시간 이상 월 174시간 고정, 파트타임 주근로시간 * 4.345)
+  // 1. 기본급 (주 40시간 소정근로 한도, 주 40h 시 월 174h, 파트타임 시 주근로시간 * 4.345)
+  const stdWeeklyHours = Math.min(40, workHoursWeekly);
   const baseMonthlyHours = workHoursWeekly >= 40 ? 174 : Number((workHoursWeekly * 4.345).toFixed(2));
   const basePayMonthly = Math.round(baseMonthlyHours * hourly);
   const baseHourlyRate = hourly;
@@ -972,46 +974,62 @@ export const calculate4ComponentsBreakdown = ({
     holidayMonthlyHours = Number(((workHoursWeekly / 40) * 35).toFixed(2));
   }
   const weeklyHolidayPayMonthly = Math.round(holidayMonthlyHours * hourly);
-  
-  // 💡 시급제 근로자 1시간 실근로 당 가산되는 주휴수당 환산 단가 (주 15h 이상 시 기본시급의 20% = 0.2배)
-  // 예: 기본시급 10,320원 ➔ 주휴시급 = 10,320 × 20% = +2,064원/h
   const weeklyHolidayHourlyRate = is15Over ? Math.round(hourly * 0.2) : 0;
 
-  // 3. 연차수당 (연간 annualLeaveDays 기준 1/12 분할)
+  // 3. 연장근로수당 (주 40시간 초과분, 5인 이상 1.5배 가산)
+  const weeklyOvertimeHours = Math.max(0, workHoursWeekly - 40);
+  const overtimeMultiplier = is5Over ? 1.5 : 1.0;
+  const monthlyOvertimeHours = weeklyOvertimeHours * 4.345;
+  const monthlyOvertimePay = Math.round(monthlyOvertimeHours * hourly * overtimeMultiplier);
+  const overtimeHourlyRate = baseMonthlyHours > 0 ? Math.round(monthlyOvertimePay / baseMonthlyHours) : 0;
+
+  // 4. 야간근로수당 (밤 22시~06시 0.5배 가산, 5인 이상)
+  const nightHoursWeekly = parseFloat(weeklyNightHours) || 0;
+  const monthlyNightHours = nightHoursWeekly * 4.345;
+  const monthlyNightPay = is5Over ? Math.round(monthlyNightHours * hourly * 0.5) : 0;
+  const nightHourlyRate = baseMonthlyHours > 0 ? Math.round(monthlyNightPay / baseMonthlyHours) : 0;
+
+  // 5. 연차수당 (연간 annualLeaveDays 기준 1/12 분할)
   const leaveDays = parseFloat(annualLeaveDays) || 0;
   const annualLeaveMonthlyHours = is15Over && includeAnnualLeave ? (leaveDays * dailyH) / 12 : 0;
   const annualLeavePayMonthly = Math.round(annualLeaveMonthlyHours * hourly);
   const annualLeaveHourlyRate = baseMonthlyHours > 0 ? Math.round(annualLeavePayMonthly / baseMonthlyHours) : 0;
 
-  // 4. 휴일근로수당 (연간 holidayWorkDaysYear 기준 1/12 분할, 5인 이상 1.5배 가산)
+  // 6. 휴일근로수당 (연간 holidayWorkDaysYear 기준 1/12 분할, 5인 이상 1.5배 가산)
   const holDays = parseFloat(holidayWorkDaysYear) || 0;
   const holidayWorkMultiplier = is5Over ? 1.5 : 1.0;
   const holidayWorkMonthlyHours = (holDays * dailyH) / 12;
   const holidayWorkPayMonthly = Math.round(holidayWorkMonthlyHours * hourly * holidayWorkMultiplier);
   const holidayWorkHourlyRate = baseMonthlyHours > 0 ? Math.round(holidayWorkPayMonthly / baseMonthlyHours) : 0;
 
-  // 총액합계
-  const grossMonthlyPay = basePayMonthly + weeklyHolidayPayMonthly + annualLeavePayMonthly + holidayWorkPayMonthly;
+  // 총액합계 (월 세전)
+  const grossMonthlyPay = basePayMonthly + weeklyHolidayPayMonthly + monthlyOvertimePay + monthlyNightPay + annualLeavePayMonthly + holidayWorkPayMonthly;
   const totalDivisor = workHoursWeekly >= 40 ? 209 : Number((baseMonthlyHours + holidayMonthlyHours).toFixed(2));
 
-  // 💡 최종 시간당 실효 총시급: 1시간 일할 때 실질적으로 버는 총시급 (기본시급 + 시간당주휴 + 시간당연차 + 시간당휴일)
-  const effectiveTotalHourlyRate = baseHourlyRate + weeklyHolidayHourlyRate + annualLeaveHourlyRate + holidayWorkHourlyRate;
+  // 최종 시간당 실효 총시급 (기본 + 주휴 + 연장 + 야간 + 연차 + 휴일 포함)
+  const effectiveTotalHourlyRate = baseHourlyRate + weeklyHolidayHourlyRate + overtimeHourlyRate + nightHourlyRate + annualLeaveHourlyRate + holidayWorkHourlyRate;
 
-  // 💡 지급 형태별(월급/주급/일급/시급) 세부 수당 금액 분해
-  const activeWeeklyDays = dailyH > 0 ? (workHoursWeekly / dailyH) : 5;
+  // 💡 지급 형태별 분해 (일급/주급)
+  const activeWeeklyDays = dailyH > 0 ? Math.min(7, workHoursWeekly / dailyH) : 5;
   const monthlyActiveDays = activeWeeklyDays * 4.345;
 
-  const dailyBasePay = Math.round(hourly * dailyH);
-  const dailyWeeklyHolidayPay = monthlyActiveDays > 0 ? Math.round(weeklyHolidayPayMonthly / monthlyActiveDays) : 0;
-  const dailyAnnualLeavePay = monthlyActiveDays > 0 ? Math.round(annualLeavePayMonthly / monthlyActiveDays) : 0;
-  const dailyHolidayWorkPay = monthlyActiveDays > 0 ? Math.round(holidayWorkPayMonthly / monthlyActiveDays) : 0;
-  const grossDailyPay = dailyBasePay + dailyWeeklyHolidayPay + dailyAnnualLeavePay + dailyHolidayWorkPay;
-
-  const weeklyBasePay = Math.round(hourly * workHoursWeekly);
+  // 주급 분해 (1주 기준)
+  const weeklyBasePay = Math.round(hourly * stdWeeklyHours);
   const weeklyWeeklyHolidayPay = Math.round(weeklyHolidayPayMonthly / 4.345);
+  const weeklyOvertimePay = Math.round(weeklyOvertimeHours * hourly * overtimeMultiplier);
+  const weeklyNightPay = is5Over ? Math.round(nightHoursWeekly * hourly * 0.5) : 0;
   const weeklyAnnualLeavePay = Math.round(annualLeavePayMonthly / 4.345);
   const weeklyHolidayWorkPay = Math.round(holidayWorkPayMonthly / 4.345);
-  const grossWeeklyPay = weeklyBasePay + weeklyWeeklyHolidayPay + weeklyAnnualLeavePay + weeklyHolidayWorkPay;
+  const grossWeeklyPay = weeklyBasePay + weeklyWeeklyHolidayPay + weeklyOvertimePay + weeklyNightPay + weeklyAnnualLeavePay + weeklyHolidayWorkPay;
+
+  // 일급 분해 (1일 기준)
+  const dailyBasePay = Math.round(hourly * (dailyH > 0 ? Math.min(8, dailyH) : 8));
+  const dailyWeeklyHolidayPay = monthlyActiveDays > 0 ? Math.round(weeklyHolidayPayMonthly / monthlyActiveDays) : 0;
+  const dailyOvertimePay = activeWeeklyDays > 0 ? Math.round(weeklyOvertimePay / activeWeeklyDays) : 0;
+  const dailyNightPay = activeWeeklyDays > 0 ? Math.round(weeklyNightPay / activeWeeklyDays) : 0;
+  const dailyAnnualLeavePay = monthlyActiveDays > 0 ? Math.round(annualLeavePayMonthly / monthlyActiveDays) : 0;
+  const dailyHolidayWorkPay = monthlyActiveDays > 0 ? Math.round(holidayWorkPayMonthly / monthlyActiveDays) : 0;
+  const grossDailyPay = dailyBasePay + dailyWeeklyHolidayPay + dailyOvertimePay + dailyNightPay + dailyAnnualLeavePay + dailyHolidayWorkPay;
 
   return {
     payType,
@@ -1021,6 +1039,12 @@ export const calculate4ComponentsBreakdown = ({
     holidayMonthlyHours,
     weeklyHolidayPayMonthly,
     weeklyHolidayHourlyRate,
+    monthlyOvertimeHours: Number(monthlyOvertimeHours.toFixed(2)),
+    monthlyOvertimePay,
+    overtimeHourlyRate,
+    monthlyNightHours: Number(monthlyNightHours.toFixed(2)),
+    monthlyNightPay,
+    nightHourlyRate,
     leaveDays,
     annualLeaveMonthlyHours: Number(annualLeaveMonthlyHours.toFixed(2)),
     annualLeavePayMonthly,
@@ -1032,10 +1056,12 @@ export const calculate4ComponentsBreakdown = ({
     totalDivisor,
     grossMonthlyPay,
     effectiveTotalHourlyRate,
-    
+
     // 일급 분해
     dailyBasePay,
     dailyWeeklyHolidayPay,
+    dailyOvertimePay,
+    dailyNightPay,
     dailyAnnualLeavePay,
     dailyHolidayWorkPay,
     grossDailyPay,
@@ -1043,6 +1069,8 @@ export const calculate4ComponentsBreakdown = ({
     // 주급 분해
     weeklyBasePay,
     weeklyWeeklyHolidayPay,
+    weeklyOvertimePay,
+    weeklyNightPay,
     weeklyAnnualLeavePay,
     weeklyHolidayWorkPay,
     grossWeeklyPay

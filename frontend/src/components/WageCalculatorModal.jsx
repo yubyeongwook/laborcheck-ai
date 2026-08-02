@@ -209,15 +209,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const isNormalStandardWorker = (computedWeeklyNetWork >= 40);
     const is15HoursOver = computedWeeklyNetWork >= 15 && (payType === 'monthly' || isWeekly15Over);
 
-    // 💡 급여 지급 형태별 통상 시급 역산 (일급 ➔ 시급, 주급 ➔ 시급)
+    // 💡 급여 지급 형태별 통상 시급 (입력받은 시급 단가 100% 유지)
     let effectiveHourlyRate = hourlyRate;
-    if (payType === 'daily') {
-      effectiveHourlyRate = computedDailyNetWork > 0 ? hourlyRate / computedDailyNetWork : hourlyRate / 8;
-    } else if (payType === 'weekly') {
-      const weeklyHolidayHours = is15HoursOver ? (computedWeeklyNetWork / 40 * 8) : 0;
-      const totalWeeklyDivisor = computedWeeklyNetWork + weeklyHolidayHours;
-      effectiveHourlyRate = totalWeeklyDivisor > 0 ? hourlyRate / totalWeeklyDivisor : hourlyRate / 48;
-    }
 
     // 1) 기본급 산정
     let baseHoursMonthly = 209;
@@ -1381,7 +1374,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
               </div>
 
-              {/* 💡 시급 / 일급 / 주급 / 월급 선택 시 4대 수당 (기본+주휴+연차+휴일) 세부 명세 카드 */}
+              {/* 💡 시급 / 일급 / 주급 / 월급 선택 시 6대 수당 (기본+주휴+연장+야간+연차+휴일) 세부 명세 카드 */}
               {calculated.fourComponents && (
                 <div style={{
                   background: 'linear-gradient(135deg, #0f172a, #1e1b4b)',
@@ -1395,10 +1388,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     <div style={{ fontSize: '0.82rem', color: '#c084fc', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <Layers size={17} color="#c084fc" /> 
                       <span>
-                        {payType === 'hourly' ? '💡 4대 수당 (기본+주휴+연차+휴일) 1시간당 시급 명세' :
-                         payType === 'daily' ? '💡 4대 수당 (기본+주휴+연차+휴일) 1일당 일급 명세' :
-                         payType === 'weekly' ? '💡 4대 수당 (기본+주휴+연차+휴일) 1주당 주급 명세' :
-                         '💡 4대 수당 (기본+주휴+연차+휴일) 1월당 월급 명세'}
+                        {payType === 'hourly' ? '💡 6대 법정 수당 (기본+주휴+연장+야간+연차+휴일) 1시간당 시급 명세' :
+                         payType === 'daily' ? '💡 6대 법정 수당 (기본+주휴+연장+야간+연차+휴일) 1일당 일급 명세' :
+                         payType === 'weekly' ? '💡 6대 법정 수당 (기본+주휴+연장+야간+연차+휴일) 1주당 주급 명세' :
+                         '💡 6대 법정 수당 (기본+주휴+연장+야간+연차+휴일) 1월당 월급 명세'}
                       </span>
                     </div>
                     <span style={{ fontSize: '0.68rem', background: 'rgba(168, 85, 247, 0.2)', color: '#e9d5ff', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid #c084fc', fontWeight: 700 }}>
@@ -1410,7 +1403,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     {/* ① 기본급 항목 */}
                     <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.45rem 0.55rem', borderRadius: '8px', border: '1px solid #334155' }}>
                       <div style={{ color: '#94a3b8', fontSize: '0.65rem', fontWeight: 700 }}>
-                        {payType === 'hourly' ? '① 기본 시급' : payType === 'daily' ? '① 1일 기본일급' : payType === 'weekly' ? '① 1주 기본주급' : '① 월 기본급'}
+                        {payType === 'hourly' ? '① 기본 시급' : payType === 'daily' ? '① 1일 기본일급 (8h)' : payType === 'weekly' ? '① 1주 기본주급 (40h)' : '① 월 기본급 (174h)'}
                       </div>
                       <div style={{ color: '#ffffff', fontWeight: 900, fontSize: '0.82rem', marginTop: '0.1rem' }}>
                         {payType === 'hourly' ? `${calculated.fourComponents.baseHourlyRate.toLocaleString()}원/h` :
@@ -1420,8 +1413,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       </div>
                       <div style={{ color: '#64748b', fontSize: '0.65rem' }}>
                         {payType === 'hourly' ? `월 ${calculated.fourComponents.basePayMonthly.toLocaleString()}원 (${calculated.fourComponents.baseMonthlyHours}h)` :
-                         payType === 'daily' ? `통상시급 ${calculated.fourComponents.baseHourlyRate.toLocaleString()}원 × ${calculated.computedDailyNetWork}h` :
-                         payType === 'weekly' ? `주 ${calculated.computedWeeklyNetWork}h 기준 기본근로` :
+                         payType === 'daily' ? `통상시급 ${calculated.fourComponents.baseHourlyRate.toLocaleString()}원 × ${Math.min(8, calculated.computedDailyNetWork)}h` :
+                         payType === 'weekly' ? `주 소정근로 ${Math.min(40, calculated.computedWeeklyNetWork)}h` :
                          `월 소정근로 ${calculated.fourComponents.baseMonthlyHours}h`}
                       </div>
                     </div>
@@ -1429,7 +1422,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     {/* ② 주휴수당 항목 */}
                     <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.45rem 0.55rem', borderRadius: '8px', border: '1px solid #334155' }}>
                       <div style={{ color: '#34d399', fontSize: '0.65rem', fontWeight: 700 }}>
-                        {payType === 'hourly' ? '② 주휴 시급 (환산)' : payType === 'daily' ? '② 1일 주휴수당 (분할)' : payType === 'weekly' ? '② 1주 주휴수당' : '② 월 주휴수당'}
+                        {payType === 'hourly' ? '② 주휴 시급 (환산)' : payType === 'daily' ? '② 1일 주휴수당 (분할)' : payType === 'weekly' ? '② 1주 주휴수당 (8h)' : '② 월 주휴수당 (35h)'}
                       </div>
                       <div style={{ color: '#34d399', fontWeight: 900, fontSize: '0.82rem', marginTop: '0.1rem' }}>
                         {payType === 'hourly' ? `+${calculated.fourComponents.weeklyHolidayHourlyRate.toLocaleString()}원/h` :
@@ -1442,15 +1435,53 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       </div>
                     </div>
 
-                    {/* ③ 연차수당 항목 */}
-                    <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.45rem 0.55rem', borderRadius: '8px', border: '1px solid #334155' }}>
-                      <div style={{ color: '#c084fc', fontSize: '0.65rem', fontWeight: 700 }}>
-                        {payType === 'hourly' ? `③ 연차 시급 (연 ${calculated.fourComponents.leaveDays}일)` :
-                         payType === 'daily' ? `③ 1일 연차수당 (분할)` :
-                         payType === 'weekly' ? `③ 1주 연차수당 (분할)` :
-                         `③ 월 연차수당 (연 ${calculated.fourComponents.leaveDays}일)`}
+                    {/* ③ 연장근로수당 항목 */}
+                    <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.45rem 0.55rem', borderRadius: '8px', border: '1px solid #fb923c' }}>
+                      <div style={{ color: '#fb923c', fontSize: '0.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>
+                          {payType === 'hourly' ? '③ 연장 시급 (환산)' : payType === 'daily' ? '③ 1일 연장수당 (1.5배)' : payType === 'weekly' ? `③ 1주 연장수당 (${Math.max(0, calculated.computedWeeklyNetWork - 40).toFixed(1)}h)` : `③ 월 연장수당 (${calculated.netOvertimeHours}h)`}
+                        </span>
+                        <span style={{ fontSize: '0.58rem', color: '#fb923c', background: 'rgba(251, 146, 60, 0.15)', padding: '0.05rem 0.25rem', borderRadius: '3px', border: '1px solid #fb923c' }}>1.5배 가산</span>
+                      </div>
+                      <div style={{ color: '#fb923c', fontWeight: 900, fontSize: '0.82rem', marginTop: '0.1rem' }}>
+                        {payType === 'hourly' ? `+${calculated.fourComponents.overtimeHourlyRate.toLocaleString()}원/h` :
+                         payType === 'daily' ? `+${calculated.fourComponents.dailyOvertimePay.toLocaleString()}원/일` :
+                         payType === 'weekly' ? `+${calculated.fourComponents.weeklyOvertimePay.toLocaleString()}원/주` :
+                         `+${calculated.fourComponents.monthlyOvertimePay.toLocaleString()}원/월`}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.65rem' }}>
+                        월 {calculated.fourComponents.monthlyOvertimePay.toLocaleString()}원 ({calculated.fourComponents.monthlyOvertimeHours}h)
+                      </div>
+                    </div>
+
+                    {/* ④ 야간근로수당 항목 */}
+                    <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.45rem 0.55rem', borderRadius: '8px', border: '1px solid #c084fc' }}>
+                      <div style={{ color: '#c084fc', fontSize: '0.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>
+                          {payType === 'hourly' ? '④ 야간 시급 (환산)' : payType === 'daily' ? '④ 1일 야간수당 (0.5배)' : payType === 'weekly' ? `④ 1주 야간수당 (${calculated.computedWeeklyNightWork.toFixed(1)}h)` : `④ 월 야간수당 (${calculated.netNightHours}h)`}
+                        </span>
+                        <span style={{ fontSize: '0.58rem', color: '#c084fc', background: 'rgba(192, 132, 252, 0.15)', padding: '0.05rem 0.25rem', borderRadius: '3px', border: '1px solid #c084fc' }}>22~06시 0.5배</span>
                       </div>
                       <div style={{ color: '#c084fc', fontWeight: 900, fontSize: '0.82rem', marginTop: '0.1rem' }}>
+                        {payType === 'hourly' ? `+${calculated.fourComponents.nightHourlyRate.toLocaleString()}원/h` :
+                         payType === 'daily' ? `+${calculated.fourComponents.dailyNightPay.toLocaleString()}원/일` :
+                         payType === 'weekly' ? `+${calculated.fourComponents.weeklyNightPay.toLocaleString()}원/주` :
+                         `+${calculated.fourComponents.monthlyNightPay.toLocaleString()}원/월`}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.65rem' }}>
+                        월 {calculated.fourComponents.monthlyNightPay.toLocaleString()}원 ({calculated.fourComponents.monthlyNightHours}h)
+                      </div>
+                    </div>
+
+                    {/* ⑤ 연차수당 항목 */}
+                    <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.45rem 0.55rem', borderRadius: '8px', border: '1px solid #334155' }}>
+                      <div style={{ color: '#f43f5e', fontSize: '0.65rem', fontWeight: 700 }}>
+                        {payType === 'hourly' ? `⑤ 연차 시급 (연 ${calculated.fourComponents.leaveDays}일)` :
+                         payType === 'daily' ? `⑤ 1일 연차수당 (분할)` :
+                         payType === 'weekly' ? `⑤ 1주 연차수당 (분할)` :
+                         `⑤ 월 연차수당 (연 ${calculated.fourComponents.leaveDays}일)`}
+                      </div>
+                      <div style={{ color: '#f43f5e', fontWeight: 900, fontSize: '0.82rem', marginTop: '0.1rem' }}>
                         {payType === 'hourly' ? `+${calculated.fourComponents.annualLeaveHourlyRate.toLocaleString()}원/h` :
                          payType === 'daily' ? `+${calculated.fourComponents.dailyAnnualLeavePay.toLocaleString()}원/일` :
                          payType === 'weekly' ? `+${calculated.fourComponents.weeklyAnnualLeavePay.toLocaleString()}원/주` :
@@ -1461,15 +1492,15 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                       </div>
                     </div>
 
-                    {/* ④ 휴일근로 수당 항목 */}
+                    {/* ⑥ 휴일근로 수당 항목 */}
                     <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '0.45rem 0.55rem', borderRadius: '8px', border: '1px solid #334155' }}>
-                      <div style={{ color: '#fb923c', fontSize: '0.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ color: '#38bdf8', fontSize: '0.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span>
-                          {payType === 'hourly' ? '④ 휴일근로 시급' : payType === 'daily' ? '④ 1일 휴일수당' : payType === 'weekly' ? '④ 1주 휴일수당' : '④ 월 휴일근로수당'}
+                          {payType === 'hourly' ? '⑥ 휴일근로 시급' : payType === 'daily' ? '⑥ 1일 휴일수당' : payType === 'weekly' ? '⑥ 1주 휴일수당' : '⑥ 월 휴일근로수당'}
                         </span>
-                        <span style={{ fontSize: '0.58rem', color: '#fb923c', background: 'rgba(251, 146, 60, 0.15)', padding: '0.05rem 0.25rem', borderRadius: '3px', border: '1px solid #fb923c' }}>실근로연동</span>
+                        <span style={{ fontSize: '0.58rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', padding: '0.05rem 0.25rem', borderRadius: '3px', border: '1px solid #38bdf8' }}>실근로연동</span>
                       </div>
-                      <div style={{ color: '#fb923c', fontWeight: 900, fontSize: '0.82rem', marginTop: '0.1rem' }}>
+                      <div style={{ color: '#38bdf8', fontWeight: 900, fontSize: '0.82rem', marginTop: '0.1rem' }}>
                         {payType === 'hourly' ? `+${calculated.fourComponents.holidayWorkHourlyRate.toLocaleString()}원/h` :
                          payType === 'daily' ? `+${calculated.fourComponents.dailyHolidayWorkPay.toLocaleString()}원/일` :
                          payType === 'weekly' ? `+${calculated.fourComponents.weeklyHolidayWorkPay.toLocaleString()}원/주` :
