@@ -1015,7 +1015,8 @@ export const calculate4ComponentsBreakdown = ({
 
   // 주급 분해 (1주 기준)
   const weeklyBasePay = Math.round(hourly * stdWeeklyHours);
-  const weeklyWeeklyHolidayPay = Math.round(weeklyHolidayPayMonthly / 4.345);
+  // 💡 주급제 주휴수당: 주 15시간 이상 시 1주 기본주급의 정확히 20% (기본주급 × 0.2, 기본급×1.2 = 주휴포함 주급)
+  const weeklyWeeklyHolidayPay = is15Over ? Math.round(weeklyBasePay * 0.2) : 0;
   const weeklyOvertimePay = Math.round(weeklyOvertimeHours * hourly * overtimeMultiplier);
   const weeklyNightPay = is5Over ? Math.round(nightHoursWeekly * hourly * 0.5) : 0;
   const weeklyAnnualLeavePay = Math.round(annualLeavePayMonthly / 4.345);
@@ -1023,8 +1024,10 @@ export const calculate4ComponentsBreakdown = ({
   const grossWeeklyPay = weeklyBasePay + weeklyWeeklyHolidayPay + weeklyOvertimePay + weeklyNightPay + weeklyAnnualLeavePay + weeklyHolidayWorkPay;
 
   // 일급 분해 (1일 기준)
-  const dailyBasePay = Math.round(hourly * (dailyH > 0 ? Math.min(8, dailyH) : 8));
-  const dailyWeeklyHolidayPay = monthlyActiveDays > 0 ? Math.round(weeklyHolidayPayMonthly / monthlyActiveDays) : 0;
+  const stdDailyHours = (dailyH > 0 ? Math.min(8, dailyH) : 8);
+  const dailyBasePay = Math.round(hourly * stdDailyHours);
+  // 💡 일급제 주휴수당: 주 15시간 이상 시 1일 기본일급의 정확히 20% (기본일급 × 0.2, 기본급×1.2 = 주휴포함 일급)
+  const dailyWeeklyHolidayPay = is15Over ? Math.round(dailyBasePay * 0.2) : 0;
   const dailyOvertimePay = activeWeeklyDays > 0 ? Math.round(weeklyOvertimePay / activeWeeklyDays) : 0;
   const dailyNightPay = activeWeeklyDays > 0 ? Math.round(weeklyNightPay / activeWeeklyDays) : 0;
   const dailyAnnualLeavePay = monthlyActiveDays > 0 ? Math.round(annualLeavePayMonthly / monthlyActiveDays) : 0;
