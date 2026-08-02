@@ -116,7 +116,7 @@ function ContactForm() {
                 style={{ marginTop: '0.15rem' }}
               />
               <span>
-                (필수) <a href="#/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }}>개인정보 수집·이용</a>에 동의합니다.
+                (필수) <a href="#/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }}>개인정보 수집·이용 및 전문 노무사 연결 / 카카오톡·이메일·전화 안내를 위한 제3자 제공 동의</a>에 동의합니다.
               </span>
             </label>
             <button
