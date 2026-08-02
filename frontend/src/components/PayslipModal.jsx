@@ -189,12 +189,16 @@ export default function PayslipModal({ data = {}, onClose }) {
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 600 }}>기본급 (순수 소정)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 600 }}>
+                      기본급 ({calcPureBaseHours}h × {hourlyRate ? hourlyRate.toLocaleString() : '10,320'}원)
+                    </td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#64748b' }}>{calcPureBaseHours}h</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 700 }}>{calcPureBasePay.toLocaleString()}</td>
                   </tr>
                   <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 700, color: '#047857', background: '#ecfdf5' }}>주휴수당 (유급주휴)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 700, color: '#047857', background: '#ecfdf5' }}>
+                      주휴수당 ({calcWeeklyHolidayHours}h × {hourlyRate ? hourlyRate.toLocaleString() : '10,320'}원)
+                    </td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#047857', fontWeight: 700, background: '#ecfdf5' }}>{calcWeeklyHolidayHours}h</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 800, color: '#047857', background: '#ecfdf5' }}>{calcWeeklyHolidayPay.toLocaleString()}</td>
                   </tr>
@@ -209,7 +213,7 @@ export default function PayslipModal({ data = {}, onClose }) {
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{(nightAllowance || 0).toLocaleString()}</td>
                   </tr>
                   <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>휴일근로수당 (중복가산)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>휴일근로수당 (1.5배 가산)</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{displayHolidayHours}h</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{holidayAllowance.toLocaleString()}</td>
                   </tr>
