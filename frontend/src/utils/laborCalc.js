@@ -972,26 +972,30 @@ export const calculate4ComponentsBreakdown = ({
     holidayMonthlyHours = Number(((workHoursWeekly / 40) * 35).toFixed(2));
   }
   const weeklyHolidayPayMonthly = Math.round(holidayMonthlyHours * hourly);
-  // 209시간(또는 총 소정월근로시간) 기준 시간당 주휴수당 환산 단가
-  const totalDivisor = workHoursWeekly >= 40 ? 209 : (baseMonthlyHours + holidayMonthlyHours);
-  const weeklyHolidayHourlyRate = totalDivisor > 0 ? Math.round(weeklyHolidayPayMonthly / totalDivisor) : 0;
+  
+  // 💡 시급제 근로자 1시간 실근로 당 가산되는 주휴수당 환산 단가 (주 15h 이상 시 기본시급의 20% = 0.2배)
+  // 예: 기본시급 10,320원 ➔ 주휴시급 = 10,320 × 20% = +2,064원/h
+  const weeklyHolidayHourlyRate = is15Over ? Math.round(hourly * 0.2) : 0;
 
   // 3. 연차수당 (연간 annualLeaveDays 기준 1/12 분할)
   const leaveDays = parseFloat(annualLeaveDays) || 0;
   const annualLeaveMonthlyHours = is15Over && includeAnnualLeave ? (leaveDays * dailyH) / 12 : 0;
   const annualLeavePayMonthly = Math.round(annualLeaveMonthlyHours * hourly);
-  const annualLeaveHourlyRate = totalDivisor > 0 ? Math.round(annualLeavePayMonthly / totalDivisor) : 0;
+  const annualLeaveHourlyRate = baseMonthlyHours > 0 ? Math.round(annualLeavePayMonthly / baseMonthlyHours) : 0;
 
   // 4. 휴일근로수당 (연간 holidayWorkDaysYear 기준 1/12 분할, 5인 이상 1.5배 가산)
   const holDays = parseFloat(holidayWorkDaysYear) || 0;
   const holidayWorkMultiplier = is5Over ? 1.5 : 1.0;
   const holidayWorkMonthlyHours = (holDays * dailyH) / 12;
   const holidayWorkPayMonthly = Math.round(holidayWorkMonthlyHours * hourly * holidayWorkMultiplier);
-  const holidayWorkHourlyRate = totalDivisor > 0 ? Math.round(holidayWorkPayMonthly / totalDivisor) : 0;
+  const holidayWorkHourlyRate = baseMonthlyHours > 0 ? Math.round(holidayWorkPayMonthly / baseMonthlyHours) : 0;
 
   // 총액합계
   const grossMonthlyPay = basePayMonthly + weeklyHolidayPayMonthly + annualLeavePayMonthly + holidayWorkPayMonthly;
-  const effectiveTotalHourlyRate = totalDivisor > 0 ? Math.round(grossMonthlyPay / totalDivisor) : hourly;
+  const totalDivisor = workHoursWeekly >= 40 ? 209 : Number((baseMonthlyHours + holidayMonthlyHours).toFixed(2));
+
+  // 💡 최종 시간당 실효 총시급: 1시간 일할 때 실질적으로 버는 총시급 (기본시급 + 시간당주휴 + 시간당연차 + 시간당휴일)
+  const effectiveTotalHourlyRate = baseHourlyRate + weeklyHolidayHourlyRate + annualLeaveHourlyRate + holidayWorkHourlyRate;
 
   // 💡 지급 형태별(월급/주급/일급/시급) 세부 수당 금액 분해
   const activeWeeklyDays = dailyH > 0 ? (workHoursWeekly / dailyH) : 5;
