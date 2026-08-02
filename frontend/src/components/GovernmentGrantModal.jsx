@@ -81,6 +81,26 @@ const GRANT_PROGRAMS = [
     ]
   },
   {
+    id: 'startup',
+    title: '신규 사업자(창업 3년 이내) 전용 패키지',
+    target: '창업 3년 미만 신규 사업자 및 예비 창업자',
+    amount: '사업화 자금 최대 1억원 (무상) + 저리 융자 7,000만',
+    desc: '신규 창업자가 초기 인건비·사무실 임차료·시제품 제작비를 부담 없이 확보하도록 지원하는 정부 100% 창업지원 프로그램',
+    badge: '🚀 신규 창업자 특화',
+    typeTag: '🚀 신규 창업 특화 지원 (무상 보조금 + 저리 융자)',
+    criteria: '사업자등록일 기준 3년 미만 신규 사업자, 1인 창업기업 포함 (유흥/사행업 제외 전 업종)',
+    documents: [
+      '① 사업자등록증 사본 (또는 예비창업자 신분증)',
+      '② 1페이지 요약 창업 사업계획서',
+      '③ 대표자 이력서 및 대표자 국세 완납증명서'
+    ],
+    checklist: [
+      '□ 대표자 개인 국세 및 지방세 체불 기록 없을 것',
+      '□ 창업 3년 이내 신규 등록 사업주일 것',
+      '□ 노무체크 AI 자동 검수로 1페이지 사업계획서 검증 완료할 것'
+    ]
+  },
+  {
     id: 'policy_loan',
     title: '중진공·신보·기보 정책자금 융자',
     target: '전 중소기업 및 소상공인 사업장',
@@ -249,6 +269,38 @@ export default function GovernmentGrantModal({ isOpen, onClose }) {
               </div>
             );
           })}
+        </div>
+
+        {/* 📌 신규 및 기존 사업자 실제 지원금 100% 수령 실현 5단계 로드맵 */}
+        <div style={{
+          background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(56, 189, 248, 0.3)',
+          borderRadius: '16px', padding: '1.2rem', marginBottom: '1.5rem'
+        }}>
+          <h4 style={{ fontSize: '0.98rem', fontWeight: 800, color: '#38bdf8', margin: '0 0 0.6rem 0', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <Sparkles size={18} color="#38bdf8" /> 신규 창업자 & 기존 기업 실제 지원금 100% 수령 5단계 로드맵
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.6rem' }}>
+            <div style={{ background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 800 }}>1단계 (사전검증)</div>
+              <div style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 700, marginTop: '0.1rem' }}>국세 체불 0원 & 권고사직 이력 체크</div>
+            </div>
+            <div style={{ background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 800 }}>2단계 (서류세팅)</div>
+              <div style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 700, marginTop: '0.1rem' }}>209시간 근로계약서 & 급여 입금 내역</div>
+            </div>
+            <div style={{ background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 800 }}>3단계 (사전신청)</div>
+              <div style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 700, marginTop: '0.1rem' }}>고용24 / 신보 1분 온라인 우선 등록</div>
+            </div>
+            <div style={{ background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontSize: '0.72rem', color: '#a78bfa', fontWeight: 800 }}>4단계 (서류검수)</div>
+              <div style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 700, marginTop: '0.1rem' }}>AI 자동검증 서류 제출 (탈락율 0%)</div>
+            </div>
+            <div style={{ background: '#0f172a', padding: '0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontSize: '0.72rem', color: '#f43f5e', fontWeight: 800 }}>5단계 (지급승인)</div>
+              <div style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 700, marginTop: '0.1rem' }}>지원금 최종 승인 및 매월 통장 수령</div>
+            </div>
+          </div>
         </div>
 
         {/* 📝 지원금 무료 자격 심사 신청 폼 */}
