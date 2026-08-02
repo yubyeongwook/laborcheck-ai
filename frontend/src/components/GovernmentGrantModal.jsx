@@ -9,6 +9,7 @@ const GRANT_PROGRAMS = [
     amount: '최대 1,200만원 / 1인당',
     desc: '취업애로청년을 정규직으로 채용하여 6개월 이상 고용 유지 시, 1년간 월 60만원 + 2년차 480만원 일시지급',
     badge: '👑 대표 추천',
+    typeTag: '🎁 100% 무상 보조금 (상환 의무 없음)',
     criteria: '만 15~34세 미취업 청년 정규직 채용, 고용보험 피보험자 수 5인 이상 (지식서비스/제조업 1인 이상 특례)',
     documents: [
       '① 표준 서면 근로계약서 사본 (주 30시간 이상)',
@@ -29,6 +30,7 @@ const GRANT_PROGRAMS = [
     amount: '최대 240만원 / 1인당',
     desc: '60세 이상 고령자를 1년 이상 정규직 또는 1년 이상 계약직으로 신규 채용 시 분기별 30만원씩 2년간 지원',
     badge: '👴 고령자 채용',
+    typeTag: '🎁 100% 무상 보조금 (상환 의무 없음)',
     criteria: '채용일 기준 만 60세 이상 미취업 고령자 채용, 1년 이상 고용계약 체결',
     documents: [
       '① 근로계약서 사본 (1년 이상 계약)',
@@ -47,6 +49,7 @@ const GRANT_PROGRAMS = [
     amount: '월 30~50만원 / 1인당',
     desc: '재택근무, 시차출퇴근, 선택근무제 등 유연근무제를 도입하고 전자·기계적 출퇴근을 기록한 사업주 지원',
     badge: '💻 유연근무',
+    typeTag: '🎁 100% 무상 보조금 (상환 의무 없음)',
     criteria: '취업규칙/근로계약서상 유연근무제 명시, 지문·카드·앱 등 전자·기계적 출퇴근 기록 보관',
     documents: [
       '① 유연근무제 도입 취업규칙 또는 노사합의서',
@@ -65,6 +68,7 @@ const GRANT_PROGRAMS = [
     amount: '최대 960만원 / 1인당',
     desc: '50세 이상 미취업자를 신중년 적합직무(기술·경영·전문 직종)에 정규직 채용 시 1년간 월 40~80만원 지원',
     badge: '👔 신중년',
+    typeTag: '🎁 100% 무상 보조금 (상환 의무 없음)',
     criteria: '만 50세 이상 미취업자 채용, 고용노동부 지정 신중년 적합직무 분야 수불 채용',
     documents: [
       '① 정규직 근로계약서 사본',
@@ -74,6 +78,27 @@ const GRANT_PROGRAMS = [
     checklist: [
       '□ 채용 후 3개월 고용 유지 후 1차 지원금 신청 가능',
       '□ 최저임금 100% 이상 지급'
+    ]
+  },
+  {
+    id: 'policy_loan',
+    title: '중진공·신보·기보 정책자금 융자',
+    target: '전 중소기업 및 소상공인 사업장',
+    amount: '최대 5억~50억원 (금리 1.5~3%대)',
+    desc: '상환 의무가 존재하는 저금리 유상 정책자금. 신용보증기금·기술보증기금 보증서를 기반으로 시중은행 대비 초저금리로 시설/운전자금 융자',
+    badge: '🏦 정책자금 융자',
+    typeTag: '🏦 유상 융자 정책자금 (초저금리 상환형)',
+    criteria: '사업자등록 1년 이상 정상 영업, 국세/지방세 체불 및 금융 연체 부존재, 부채비율 기준 충족',
+    documents: [
+      '① 사업자등록증 및 법인등기부등본',
+      '② 최근 3개년 재무제표 증명원',
+      '③ 국세 및 지방세 완납증명서',
+      '④ 시설/운전자금 사업계획서'
+    ],
+    checklist: [
+      '□ 최근 1년 이내 국세/지방세 체불 기록 없을 것',
+      '□ 자본잠식 상태가 아니어야 함',
+      '□ 신보/기보 보증 잔액 한도 사전 확인'
     ]
   }
 ];
@@ -166,8 +191,9 @@ export default function GovernmentGrantModal({ isOpen, onClose }) {
                 transition: 'all 0.2s ease'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', fontSize: '0.75rem', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800 }}>{p.badge}</span>
+                    <span style={{ background: p.id === 'policy_loan' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(56, 189, 248, 0.15)', color: p.id === 'policy_loan' ? '#fbbf24' : '#38bdf8', fontSize: '0.72rem', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>{p.typeTag}</span>
                     <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>{p.title}</h4>
                   </div>
                   <span style={{ fontSize: '1rem', fontWeight: 900, color: '#fbbf24' }}>{p.amount}</span>
