@@ -202,6 +202,16 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       computedWeeklyNightWork = nightHoursWeekly;
     }
 
+    // 💡 급여 지급 형태별 통상 시급 역산 (일급 ➔ 시급, 주급 ➔ 시급)
+    let effectiveHourlyRate = hourlyRate;
+    if (payType === 'daily') {
+      effectiveHourlyRate = computedDailyNetWork > 0 ? hourlyRate / computedDailyNetWork : hourlyRate / 8;
+    } else if (payType === 'weekly') {
+      const weeklyHolidayHours = is15HoursOver ? (computedWeeklyNetWork / 40 * 8) : 0;
+      const totalWeeklyDivisor = computedWeeklyNetWork + weeklyHolidayHours;
+      effectiveHourlyRate = totalWeeklyDivisor > 0 ? hourlyRate / totalWeeklyDivisor : hourlyRate / 48;
+    }
+
     // 💡 주 40시간 이상 근로 시 대한민국 관례 관행인 174시간(기본급) + 35시간(주휴) = 209시간 정액제 적용!
     const isNormalStandardWorker = (computedWeeklyNetWork >= 40);
     const is15HoursOver = computedWeeklyNetWork >= 15 && (payType === 'monthly' || isWeekly15Over);
@@ -216,12 +226,12 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
     if (isNormalStandardWorker) {
       baseHoursMonthly = 209;
-      actualBasePay = Math.round(174 * hourlyRate);
+      actualBasePay = Math.round(174 * effectiveHourlyRate);
       displayBaseHours = '174h';
     } else {
       // 174시간 미만 파트타임: 주 실근로시간 * 4.345주 (소수점 둘째 자리 유지, 예: 95.59h)
       const netMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
-      actualBasePay = Math.round(netMonthlyHours * hourlyRate);
+      actualBasePay = Math.round(netMonthlyHours * effectiveHourlyRate);
       displayBaseHours = `${netMonthlyHours.toFixed(2)}h`;
     }
 
@@ -231,11 +241,11 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
     if (isNormalStandardWorker) {
       monthlyHolidayHours = 35;
-      weeklyHolidayPay = Math.round(35 * hourlyRate);
+      weeklyHolidayPay = Math.round(35 * effectiveHourlyRate);
     } else if (is15HoursOver) {
       // 주 15시간 이상 ~ 40시간 미만 비례 주휴수당 (35시간 기준 비례, 소수점 둘째 자리 유지, 예: 19.25h)
       monthlyHolidayHours = Number((computedWeeklyNetWork / 40 * 35).toFixed(2));
-      weeklyHolidayPay = Math.round(monthlyHolidayHours * hourlyRate);
+      weeklyHolidayPay = Math.round(monthlyHolidayHours * effectiveHourlyRate);
     } else {
       // 주 15시간 미만 초단시간 ➔ 주휴수당 법정 0원!
       monthlyHolidayHours = 0;
@@ -245,7 +255,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     // 3) 공휴일·휴일근로수당 (연간 휴일근로일수 holidayDaysYear 기준 1/12 분할 정산)
     const holidayWorkMultiplier = is5Over ? 1.5 : 1.0;
     const monthlyHolidayWorkHours = (holidayDaysYear * computedDailyNetWork) / 12;
-    const holidayPayMonthly = Math.round(monthlyHolidayWorkHours * hourlyRate * holidayWorkMultiplier);
+    const holidayPayMonthly = Math.round(monthlyHolidayWorkHours * effectiveHourlyRate * holidayWorkMultiplier);
 
     // 주 40시간 초과 연장근로
     const weeklyOvertimeHours = Math.max(0, computedWeeklyNetWork - 40);
@@ -253,13 +263,13 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     const monthlyNightHoursTotal = computedWeeklyNightWork * 4.345;
 
     // 수당 계산
-    let monthlyOvertimePay = Math.round(monthlyOvertimeHours * hourlyRate * (is5Over ? 1.5 : 1.0));
-    let nightAllowance = is5Over ? Math.round(monthlyNightHoursTotal * hourlyRate * 0.5) : 0;
+    let monthlyOvertimePay = Math.round(monthlyOvertimeHours * effectiveHourlyRate * (is5Over ? 1.5 : 1.0));
+    let nightAllowance = is5Over ? Math.round(monthlyNightHoursTotal * effectiveHourlyRate * 0.5) : 0;
 
     // 미사용 연차수당 (근로자의 1일 실근로시간 computedDailyNetWork 기준 정밀 비례 산출)
     const unusedAnnualLeaveDays = Math.max(0, totalAnnualLeaveDays - usedAnnualLeaveDays);
     const annualLeaveMonthlyHours = (unusedAnnualLeaveDays * computedDailyNetWork) / 12;
-    const annualLeaveMonthlyPay = includeAnnualLeave ? Math.round(annualLeaveMonthlyHours * hourlyRate) : 0;
+    const annualLeaveMonthlyPay = includeAnnualLeave ? Math.round(annualLeaveMonthlyHours * effectiveHourlyRate) : 0;
 
     // 비과세 식대
     const mealPay = includeMeal ? 200000 : 0;
@@ -280,8 +290,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     if (isNormalStandardWorker) {
       displayBaseHoursStr = '174';
       displayWeeklyHolidayHoursStr = '35';
-      pureBasePay = Math.round(174 * hourlyRate);
-      weeklyHolidayPay = Math.round(35 * hourlyRate);
+      pureBasePay = Math.round(174 * effectiveHourlyRate);
+      weeklyHolidayPay = Math.round(35 * effectiveHourlyRate);
     } else {
       // 174시간 미만 파트타임/시급제: 소수점 둘째 자리 유지
       const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
@@ -289,8 +299,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       
       displayBaseHoursStr = calcTotalMonthlyHours.toFixed(2);
       displayWeeklyHolidayHoursStr = is15HoursOver ? calcWeeklyHolidayHours.toFixed(2) : '주 15h 미만 0';
-      pureBasePay = Math.round(calcTotalMonthlyHours * hourlyRate);
-      weeklyHolidayPay = is15HoursOver ? Math.round(calcWeeklyHolidayHours * hourlyRate) : 0;
+      pureBasePay = Math.round(calcTotalMonthlyHours * effectiveHourlyRate);
+      weeklyHolidayPay = is15HoursOver ? Math.round(calcWeeklyHolidayHours * effectiveHourlyRate) : 0;
     }
 
     // 💡 세전 기본급 산정 (기본급 + 주휴수당 합산)
@@ -546,11 +556,11 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               
-              {/* 통상시급 & 사업장 규모 */}
+              {/* 통상시급/약정금액 & 사업장 규모 */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>
-                    통상 시급 (2026 최저 10,320원)
+                    {payType === 'daily' ? '약정 일급 (원)' : payType === 'weekly' ? '약정 주급 (원)' : '통상 시급 (2026 최저 10,320원)'}
                   </label>
                   <div style={{ display: 'flex', alignItems: 'center' }}>
                     <input
