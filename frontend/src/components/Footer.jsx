@@ -68,9 +68,9 @@ function Footer() {
         </div>
       </div>
 
-      <div className="site-footer-disclaimer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.2rem', marginTop: '1.5rem', fontSize: '0.8rem', color: '#64748b' }}>
-        본 서비스가 제공하는 모든 계산 결과 및 AI 진단 리포트는 근로기준법 및 관련 고용노동부 고시 기준 참고용 정보입니다.<br />
-        개별 분쟁 및 재판 절차는 공인노무사·변호사 등 법률 전문가와 직접 상담을 권장합니다.<br />
+      <div className="site-footer-disclaimer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.2rem', marginTop: '1.5rem', fontSize: '0.8rem', color: '#64748b', lineHeight: 1.6 }}>
+        본 서비스가 제공하는 모든 계산 결과 및 AI 자가진단 리포트는 대한민국 근로기준법 및 고용노동부 고시 데이터 기반 자가진단 정보이며, 공인노무사·변호사·의사의 개별적인 법률 수임 또는 개별 자문이 아닙니다.<br />
+        구체적인 사안 및 개별 법적 분쟁은 고용노동부(1350) 또는 전문 자격사와 상담하시기 바랍니다.<br />
         © {new Date().getFullYear()} LaborCheck AI. All rights reserved.
       </div>
     </footer>
