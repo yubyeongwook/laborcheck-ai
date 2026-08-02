@@ -88,6 +88,11 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   // 💡 국민연금 부과 대상 소득월액 (기본 빈값/자동과세표준 산정)
   const [pensionBaseInput, setPensionBaseInput] = useState(calcData?.pensionBase || '');
 
+  // 💡 비과세 및 과세 수당 정밀 조율 state
+  const [carAllowanceInput, setCarAllowanceInput] = useState(0);
+  const [childcareAllowanceInput, setChildcareAllowanceInput] = useState(0);
+  const [taxableAllowanceInput, setTaxableAllowanceInput] = useState(0);
+
   // ⚠️ 결근 / 조퇴·외출 정밀 공제 state (기본 0)
   const [absentDays, setAbsentDays] = useState(0);
   const [latenessHours, setLatenessHours] = useState(0);
@@ -968,16 +973,61 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
               </div>
 
-              {/* 비과세 식대 및 연차 정밀 설정 */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderTop: '1px solid #334155', paddingTop: '0.65rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#e2e8f0', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={includeMeal}
-                    onChange={(e) => setIncludeMeal(e.target.checked)}
-                  />
-                  🍚 식대 20만원 비과세 기본급 분할 (절세 적용)
-                </label>
+              {/* 비과세 식대 및 과세 수당 정밀 설정 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px solid #334155', paddingTop: '0.65rem' }}>
+                <div style={{ background: '#0f172a', padding: '0.65rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.4)' }}>
+                  <div style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.4rem' }}>
+                    비과세 및 과세 수당 세부 입력 조율
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>식대 비과세 (월 최대 20만)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="10000"
+                        value={includeMeal ? 200000 : 0}
+                        onChange={(e) => setIncludeMeal(Number(e.target.value) > 0)}
+                        style={{ width: '100%', padding: '0.25rem', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', fontSize: '0.75rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>자가운전보조금 (월 최대 20만)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="10000"
+                        value={carAllowanceInput}
+                        onChange={(e) => setCarAllowanceInput(Math.max(0, Number(e.target.value)))}
+                        style={{ width: '100%', padding: '0.25rem', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', fontSize: '0.75rem' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#94a3b8', marginBottom: '0.15rem' }}>육아수당 (월 최대 20만)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="10000"
+                        value={childcareAllowanceInput}
+                        onChange={(e) => setChildcareAllowanceInput(Math.max(0, Number(e.target.value)))}
+                        style={{ width: '100%', padding: '0.25rem', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', fontSize: '0.75rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.68rem', color: '#fbbf24', marginBottom: '0.15rem' }}>과세 수당 (직책/직무 수당)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="10000"
+                        value={taxableAllowanceInput}
+                        onChange={(e) => setTaxableAllowanceInput(Math.max(0, Number(e.target.value)))}
+                        style={{ width: '100%', padding: '0.25rem', background: '#1e293b', border: '1px solid #fbbf24', color: '#fbbf24', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 800 }}
+                      />
+                    </div>
+                  </div>
+                </div>
 
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#e2e8f0', cursor: 'pointer' }}>
                   <input
@@ -985,7 +1035,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     checked={includeAnnualLeave}
                     onChange={(e) => setIncludeAnnualLeave(e.target.checked)}
                   />
-                  📅 미사용 연차수당 월 급여에 정산 포함
+                  미사용 연차수당 월 급여에 정산 포함
                 </label>
 
                 {/* 연차 정밀 세팅 */}
