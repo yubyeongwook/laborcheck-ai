@@ -205,6 +205,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       computedWeeklyNightWork = nightHoursWeekly;
     }
 
+    // 💡 주 40시간 이상 근로 시 대한민국 관례 관행인 174시간(기본급) + 35시간(주휴) = 209시간 정액제 적용!
+    const isNormalStandardWorker = (computedWeeklyNetWork >= 40);
+    const is15HoursOver = computedWeeklyNetWork >= 15 && (payType === 'monthly' || isWeekly15Over);
+
     // 💡 급여 지급 형태별 통상 시급 역산 (일급 ➔ 시급, 주급 ➔ 시급)
     let effectiveHourlyRate = hourlyRate;
     if (payType === 'daily') {
@@ -214,10 +218,6 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       const totalWeeklyDivisor = computedWeeklyNetWork + weeklyHolidayHours;
       effectiveHourlyRate = totalWeeklyDivisor > 0 ? hourlyRate / totalWeeklyDivisor : hourlyRate / 48;
     }
-
-    // 💡 주 40시간 이상 근로 시 대한민국 관례 관행인 174시간(기본급) + 35시간(주휴) = 209시간 정액제 적용!
-    const isNormalStandardWorker = (computedWeeklyNetWork >= 40);
-    const is15HoursOver = computedWeeklyNetWork >= 15 && (payType === 'monthly' || isWeekly15Over);
 
     // 1) 기본급 산정
     let baseHoursMonthly = 209;
