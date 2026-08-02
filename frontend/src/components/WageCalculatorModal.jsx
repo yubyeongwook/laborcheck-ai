@@ -356,7 +356,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       holidayPayMonthly,
       netHolidayHours: netHolidayHoursStr,
       unusedAnnualLeaveDays,
-      annualLeaveMonthlyHours: annualLeaveMonthlyHours.toFixed(1),
+      annualLeaveMonthlyHours: annualLeaveMonthlyHours.toFixed(2),
       annualLeaveMonthlyPay,
       mealPay,
       pensionBase,
@@ -1263,39 +1263,45 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.78rem' }}>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem' }}>
-                  <span style={{ color: '#e2e8f0' }}>기본급 ({calculated.pureBaseHoursMonthly}h)</span>
+                  <span style={{ color: '#e2e8f0' }}>
+                    기본급 ({calculated.pureBaseHoursMonthly}h × {hourlyRate.toLocaleString()}원)
+                  </span>
                   <span style={{ fontWeight: 800, color: '#ffffff' }}>{calculated.pureBasePay.toLocaleString()} 원</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem' }}>
-                  <span style={{ color: '#34d399', fontWeight: 700 }}>주휴수당 ({calculated.weeklyHolidayHoursMonthly}h)</span>
+                  <span style={{ color: '#34d399', fontWeight: 700 }}>
+                    주휴수당 ({calculated.weeklyHolidayHoursMonthly}h × {hourlyRate.toLocaleString()}원)
+                  </span>
                   <span style={{ fontWeight: 800, color: '#34d399' }}>{calculated.weeklyHolidayPay.toLocaleString()} 원</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem' }}>
                   <span style={{ color: '#94a3b8' }}>
-                    연장근로수당 ({calculated.netOvertimeHours}h × {is5Over ? '1.5배' : '1.0배'} = {(Number(calculated.netOvertimeHours) * (is5Over ? 1.5 : 1.0)).toFixed(1)}h)
+                    연장근로수당 ({calculated.netOvertimeHours}h × {hourlyRate.toLocaleString()}원 × {is5Over ? '1.5배' : '1.0배'})
                   </span>
                   <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.monthlyOvertimePay.toLocaleString()} 원</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem' }}>
                   <span style={{ color: '#94a3b8' }}>
-                    야간근로수당 ({calculated.netNightHours}h × {is5Over ? '0.5배' : '0.0배'} = {(Number(calculated.netNightHours) * (is5Over ? 0.5 : 0.0)).toFixed(1)}h)
+                    야간근로수당 ({calculated.netNightHours}h × {hourlyRate.toLocaleString()}원 × {is5Over ? '0.5배' : '0.0배'})
                   </span>
                   <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.nightAllowance.toLocaleString()} 원</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem' }}>
                   <span style={{ color: '#94a3b8' }}>
-                    휴일근로/공휴일 수당 {holidayDaysYear > 0 ? `(연 ${holidayDaysYear}일 / 월 ${calculated.netHolidayHours}h)` : '(연 0일)'}
+                    휴일근로/공휴일 수당 {holidayDaysYear > 0 ? `(월 ${calculated.netHolidayHours}h × ${hourlyRate.toLocaleString()}원 × ${is5Over ? '1.5배' : '1.0배'})` : '(연 0일)'}
                   </span>
                   <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.holidayPayMonthly.toLocaleString()} 원</span>
                 </div>
 
                 {includeAnnualLeave && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem' }}>
-                    <span style={{ color: '#c084fc' }}>연차수당 (미사용 {calculated.unusedAnnualLeaveDays}일분)</span>
+                    <span style={{ color: '#c084fc' }}>
+                      연차수당 (미사용 {calculated.unusedAnnualLeaveDays}일 / 월 {calculated.annualLeaveMonthlyHours}h × {hourlyRate.toLocaleString()}원)
+                    </span>
                     <span style={{ fontWeight: 800, color: '#c084fc' }}>{calculated.annualLeaveMonthlyPay.toLocaleString()} 원</span>
                   </div>
                 )}
