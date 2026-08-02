@@ -1349,12 +1349,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 500 }}>실시간 자동 정산</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.35rem' }}>
-                  <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>⏰ 월 총 근로</div>
+                  <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #38bdf8', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.64rem', color: '#38bdf8', fontWeight: 800 }}>⏰ 월 총 실근로</div>
                     <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 900, marginTop: '0.1rem' }}>
-                      {(Number(calculated.pureBaseHoursMonthly) + Number(calculated.netOvertimeHours)) >= 174 
-                        ? '174h' 
-                        : (Number(calculated.pureBaseHoursMonthly) + Number(calculated.netOvertimeHours)).toFixed(2) + 'h'}
+                      {(calculated.computedWeeklyNetWork * 4.345).toFixed(1)}h
                     </div>
                   </div>
 
