@@ -1431,7 +1431,10 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                          `+${calculated.fourComponents.weeklyHolidayPayMonthly.toLocaleString()}원/월`}
                       </div>
                       <div style={{ color: '#64748b', fontSize: '0.65rem' }}>
-                        월 {calculated.fourComponents.weeklyHolidayPayMonthly.toLocaleString()}원 ({calculated.fourComponents.holidayMonthlyHours}h)
+                        {payType === 'monthly' ? `월 35시간 주휴 포함 (월 ${calculated.fourComponents.weeklyHolidayPayMonthly.toLocaleString()}원)` :
+                         payType === 'weekly' ? `1주 8h 주휴 포함 (기본주급 × 0.2)` :
+                         payType === 'daily' ? `1일 주휴 분할 포함 (기본일급 × 0.2)` :
+                         `1시간당 주휴 포함 (기본시급 × 0.2)`}
                       </div>
                     </div>
 
