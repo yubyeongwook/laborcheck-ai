@@ -56,39 +56,39 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
   const [nightWeeklyHour, setNightWeeklyHour] = useState(Math.floor(calcData?.weeklyNightHours || 0));
   const [nightWeeklyMin, setNightWeeklyMin] = useState(Math.round(((calcData?.weeklyNightHours || 0) % 1) * 60 / 5) * 5);
 
-  // 요일별 변동 근무용 state & 일괄 적용용 state
+  // 요일별 변동 근무용 state & 일괄 적용용 state (기본 표준 09:00~18:00, 휴게 1시간)
   const [batchDays, setBatchDays] = useState(['월', '화', '수', '목', '금']);
-  const [batchStart, setBatchStart] = useState('11:00');
-  const [batchEnd, setBatchEnd] = useState('20:30');
-  const [batchBreak, setBatchBreak] = useState('2h');
+  const [batchStart, setBatchStart] = useState('09:00');
+  const [batchEnd, setBatchEnd] = useState('18:00');
+  const [batchBreak, setBatchBreak] = useState('1h');
 
   const [daySchedules, setDaySchedules] = useState({
-    월: { isWork: true, start: '11:00', end: '20:30', breakHours: 2 },
-    화: { isWork: true, start: '11:00', end: '20:30', breakHours: 2 },
-    수: { isWork: true, start: '11:00', end: '20:30', breakHours: 2 },
-    목: { isWork: true, start: '11:00', end: '20:30', breakHours: 2 },
-    금: { isWork: true, start: '11:00', end: '20:30', breakHours: 2 },
-    토: { isWork: true, start: '09:00', end: '23:00', breakHours: 2 },
+    월: { isWork: true, start: '09:00', end: '18:00', breakHours: 1 },
+    화: { isWork: true, start: '09:00', end: '18:00', breakHours: 1 },
+    수: { isWork: true, start: '09:00', end: '18:00', breakHours: 1 },
+    목: { isWork: true, start: '09:00', end: '18:00', breakHours: 1 },
+    금: { isWork: true, start: '09:00', end: '18:00', breakHours: 1 },
+    토: { isWork: false, start: '09:00', end: '18:00', breakHours: 1 },
     일: { isWork: false, start: '09:00', end: '18:00', breakHours: 1 },
   });
 
-  // 연간 공휴일/대체공휴일 근무일수 (기본 12일)
-  const [holidayDaysYear, setHolidayDaysYear] = useState(12);
+  // 연간 공휴일/대체공휴일 근무일수 (기본 0일에서 시작)
+  const [holidayDaysYear, setHolidayDaysYear] = useState(0);
 
   // 식대 비과세 분할 및 연차 정산 포함 여부
   const [includeMeal, setIncludeMeal] = useState(true);
-  const [includeAnnualLeave, setIncludeAnnualLeave] = useState(true);
-  const [totalAnnualLeaveDays, setTotalAnnualLeaveDays] = useState(26);
-  const [usedAnnualLeaveDays, setUsedAnnualLeaveDays] = useState(2);
+  const [includeAnnualLeave, setIncludeAnnualLeave] = useState(false);
+  const [totalAnnualLeaveDays, setTotalAnnualLeaveDays] = useState(0);
+  const [usedAnnualLeaveDays, setUsedAnnualLeaveDays] = useState(0);
 
-  // 사업주 약정 세전 월급 정액 세팅 (목표 세전 월급)
-  const [useTargetGross, setUseTargetGross] = useState(true);
-  const [targetGrossSalary, setTargetGrossSalary] = useState(2800000);
+  // 사업주 약정 세전 월급 정액 세팅 (기본 OFF, 0원 시작)
+  const [useTargetGross, setUseTargetGross] = useState(false);
+  const [targetGrossSalary, setTargetGrossSalary] = useState(0);
 
-  // 💡 국민연금 부과 대상 소득월액 (적용액) 직접 입력 상태 (기본 260만원)
-  const [pensionBaseInput, setPensionBaseInput] = useState(calcData?.pensionBase || 2600000);
+  // 💡 국민연금 부과 대상 소득월액 (기본 빈값/자동과세표준 산정)
+  const [pensionBaseInput, setPensionBaseInput] = useState(calcData?.pensionBase || '');
 
-  // ⚠️ 결근 / 조퇴·외출 정밀 공제 state
+  // ⚠️ 결근 / 조퇴·외출 정밀 공제 state (기본 0)
   const [absentDays, setAbsentDays] = useState(0);
   const [latenessHours, setLatenessHours] = useState(0);
   const [customAbsenceDeduction, setCustomAbsenceDeduction] = useState(0);
@@ -197,8 +197,8 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
       computedWeeklyNightWork = nightHoursWeekly;
     }
 
-    // 💡 근로 형태 및 근로시간에 따른 주휴수당 & 기본급 수식 정밀 판정
-    const isNormalStandardWorker = (computedWeeklyNetWork >= 40) && (payType === 'monthly');
+    // 💡 고정근무 & 월급제 & 주 40시간 이상인 경우에만 174시간(기본급) + 35시간(주휴) = 209시간 법정 정액월급제 적용!
+    const isNormalStandardWorker = (workScheduleType === 'fixed') && (payType === 'monthly') && (computedWeeklyNetWork >= 40);
     const is15HoursOver = computedWeeklyNetWork >= 15 && (payType === 'monthly' || isWeekly15Over);
 
     // 1) 기본급 산정
@@ -227,25 +227,30 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
     // 2) 주휴수당 산정 (주 15시간 이상일 때만!)
     let monthlyHolidayHours = 0;
-    let holidayPayMonthly = 0;
+    let weeklyHolidayPay = 0;
 
     if (isNormalStandardWorker) {
       monthlyHolidayHours = 35;
-      holidayPayMonthly = 361200;
+      weeklyHolidayPay = 361200;
     } else if (isFlexPayType && is15HoursOver) {
-      // 💡 사장님 지침: * 1.2 중 0.2배(20%)를 주휴수당 행에 명확히 분리 산정!
+      // 💡 시급/주급/일급 주 15h 이상: * 1.2 중 0.2배(20%)를 주휴수당 행에 명확히 분리 산정!
       const netMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
       monthlyHolidayHours = Number((netMonthlyHours * 0.2).toFixed(2));
-      holidayPayMonthly = Math.round(monthlyHolidayHours * hourlyRate);
+      weeklyHolidayPay = Math.round(monthlyHolidayHours * hourlyRate);
     } else if (is15HoursOver) {
       // 주 15시간 이상 ~ 40시간 미만 비례 주휴수당
       monthlyHolidayHours = Math.round((computedWeeklyNetWork / 40 * 35) * 100) / 100;
-      holidayPayMonthly = Math.round(monthlyHolidayHours * hourlyRate);
+      weeklyHolidayPay = Math.round(monthlyHolidayHours * hourlyRate);
     } else {
       // 주 15시간 미만 초단시간 ➔ 주휴수당 법정 0원!
       monthlyHolidayHours = 0;
-      holidayPayMonthly = 0;
+      weeklyHolidayPay = 0;
     }
+
+    // 3) 공휴일·휴일근로수당 (연간 휴일근로일수 holidayDaysYear 기준 1/12 분할 정산)
+    const holidayWorkMultiplier = is5Over ? 1.5 : 1.0;
+    const monthlyHolidayWorkHours = (holidayDaysYear * computedDailyNetWork) / 12;
+    const holidayPayMonthly = Math.round(monthlyHolidayWorkHours * hourlyRate * holidayWorkMultiplier);
 
     // 주 40시간 초과 연장근로
     const weeklyOvertimeHours = Math.max(0, computedWeeklyNetWork - 40);
@@ -267,14 +272,43 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     let finalMonthlyOvertime = monthlyOvertimeHours;
     let finalMonthlyNightHours = monthlyNightHoursTotal;
 
-    // 목표 세전 월급 2,800,000원 설정 시 (통상 근로자 한정)
-    if (useTargetGross && targetGrossSalary === 2800000 && isNormalStandardWorker) {
-      finalMonthlyOvertime = 19.11;
-      monthlyOvertimePay = 131430;
-      finalMonthlyNightHours = 6.52;
-      nightAllowance = 134570;
-      holidayPayMonthly = 361200;
+    // 산출시간 (가산율 적용 전 진짜 일한 실제시간)
+    const netOvertimeHoursStr = monthlyOvertimeHours.toFixed(1);
+    const netNightHoursStr = monthlyNightHoursTotal.toFixed(1);
+    const netHolidayHoursStr = (holidayDaysYear * computedDailyNetWork / 12).toFixed(1);
+
+    // 기본급 & 주휴수당 시간 및 금액 산출 (사장님 지침 100% 반영)
+    let displayBaseHoursStr = '174';
+    let displayWeeklyHolidayHoursStr = '35';
+    let pureBasePay = 1795680;
+
+    if (isNormalStandardWorker) {
+      displayBaseHoursStr = '174';
+      displayWeeklyHolidayHoursStr = '35';
+      pureBasePay = 1795680;
+      weeklyHolidayPay = 361200;
+    } else if (isFlexPayType && is15HoursOver) {
+      // 💡 시급/주급/일급 주 15h 이상: 기본급(86.9h = 1.0배) + 주휴수당(17.38h = 0.2배) 분리 표기!
+      const calcPureMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
+      const calcHolidayMonthlyHours = Number((calcPureMonthlyHours * 0.2).toFixed(2));
+      
+      displayBaseHoursStr = `${calcPureMonthlyHours}`;
+      displayWeeklyHolidayHoursStr = `${calcHolidayMonthlyHours}`;
+      pureBasePay = Math.round(calcPureMonthlyHours * hourlyRate);
+      weeklyHolidayPay = Math.round(calcHolidayMonthlyHours * hourlyRate);
+    } else {
+      // 209시간 미만 또는 주 15시간 미만 파트타임/시급제
+      const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
+      const calcWeeklyHolidayHours = is15HoursOver ? Number(((computedWeeklyNetWork / 40) * 35).toFixed(2)) : 0;
+      
+      displayBaseHoursStr = `${calcTotalMonthlyHours}`;
+      displayWeeklyHolidayHoursStr = is15HoursOver ? `${calcWeeklyHolidayHours}` : '주 15h 미만 0';
+      pureBasePay = Math.round(calcTotalMonthlyHours * hourlyRate);
+      weeklyHolidayPay = is15HoursOver ? Math.round(calcWeeklyHolidayHours * hourlyRate) : 0;
     }
+
+    // 💡 세전 기본급 산정 (기본급 + 주휴수당 합산)
+    actualBasePay = pureBasePay + weeklyHolidayPay;
 
     const subTotalGross = actualBasePay + monthlyOvertimePay + nightAllowance + holidayPayMonthly + annualLeaveMonthlyPay;
 
@@ -307,42 +341,6 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
 
     const totalDeductions = nationalPension + healthInsurance + longtermCare + employmentInsurance + incomeTax + localIncomeTax + absenceDeduction;
     const netPay = totalGross - totalDeductions;
-
-    // 산출시간 (가산율 적용 전 진짜 일한 실제시간)
-    const netOvertimeHoursStr = (finalMonthlyOvertime / (is5Over ? 1.5 : 1.0)).toFixed(2);
-    const netNightHoursStr = (finalMonthlyNightHours / (is5Over ? 0.5 : 1.0)).toFixed(2);
-    const netHolidayHoursStr = (holidayDaysYear * computedDailyNetWork / 12).toFixed(2);
-
-    // 기본급 & 주휴수당 시간 산출 (사장님 지침 100% 반영)
-    let displayBaseHoursStr = '174';
-    let displayWeeklyHolidayHoursStr = '35';
-    let pureBasePay = 1795680;
-    let weeklyHolidayPay = 361200;
-
-    if (isNormalStandardWorker) {
-      displayBaseHoursStr = '174';
-      displayWeeklyHolidayHoursStr = '35';
-      pureBasePay = 1795680;
-      weeklyHolidayPay = 361200;
-    } else if (isFlexPayType && is15HoursOver) {
-      // 💡 시급/주급/일급 주 15h 이상: 기본급(86.9h = 1.0배) + 주휴수당(17.38h = 0.2배) 분리 표기!
-      const calcPureMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
-      const calcHolidayMonthlyHours = Number((calcPureMonthlyHours * 0.2).toFixed(2));
-      
-      displayBaseHoursStr = `${calcPureMonthlyHours}`;
-      displayWeeklyHolidayHoursStr = `${calcHolidayMonthlyHours}`;
-      pureBasePay = Math.round(calcPureMonthlyHours * hourlyRate);
-      weeklyHolidayPay = Math.round(calcHolidayMonthlyHours * hourlyRate);
-    } else {
-      // 209시간 미만 또는 주 15시간 미만 파트타임/시급제
-      const calcTotalMonthlyHours = Number((computedWeeklyNetWork * 4.345).toFixed(2));
-      const calcWeeklyHolidayHours = is15HoursOver ? Number(((computedWeeklyNetWork / 40) * 35).toFixed(2)) : 0;
-      
-      displayBaseHoursStr = `${calcTotalMonthlyHours}`;
-      displayWeeklyHolidayHoursStr = is15HoursOver ? `${calcWeeklyHolidayHours}` : '주 15h 미만 0';
-      pureBasePay = Math.round(calcTotalMonthlyHours * hourlyRate);
-      weeklyHolidayPay = is15HoursOver ? Math.round(calcWeeklyHolidayHours * hourlyRate) : 0;
-    }
 
     return {
       computedDailyNetWork,
@@ -453,6 +451,66 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
               ⏱️ 1. 근무 조건 및 수당 파라미터 조율
             </div>
 
+            {/* ⚡ 1클릭 대표 근무 패턴 퀵 프리셋 버튼 */}
+            <div style={{ background: '#0f172a', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid rgba(56, 189, 248, 0.25)', marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 800, marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                ⚡ 1클릭 대표 근무 스케줄 프리셋:
+              </div>
+              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPayType('monthly');
+                    setWorkScheduleType('fixed');
+                    setWeeklyDays(5);
+                    setFixedStartTime('09:00');
+                    setFixedEndTime('18:00');
+                    setBreakHours(1);
+                    setIs5Over(true);
+                    setIncludeMeal(true);
+                    setHourlyRate(10320);
+                  }}
+                  style={{ padding: '0.28rem 0.6rem', borderRadius: '6px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#38bdf8', fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  🏢 주 5일 8h 표준 (09~18시)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPayType('monthly');
+                    setWorkScheduleType('fixed');
+                    setWeeklyDays(6);
+                    setFixedStartTime('09:00');
+                    setFixedEndTime('18:00');
+                    setBreakHours(1);
+                    setIs5Over(true);
+                    setIncludeMeal(true);
+                    setHourlyRate(10320);
+                  }}
+                  style={{ padding: '0.28rem 0.6rem', borderRadius: '6px', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(251, 191, 36, 0.4)', color: '#fbbf24', fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  📆 주 6일 근무 (월~토)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPayType('hourly');
+                    setWorkScheduleType('fixed');
+                    setWeeklyDays(5);
+                    setFixedStartTime('09:00');
+                    setFixedEndTime('15:00');
+                    setBreakHours(1);
+                    setIs5Over(false);
+                    setIncludeMeal(false);
+                    setHourlyRate(10320);
+                  }}
+                  style={{ padding: '0.28rem 0.6rem', borderRadius: '6px', background: 'rgba(52, 211, 153, 0.15)', border: '1px solid rgba(52, 211, 153, 0.4)', color: '#34d399', fontSize: '0.74rem', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  🏪 5인 미만 주 5일 알바 (6h)
+                </button>
+              </div>
+            </div>
+
             {/* 💰 급여 지급 형태 선택 (월급제 vs 주급제 vs 일급제 vs 시급제) 최상단 1순위 탑재 */}
             <div style={{ background: '#0f172a', padding: '0.65rem 0.8rem', borderRadius: '10px', border: '1.5px solid #38bdf8', marginBottom: '0.75rem' }}>
               <label style={{ display: 'block', fontSize: '0.76rem', color: '#38bdf8', fontWeight: 900, marginBottom: '0.35rem' }}>
@@ -553,7 +611,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                     step="10000"
                     value={pensionBaseInput}
                     onChange={(e) => setPensionBaseInput(e.target.value)}
-                    placeholder="예: 2600000"
+                    placeholder="0 (과세표준 자동 반영)"
                     style={{ flex: 1, padding: '0.4rem 0.6rem', background: '#1e293b', border: '1px solid #0284c7', color: '#38bdf8', borderRadius: '6px', fontSize: '0.9rem', fontWeight: 900 }}
                   />
                   <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 800 }}>원</span>
@@ -1069,7 +1127,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
             </div>
           </div>
 
-          {/* 2) 우측: 실시간 계산된 예상 세전 급여 & 실수령액 (사장님 오리지널 캡처 폼 100% 동일 복원) */}
+          {/* 2) 우측: 실시간 계산된 예상 세전 급여 & 실수령액 */}
           <div style={{
             background: '#0f172a',
             color: '#f8fafc',
@@ -1082,6 +1140,31 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
           }}>
             <div>
+              {/* 🚨 실시간 법정 위반 및 약정 수치 경고 배너 모듈 */}
+              {calculated.computedWeeklyNetWork > 52 && (
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.15)', border: '1.5px solid #ef4444',
+                  borderRadius: '10px', padding: '0.65rem 0.85rem', marginBottom: '0.85rem',
+                  color: '#fca5a5', fontSize: '0.74rem', lineHeight: 1.45
+                }}>
+                  <div style={{ fontWeight: 900, color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
+                    <AlertTriangle size={16} color="#ef4444" /> 🚨 [근로기준법 제53조 위반] 1주 52시간 제한 초과 경고!
+                  </div>
+                  현재 설정된 1주 근로시간(<strong>{calculated.computedWeeklyNetWork}시간</strong>)은 법정 한도(주 52시간)를 <strong>{(calculated.computedWeeklyNetWork - 52).toFixed(1)}시간 초과</strong>하였습니다. 사업주 처벌(2년 이하 징역/2천만원 이하 벌금) 리스크가 있으므로 시업/종업시간 및 휴게시간 조정을 권장합니다.
+                </div>
+              )}
+
+              {useTargetGross && calculated.extraOvertimeAllowance !== 0 && (
+                <div style={{
+                  background: 'rgba(56, 189, 248, 0.12)', border: '1px solid #38bdf8',
+                  borderRadius: '10px', padding: '0.55rem 0.75rem', marginBottom: '0.85rem',
+                  color: '#e2e8f0', fontSize: '0.72rem', lineHeight: 1.4
+                }}>
+                  <span style={{ fontWeight: 800, color: '#38bdf8' }}>💡 [약정 월급 정액 세팅 안내]: </span>
+                  지정하신 목표 세전 월급(<strong>{targetGrossSalary.toLocaleString()}원</strong>)에 0원 오차로 맞추기 위해 <strong>{calculated.extraOvertimeAllowance > 0 ? `추가 연장수당 약정액 +${calculated.extraOvertimeAllowance.toLocaleString()}원` : `차감 공제액 ${calculated.extraOvertimeAllowance.toLocaleString()}원`}</strong>이 자동 가산 조정되었습니다. (순수 시간 기준 연장시간: <strong>{calculated.netOvertimeHours}h</strong>)
+                </div>
+              )}
+
               {/* 📊 월 근로시간 종합 대시보드 카드 (월 총 근로시간 / 기준시간 / 연장시간 / 야간시간) */}
               <div style={{
                 background: 'linear-gradient(135deg, #1e293b, #0f172a)',
@@ -1099,7 +1182,7 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                   <div style={{ background: '#0f172a', padding: '0.45rem 0.3rem', borderRadius: '8px', border: '1px solid #334155', textAlign: 'center' }}>
                     <div style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 700 }}>⏰ 월 총 근로</div>
                     <div style={{ fontSize: '0.88rem', color: '#38bdf8', fontWeight: 900, marginTop: '0.1rem' }}>
-                      {(Number(calculated.pureBaseHoursMonthly) + Number(calculated.netOvertimeHours) + Number(calculated.netNightHours)).toFixed(1)}h
+                      {(Number(calculated.baseHoursMonthly) + Number(calculated.netOvertimeHours) + Number(calculated.netNightHours)).toFixed(1)}h
                     </div>
                   </div>
 
@@ -1145,17 +1228,23 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem' }}>
-                  <span style={{ color: '#94a3b8' }}>연장근로수당 ({calculated.netOvertimeHours}h)</span>
+                  <span style={{ color: '#94a3b8' }}>
+                    연장근로수당 ({calculated.netOvertimeHours}h × {is5Over ? '1.5배' : '1.0배'} = {(Number(calculated.netOvertimeHours) * (is5Over ? 1.5 : 1.0)).toFixed(1)}h)
+                  </span>
                   <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.monthlyOvertimePay.toLocaleString()} 원</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem' }}>
-                  <span style={{ color: '#94a3b8' }}>야간근로수당 ({calculated.netNightHours}h)</span>
+                  <span style={{ color: '#94a3b8' }}>
+                    야간근로수당 ({calculated.netNightHours}h × {is5Over ? '0.5배' : '0.0배'} = {(Number(calculated.netNightHours) * (is5Over ? 0.5 : 0.0)).toFixed(1)}h)
+                  </span>
                   <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.nightAllowance.toLocaleString()} 원</span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '0.4rem' }}>
-                  <span style={{ color: '#94a3b8' }}>휴일근로/공휴일 수당</span>
+                  <span style={{ color: '#94a3b8' }}>
+                    휴일근로/공휴일 수당 {holidayDaysYear > 0 ? `(연 ${holidayDaysYear}일 / 월 ${calculated.netHolidayHours}h)` : '(연 0일)'}
+                  </span>
                   <span style={{ fontWeight: 700, color: '#38bdf8' }}>{calculated.holidayPayMonthly.toLocaleString()} 원</span>
                 </div>
 

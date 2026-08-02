@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { ShieldAlert, Menu, X } from 'lucide-react';
+import { ShieldAlert, Menu, X, Sparkles, Coins, FileText, HeartPulse, Scale, GraduationCap, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const ADMIN_EMAIL = 'aigoid1203@gmail.com';
 
 const NAV_LINKS = [
-  { to: '/', label: '⚡ 무료 진단', highlight: true },
-  { to: '/tools/salary', label: '🛠️ AI 노동관리 도구' },
-  { to: '/employer', label: '🏢 기업 SaaS 구독' },
-  { to: '/remedy', label: '🤝 전문가 연결' },
-  { to: '/education', label: '🎓 법정의무교육 센터' },
-  { to: '/contact', label: '💬 1:1 상담·문의' }
+  { to: '/', label: '⚡ 2026 무료진단', highlight: true },
+  { to: '/worker', label: '📄 근로자 서류센터' },
+  { to: '/employer', label: '🏢 사업주 서류센터' },
+  { to: '/injury', label: '🩺 산재 70% 진단' },
+  { to: '/remedy', label: '⚖️ 부당해고 구제' },
+  { to: '/education', label: '🎓 법정의무교육' },
+  { to: '/contact', label: '💬 1:1 노무상담' }
 ];
 
 const getDisplayName = (user) => {
@@ -29,10 +30,26 @@ function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <Link to="/" className="navbar-logo" onClick={() => setMobileOpen(false)}>
-          <ShieldAlert size={26} color="#6366f1" />
-          <span>LaborCheck AI</span>
-        </Link>
+        <a
+          href="/"
+          className="navbar-logo"
+          onClick={(e) => {
+            e.preventDefault();
+            setMobileOpen(false);
+            window.location.href = '/';
+          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', textDecoration: 'none' }}
+        >
+          <div style={{ background: 'linear-gradient(135deg, #6366f1, #38bdf8)', borderRadius: '10px', padding: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ShieldAlert size={22} color="#ffffff" />
+          </div>
+          <span style={{ fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.5px', color: '#ffffff' }}>
+            LaborCheck <span style={{ color: '#38bdf8' }}>AI</span>
+          </span>
+          <span style={{ fontSize: '0.7rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)', padding: '0.15rem 0.5rem', borderRadius: '999px', fontWeight: 800 }}>
+            2026 최신
+          </span>
+        </a>
 
         <nav className="navbar-links navbar-links-desktop">
           {NAV_LINKS.map(link => (
@@ -122,3 +139,4 @@ function Navbar() {
 }
 
 export default Navbar;
+

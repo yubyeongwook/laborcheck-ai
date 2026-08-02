@@ -428,8 +428,9 @@ export const calculateSalaryBreakdown = ({
   return {
     hourlyWage: roundDownToTen(hourlyWage),
     taxableAllowance: taxableAllowanceAmt,
-    basePay: mergedBasePay,
-    weeklyHolidayPay: 0,
+    basePay, // 174시간 기본급
+    weeklyHolidayPay, // 35시간 유급주휴수당
+    mergedBasePay, // 209시간 기본급+주휴 합계
     overtimePay,
     nightPay,
     mealAllowance: allowances.meal,
@@ -456,8 +457,9 @@ export const calculateSalaryBreakdown = ({
     weeklyNightHours: Math.round(weeklyNightHoursVal * 100) / 100,
     weeklyTotalHours: Math.round((regularWorkHoursForBasePay + weeklyOvertimeHours) * 100) / 100,
     baseWorkHoursMonthly: monthlyRegularHours, // 174시간
-    regularWorkHoursMonthly: mergedRegularWorkHoursMonthly,
-    weeklyHolidayHoursMonthly: 0,
+    regularWorkHoursMonthly: monthlyRegularHours, // 174시간 기본근로
+    weeklyHolidayHoursMonthly: monthlyWeeklyHolidayHours, // 35시간 주휴시간
+    mergedRegularWorkHoursMonthly, // 209시간 통상월시간
     overtimeHoursMonthly: Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * 100) / 100,
     overtimeHoursMonthlyWeighted: Math.round(weeklyOvertimeHours * AVG_WEEKS_PER_MONTH * overtimeMultiplier * 100) / 100,
     nightHoursMonthly: Math.round(weeklyNightHoursVal * AVG_WEEKS_PER_MONTH * 100) / 100,

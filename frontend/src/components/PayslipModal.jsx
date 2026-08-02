@@ -166,8 +166,8 @@ export default function PayslipModal({ data = {}, onClose }) {
               <tr>
                 <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', background: '#f8fafc', fontWeight: 700 }}>통상 시급</td>
                 <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>{hourlyRate.toLocaleString()} 원</td>
-                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', background: '#f8fafc', fontWeight: 700 }}>기본 산정시간</td>
-                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>{baseHours} 시간 (주 40시간 기준)</td>
+                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', background: '#f8fafc', fontWeight: 700 }}>법정 기본기준시간</td>
+                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>{calcPureBaseHours} 시간 (주휴 35h 포함 총 {baseHours}h)</td>
               </tr>
             </tbody>
           </table>

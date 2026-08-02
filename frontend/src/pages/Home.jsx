@@ -4,7 +4,7 @@ import {
   User, Briefcase, Coins, Calendar, Clock, Wallet, FileText, ShieldAlert,
   HeartPulse, PiggyBank, ArrowRight, Search, Users, Sparkles, Mail, Crown,
   Send, Bot, RefreshCw, CheckCircle2, MessageSquare, X, Paperclip, FileCheck, Image,
-  Scale, Stethoscope
+  Scale, Stethoscope, ChevronRight, Zap, HelpCircle, FileCode, Check
 } from 'lucide-react';
 import PayslipModal from '../components/PayslipModal';
 import WageCalculatorModal from '../components/WageCalculatorModal';
@@ -28,6 +28,25 @@ const AGENT_TEAM = [
   { name: '노동청 지도감독 수석', role: '근로감독 자율 점검 및 4대보험 리스크 체크', icon: <ShieldAlert size={24} color="#fbbf24" /> },
   { name: '대한민국 정책자금 수석', role: '2026 고용장려금, R&D 출연금, 융자 지원금 맞춤 매칭', icon: <PiggyBank size={24} color="#34d399" /> },
   { name: '재무제표·신용진단 수석', role: '재무제표 진단 및 신보/기보 보증서 승인 시뮬레이션', icon: <Wallet size={24} color="#a78bfa" /> }
+];
+
+const LEGAL_FAQS = [
+  {
+    q: "2026년 최저시급 10,320원 적용 시 209시간 세전 월급은 얼마인가요?",
+    a: "2026년 최저시급은 10,320원으로 확정되었으며, 월 소정근로시간 209시간(주 40시간 + 유급주휴 8시간 포함) 기준 기본 세전 월급은 2,156,880원입니다. 식대 20만원 비과세를 적용하면 소득세 및 4대보험료 절세 혜택을 받으실 수 있습니다."
+  },
+  {
+    q: "포괄임금제 근로계약서가 법적으로 무효가 되는 조건은 무엇인가요?",
+    a: "출퇴근 관리가 가능하고 실제 근로시간을 명확히 산정할 수 있는 일반 사무직이나 매장 근로자에게 작성된 포괄임금 약정은 대법원 전원합의체 판례(2010다26390)에 의해 완전 무효입니다. 이 경우 실제 초과 근로시간 전체에 대해 1.5배 할증 수당을 과거 3년 치 소급 청구할 수 있습니다."
+  },
+  {
+    q: "상시 근로자 5인 미만 사업장에서도 해고예고수당 30일분을 받을 수 있나요?",
+    a: "네! 근로기준법 제26조(해고의 예고) 규정은 5인 미만 사업장이라 하더라도 예외 없이 100% 강행 적용됩니다. 30일 전 예고 없이 구두나 문자로 당일 해고된 경우, 30일분 이상의 통상임금을 해고예고수당으로 청구할 수 있습니다."
+  },
+  {
+    q: "출퇴근길에 발생한 교통사고나 도보 재해도 산재 승인이 되나요?",
+    a: "네! 통상적인 경로와 방법으로 출퇴근 중 발생한 사고는 사업주의 지휘 감독이 없었어도 산재 보상 대상에 포함됩니다. 산재 승인 시 병원 치료비(요양급여) 전액과 휴업기간 중 평균임금 70%의 휴업급여가 비과세로 지급됩니다."
+  }
 ];
 
 const TIME_OPTIONS_24H = (() => {
@@ -190,6 +209,7 @@ export default function Home() {
 
   // 💬 1:1 상담 문의 모달 팝업 상태
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [expandedFaq, setExpandedFaq] = useState(null);
 
   // 💡 메인 접속 시 원래 화면으로 돌려놓고, 파라미터 또는 아래 클릭 시 팝업 렌더링
   useEffect(() => {
@@ -818,6 +838,26 @@ export default function Home() {
 
       {/* 👑 노무비서실장 메인 히어로 섹션 */}
       <div className="hero-section">
+        {/* 🌟 2026 노동법 핵심 지표 실시간 전광판 롤링 바 */}
+        <div style={{
+          width: '100%', maxWidth: '850px', margin: '0 auto 1.5rem',
+          background: 'linear-gradient(90deg, rgba(56, 189, 248, 0.1), rgba(99, 102, 241, 0.15), rgba(56, 189, 248, 0.1))',
+          border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '999px',
+          padding: '0.45rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.6rem',
+          overflow: 'hidden', whiteSpace: 'nowrap', boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+        }}>
+          <span style={{
+            background: 'linear-gradient(135deg, #0284c7, #38bdf8)', color: '#0f172a',
+            fontSize: '0.72rem', fontWeight: 900, padding: '0.2rem 0.6rem', borderRadius: '999px',
+            flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
+          }}>
+            <Zap size={13} /> 2026 법정지표
+          </span>
+          <div style={{ fontSize: '0.82rem', color: '#e2e8f0', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span>📢 2026 최저시급 <strong>10,320원</strong> (209h <strong>2,156,880원</strong>) • 식대 비과세 <strong>월 20만원</strong> • 산재 휴업급여 상한 <strong>127,600원</strong> • 5인 미만 해고예고수당 <strong>100% 의무</strong></span>
+          </div>
+        </div>
+
         <div className="hero-badge">
           <Crown size={18} color="#fbbf24" /> AI 진단 리포트 · 서류 자동생성 SaaS
         </div>
@@ -1809,6 +1849,197 @@ export default function Home() {
         </div>
       )}
 
+      {/* ⚡ 핵심 노무 서비스 퀵 카드 그리드 (6대 모듈) */}
+      <section style={{ marginTop: '3.5rem', marginBottom: '3.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div className="glow-badge" style={{ marginBottom: '0.75rem' }}>
+            <Zap size={15} color="#38bdf8" /> 2026 노동법령 완벽 개정 반영
+          </div>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f8fafc', margin: '0 0 0.5rem 0', letterSpacing: '-0.5px' }}>
+            노무체크 AI <span style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>핵심 원스톱 서비스</span>
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.95rem', margin: 0 }}>
+            원하시는 메뉴를 선택하시면 0% 오차 자동 산출 및 맞춤형 진단 리포트가 즉시 제공됩니다.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          {/* 카드 1 */}
+          <div className="home-feature-card" onClick={() => setIsWageCalcOpen(true)}>
+            <div>
+              <div className="feature-card-icon" style={{ background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(99, 102, 241, 0.2))', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                <Coins size={26} color="#38bdf8" />
+              </div>
+              <h3 className="feature-card-title">🧮 209시간·월급 정밀 계산기</h3>
+              <p className="feature-card-desc">
+                2026 최저시급(10,320원), 주휴수당, 5인 이상 1.5배 가산, 식대 20만원 비과세 및 4대보험 공제액을 실시간 0% 오차로 정밀 계산합니다.
+              </p>
+            </div>
+            <div className="feature-card-action">
+              대화형 계산기 실행 <ChevronRight size={16} />
+            </div>
+          </div>
+
+          {/* 카드 2 */}
+          <Link to="/worker" className="home-feature-card">
+            <div>
+              <div className="feature-card-icon" style={{ background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(16, 185, 129, 0.2))', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
+                <FileText size={26} color="#34d399" />
+              </div>
+              <h3 className="feature-card-title">📄 근로계약서·취업규칙 생성</h3>
+              <p className="feature-card-desc">
+                포괄임금 무효 조항 검증, 수습기간 최저임금 90% 법정 요건 반영 표준 계약서 및 업종별 취업규칙 서식을 자동 생성합니다.
+              </p>
+            </div>
+            <div className="feature-card-action" style={{ color: '#34d399' }}>
+              서류 작성 바로가기 <ChevronRight size={16} />
+            </div>
+          </Link>
+
+          {/* 카드 3 */}
+          <Link to="/injury" className="home-feature-card">
+            <div>
+              <div className="feature-card-icon" style={{ background: 'linear-gradient(135deg, rgba(248, 113, 113, 0.2), rgba(239, 68, 68, 0.2))', border: '1px solid rgba(248, 113, 113, 0.3)' }}>
+                <HeartPulse size={26} color="#f87171" />
+              </div>
+              <h3 className="feature-card-title">🩺 산재 70% 휴업급여 AI 자가진단</h3>
+              <p className="feature-card-desc">
+                출퇴근길 교통사고·뇌심혈관계 과로 산재 승인 확률 분석 및 병원 진단서/초진기록지 Vision AI 스캔으로 휴업급여를 계산합니다.
+              </p>
+            </div>
+            <div className="feature-card-action" style={{ color: '#f87171' }}>
+              산재 진단 바로가기 <ChevronRight size={16} />
+            </div>
+          </Link>
+
+          {/* 카드 4 */}
+          <Link to="/remedy" className="home-feature-card">
+            <div>
+              <div className="feature-card-icon" style={{ background: 'linear-gradient(135deg, rgba(165, 180, 252, 0.2), rgba(129, 140, 248, 0.2))', border: '1px solid rgba(165, 180, 252, 0.3)' }}>
+                <Scale size={26} color="#a5b4fc" />
+              </div>
+              <h3 className="feature-card-title">⚖️ 부당해고 30일 예고수당 계산</h3>
+              <p className="feature-card-desc">
+                5인 미만/이상 사업장 판정 기준, 구두 당일 해고 시 30일분 해고예고수당 및 노동위원회 부당해고 구제신청 절차를 안내합니다.
+              </p>
+            </div>
+            <div className="feature-card-action" style={{ color: '#a5b4fc' }}>
+              해고 구제 바로가기 <ChevronRight size={16} />
+            </div>
+          </Link>
+
+          {/* 카드 5 */}
+          <Link to="/employer" className="home-feature-card">
+            <div>
+              <div className="feature-card-icon" style={{ background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2))', border: '1px solid rgba(251, 191, 36, 0.3)' }}>
+                <ShieldAlert size={26} color="#fbbf24" />
+              </div>
+              <h3 className="feature-card-title">🏢 사업주 4대보험 & 점검 대비</h3>
+              <p className="feature-card-desc">
+                고용노동부 근로감독 자율 점검 대비, 임금명세서 교부 의무 과태료 예방 및 2026 고용장려금·정부지원금 맞춤 매칭을 지원합니다.
+              </p>
+            </div>
+            <div className="feature-card-action" style={{ color: '#fbbf24' }}>
+              사업주 센터 바로가기 <ChevronRight size={16} />
+            </div>
+          </Link>
+
+          {/* 카드 6 */}
+          <Link to="/education" className="home-feature-card">
+            <div>
+              <div className="feature-card-icon" style={{ background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(139, 92, 246, 0.2))', border: '1px solid rgba(167, 139, 250, 0.3)' }}>
+                <FileCode size={26} color="#a78bfa" />
+              </div>
+              <h3 className="feature-card-title">🎓 법정의무교육 & 리포트 센터</h3>
+              <p className="feature-card-desc">
+                성희롱 예방, 개인정보 보호, 장애인 인식개선 등 5대 법정의무교육 이수 관리 및 노동청 제출용 검증 리포트를 자동 발행합니다.
+              </p>
+            </div>
+            <div className="feature-card-action" style={{ color: '#a78bfa' }}>
+              교육 센터 바로가기 <ChevronRight size={16} />
+            </div>
+          </Link>
+        </div>
+      </section>
+
+      {/* 👥 AI 7대 전문 수석 에이전트 팀 전면 공개 */}
+      <section style={{ marginBottom: '3.5rem', background: 'rgba(15, 23, 42, 0.5)', padding: '2.5rem 1.8rem', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div className="glow-badge" style={{ marginBottom: '0.75rem', borderColor: '#a5b4fc', color: '#a5b4fc', background: 'rgba(165, 180, 252, 0.12)' }}>
+            <Users size={15} color="#a5b4fc" /> AI 노무 전문 변호/의학/감정 에이전트
+          </div>
+          <h2 style={{ fontSize: '1.7rem', fontWeight: 900, color: '#f8fafc', margin: '0 0 0.5rem 0' }}>
+            노무체크 AI <span style={{ color: '#38bdf8' }}>7대 전문 수석 에이전트 팀</span>
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.92rem', margin: 0 }}>
+            근로기준법, 산재의학, 대법원 판례, 노동청 감독 전문 AI 수석이 24시간 실시간 교차 검증합니다.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+          {AGENT_TEAM.map((agent, idx) => (
+            <div
+              key={idx}
+              className="agent-card"
+              onClick={() => startChatWithSecretary(`${agent.name} 팀장 자문 요청`)}
+            >
+              <div className="agent-avatar">
+                {agent.icon}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>{agent.name}</h4>
+                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, background: 'rgba(56, 189, 248, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>1:1 자문 가능</span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                  {agent.role}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ❓ 2026 최신 노무/법률 FAQ & 팩트체크 아코디언 */}
+      <section style={{ marginBottom: '3.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div className="glow-badge" style={{ marginBottom: '0.75rem', borderColor: '#fbbf24', color: '#fbbf24', background: 'rgba(251, 191, 36, 0.12)' }}>
+            <HelpCircle size={15} color="#fbbf24" /> 팩트 기반 노동법령 해설
+          </div>
+          <h2 style={{ fontSize: '1.7rem', fontWeight: 900, color: '#f8fafc', margin: '0 0 0.5rem 0' }}>
+            자주 묻는 <span style={{ color: '#fbbf24' }}>핵심 노무 법률 Q&A</span>
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.92rem', margin: 0 }}>
+            대법원 판례 및 고용노동부 지침에 따른 팩트 기반 질문과 답을 클릭하여 확인하세요.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {LEGAL_FAQS.map((faq, idx) => {
+            const isExp = expandedFaq === idx;
+            return (
+              <div
+                key={idx}
+                className="faq-item"
+                onClick={() => setExpandedFaq(isExp ? null : idx)}
+              >
+                <div className="faq-question">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <span style={{ color: '#fbbf24', fontWeight: 900 }}>Q.</span> {faq.q}
+                  </span>
+                  <ChevronRight size={18} color="#94a3b8" style={{ transform: isExp ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+                </div>
+                {isExp && (
+                  <div className="faq-answer">
+                    <strong style={{ color: '#38bdf8' }}>A.</strong> {faq.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* 🧮 메인 본문 인라인 실시간 월급 계산기 & 법정 명세서 섹션 (원래 화면 복원) */}
       <section style={{ marginTop: '3rem', marginBottom: '2rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
@@ -1824,7 +2055,7 @@ export default function Home() {
           isOpen={true}
           isInline={true}
           onClose={() => {}}
-          calcData={latestCalcResult}
+          calcData={isCalculatedOnce ? latestCalcResult : null}
           onApplyChanges={handleApplyCalcModalChanges}
         />
       </section>
@@ -1838,7 +2069,7 @@ export default function Home() {
       <WageCalculatorModal
         isOpen={isWageCalcOpen}
         onClose={() => setIsWageCalcOpen(false)}
-        calcData={latestCalcResult}
+        calcData={isCalculatedOnce ? latestCalcResult : null}
         onApplyChanges={handleApplyCalcModalChanges}
       />
 

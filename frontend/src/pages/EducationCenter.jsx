@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { GraduationCap, ShieldCheck, CheckCircle2, Award, FileText, Send, Sparkles, AlertTriangle } from 'lucide-react';
+import { 
+  GraduationCap, ShieldCheck, CheckCircle2, Award, FileText, Send, 
+  Sparkles, AlertTriangle, Printer, Copy, X, FileCheck, Users, ShieldAlert 
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const MANDATORY_COURSES = [
@@ -8,8 +11,8 @@ const MANDATORY_COURSES = [
     title: '직장 내 성희롱 예방 교육',
     target: '상시 1인 이상 전 사업장 (연 1회 이상)',
     penalty: '미이수 시 과태료 최대 500만원',
-    duration: '1시간',
-    desc: '사업주 및 근로자 전체 대상 필수 교육. 성희롱 판단 기준과 신고·구제 절차 안내.',
+    duration: '연 1회 (1시간 이상)',
+    desc: '사업주 및 근로자 전체 대상 필수 교육. 성희롱 판단 기준과 신고·구제 절차 및 피해자 보호 조치.',
     icon: '🛡️'
   },
   {
@@ -17,8 +20,8 @@ const MANDATORY_COURSES = [
     title: '개인정보 보호 교육',
     target: '개인정보 취급 사업장 전체',
     penalty: '시정명령 및 유출 사고 시 억대 과징금',
-    duration: '1시간',
-    desc: '고객 및 임직원 개인정보 관리 가이드, 데이터 암호화 및 유출 방지 실무.',
+    duration: '연 1회 (1시간 이상)',
+    desc: '고객 및 임직원 개인정보 관리 가이드, 데이터 암호화, 파기 절차 및 유출 사고 방지 실무.',
     icon: '🔒'
   },
   {
@@ -26,8 +29,8 @@ const MANDATORY_COURSES = [
     title: '장애인 인식 개선 교육',
     target: '상시 1인 이상 전 사업장 (연 1회 이상)',
     penalty: '미이수 시 과태료 최대 300만원',
-    duration: '1시간',
-    desc: '직장 내 장애인 차별 금지 및 직무 적응 지원, 상생하는 기업 문화 조성.',
+    duration: '연 1회 (1시간 이상)',
+    desc: '직장 내 장애인 차별 금지 및 정당한 편의 제공, 장애인 근로자 직무 적응 및 상생 조직 문화.',
     icon: '♿'
   },
   {
@@ -35,9 +38,18 @@ const MANDATORY_COURSES = [
     title: '산업안전보건 교육 / 중대재해예방',
     target: '5인 이상 사업장 (매분기 6시간)',
     penalty: '미이수 시 과태료 최대 500만원 / 형사처벌',
-    duration: '분기별 6시간',
-    desc: '위험성 평가, 안전 수칙 준수, 중대재해처벌법 대비 의무 조치사항 체크.',
+    duration: '분기별 6시간 (사무직 분기 3시간)',
+    desc: '위험성 평가 실무, 안전 작업 수칙, 중대재해처벌법 대비 사업주 의무 조치 및 사고 예방.',
     icon: '⛑️'
+  },
+  {
+    id: 'pension',
+    title: '퇴직연금 가입자 교육',
+    target: '퇴직연금(DB/DC) 도입 사업장 전체',
+    penalty: '미이수 시 과태료 최대 500만원',
+    duration: '연 1회 (1시간 이상)',
+    desc: 'DB형/DC형 퇴직연금 운용 방법, 자산관리 및 퇴직소득 세제 안내.',
+    icon: '💰'
   }
 ];
 
@@ -49,6 +61,13 @@ export default function EducationCenter() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  // 📜 자체 교육 실시 확인서 모달 상태
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [certCourse, setCertCourse] = useState('직장 내 성희롱 예방 교육');
+  const [certDate, setCertDate] = useState('2026-08-01');
+  const [certAttendees, setCertAttendees] = useState('5');
+  const [copied, setCopied] = useState(false);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!companyName || !phone) {
@@ -56,6 +75,35 @@ export default function EducationCenter() {
       return;
     }
     setSubmitted(true);
+  };
+
+  const getCertText = () => {
+    return `[2026 법정의무교육 자체 교육 실시 확인서]
+
+1. 사업장 정보
+ - 사업장명(상호): ${companyName || '(주)노무체크 검증 사업장'}
+ - 대표자 성명: (대표자 성명 기재)
+ - 사업장 소재지: (주소 기재)
+
+2. 교육 실시 내역
+ - 교육 과목: ${certCourse}
+ - 교육 실시일: ${certDate}
+ - 교육 방법: 자체 집체 교육 / 시청각 자료 배포 교재 이수
+ - 참석 인원: 총 ${certAttendees}명 (전원 이수)
+
+3. 교육 내용 요약
+ - 법정 필수 항목 교안 교육 및 성희롱/개인정보/안전보건 관련 법률 준수 서약
+
+본 사업장은 근로기준법 및 관련 노동관계 법령에 따라 상기 법정의무교육을 정식 실시하였음을 확인합니다.
+
+작성일자: ${certDate}
+사업주(사용자): __________________ (직인)`;
+  };
+
+  const handleCopyCert = () => {
+    navigator.clipboard.writeText(getCertText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -79,34 +127,32 @@ export default function EducationCenter() {
         </div>
         <h1 style={{ fontSize: '2.4rem', fontWeight: 800, margin: '0 0 1rem', lineHeight: 1.35, letterSpacing: '-0.02em' }}>
           과태료 최대 500만원 위험, <br />
-          <span style={{ color: '#818cf8', textDecoration: 'underline' }}>노무체크 AI 법정의무교육</span>으로 한번에 해결하세요
+          <span style={{ color: '#818cf8', textDecoration: 'underline' }}>노무체크 AI 법정의무교육 & 이수증 발급</span>으로 해결하세요
         </h1>
-        <p style={{ fontSize: '1.05rem', color: '#cbd5e1', maxWidth: '700px', margin: '0 auto 2rem', lineHeight: 1.6 }}>
-          매년 반복되는 필수 의무교육! 위탁 교육 수강부터 이수증 즉시 발급까지 <br />
-          정부 정식 지정 기관 제휴를 통해 <strong>무료/환급 수강 지원</strong>을 신청하세요.
+        <p style={{ fontSize: '1.05rem', color: '#cbd5e1', maxWidth: '750px', margin: '0 auto 2rem', lineHeight: 1.6 }}>
+          매년 반복되는 5대 필수 의무교육! 노동청 근로감독 점검 시 제출할 <strong>자체 교육 실시 확인서</strong>를 1초 만에 발급하고 <strong>무료/환급 수강 플랜</strong>을 신청하세요.
         </p>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-          <div style={{ background: 'rgba(255,255,255,0.07)', padding: '1rem 1.5rem', borderRadius: '12px', textAlign: 'left', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>미이수 시 과태료</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f87171' }}>최대 500만원 부과</div>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.07)', padding: '1rem 1.5rem', borderRadius: '12px', textAlign: 'left', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>교육 방식</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#38bdf8' }}>온라인 무제한 수강 / 출강</div>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.07)', padding: '1rem 1.5rem', borderRadius: '12px', textAlign: 'left', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>이수증 증빙</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#4ade80' }}>노동청점검 대비 즉시발급</div>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setShowCertificateModal(true)}
+            style={{
+              padding: '0.85rem 1.6rem', borderRadius: '12px',
+              background: 'linear-gradient(135deg, #0284c7, #38bdf8)', color: '#fff',
+              fontWeight: 800, fontSize: '0.95rem', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(56, 189, 248, 0.4)'
+            }}
+          >
+            <FileCheck size={20} /> 📜 1초 자체 교육 실시 확인서 출력/복사
+          </button>
         </div>
       </div>
 
-      {/* 📚 필수 4대 법정의무교육 코스 Grid */}
+      {/* 📚 필수 5대 법정의무교육 코스 Grid */}
       <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f8fafc', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        📚 4대 필수 법정의무교육 안내
+        📚 5대 필수 법정의무교육 안내 & 점검 체크리스트
       </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
         {MANDATORY_COURSES.map((course) => (
           <div key={course.id} style={{
             background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.9))',
@@ -115,7 +161,7 @@ export default function EducationCenter() {
             padding: '1.5rem',
             display: 'flex',
             flexDirection: 'column',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             boxShadow: '0 10px 20px rgba(0, 0, 0, 0.2)'
           }}>
             <div>
@@ -131,7 +177,7 @@ export default function EducationCenter() {
             <div>
               <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '1rem' }}>
                 • 대상: <strong>{course.target}</strong> <br />
-                • 소요시간: <strong>{course.duration}</strong>
+                • 주기: <strong>{course.duration}</strong>
               </div>
               <button
                 type="button"
@@ -152,7 +198,7 @@ export default function EducationCenter() {
                   cursor: 'pointer'
                 }}
               >
-                신청하기
+                무료 가이드 신청
               </button>
             </div>
           </div>
@@ -206,7 +252,7 @@ export default function EducationCenter() {
                 style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '10px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.95rem' }}
               >
                 {MANDATORY_COURSES.map(c => <option key={c.id} value={c.title}>{c.title}</option>)}
-                <option value="전체 4대 의무교육 패키지">전체 4대 의무교육 패키지 (추천)</option>
+                <option value="전체 5대 의무교육 패키지">전체 5대 의무교육 패키지 (추천)</option>
               </select>
             </div>
 
@@ -290,6 +336,91 @@ export default function EducationCenter() {
           </form>
         )}
       </div>
+
+      {/* 📜 자체 교육 실시 확인서 발급 모달 */}
+      {showCertificateModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div style={{
+            position: 'relative', width: '100%', maxWidth: '650px', maxHeight: '88vh',
+            background: '#0f172a', border: '1px solid rgba(56, 189, 248, 0.4)',
+            borderRadius: '20px', padding: '1.8rem', color: '#f8fafc',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.7)', overflowY: 'auto', display: 'flex', flexDirection: 'column'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.8rem' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#38bdf8', margin: 0 }}>
+                📜 법정의무교육 자체 교육 실시 확인서 발급
+              </h3>
+              <button onClick={() => setShowCertificateModal(false)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                <X size={22} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.2rem' }}>교육 과목 선택</label>
+                <select
+                  value={certCourse}
+                  onChange={(e) => setCertCourse(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.88rem' }}
+                >
+                  {MANDATORY_COURSES.map(c => <option key={c.id} value={c.title}>{c.title}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.2rem' }}>교육 실시 일자</label>
+                <input
+                  type="date"
+                  value={certDate}
+                  onChange={(e) => setCertDate(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.88rem' }}
+                />
+              </div>
+            </div>
+
+            <textarea
+              readOnly
+              value={getCertText()}
+              rows={12}
+              style={{
+                width: '100%', background: '#1e293b', border: '1px solid #334155',
+                color: '#e2e8f0', borderRadius: '12px', padding: '1rem',
+                fontFamily: 'monospace', fontSize: '0.86rem', lineHeight: 1.6,
+                boxSizing: 'border-box', marginBottom: '1.2rem', outline: 'none'
+              }}
+            />
+
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <button
+                onClick={handleCopyCert}
+                style={{
+                  flex: 1, padding: '0.8rem', borderRadius: '10px',
+                  background: copied ? '#16a34a' : 'linear-gradient(135deg, #0284c7, #38bdf8)',
+                  color: '#ffffff', border: 'none', fontWeight: 800, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem'
+                }}
+              >
+                <Copy size={18} /> {copied ? '확인서 복사 완료!' : '확인서 텍스트 전체 복사하기'}
+              </button>
+              <button
+                onClick={() => window.print()}
+                style={{
+                  padding: '0.8rem 1.2rem', borderRadius: '10px',
+                  background: '#334155', color: '#ffffff', border: 'none', fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '0.3rem'
+                }}
+              >
+                <Printer size={18} /> 인쇄/PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+

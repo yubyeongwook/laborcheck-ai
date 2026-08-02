@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "concurrently \"nodemon server.js\" \"npm run frontend-dev\"",
+    "frontend-dev": "cd frontend && npm run dev",
     "install-all": "npm install && cd frontend && npm install",
     "test-engine": "ts-node src/engine/testCalculator.ts",
     "build": "cd frontend && npm install && npm run build",
