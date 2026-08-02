@@ -256,9 +256,9 @@ export default function WageCalculatorModal({ isOpen, onClose, calcData, onApply
     let monthlyOvertimePay = Math.round(monthlyOvertimeHours * hourlyRate * (is5Over ? 1.5 : 1.0));
     let nightAllowance = is5Over ? Math.round(monthlyNightHoursTotal * hourlyRate * 0.5) : 0;
 
-    // 미사용 연차수당
+    // 미사용 연차수당 (근로자의 1일 실근로시간 computedDailyNetWork 기준 정밀 비례 산출)
     const unusedAnnualLeaveDays = Math.max(0, totalAnnualLeaveDays - usedAnnualLeaveDays);
-    const annualLeaveMonthlyHours = (unusedAnnualLeaveDays * 8) / 12;
+    const annualLeaveMonthlyHours = (unusedAnnualLeaveDays * computedDailyNetWork) / 12;
     const annualLeaveMonthlyPay = includeAnnualLeave ? Math.round(annualLeaveMonthlyHours * hourlyRate) : 0;
 
     // 비과세 식대
