@@ -523,37 +523,221 @@ export const calculateAnnualLeave = (hireDateStr, refDateStr) => {
   };
 };
 
-// 퇴직금 계산 (근로기준법 제34조, 근로자퇴직급여보장법)
+/**
+ * 소득세법 제55조 기준 법정 퇴직소득세 및 지방소득세 정밀 산출 헬퍼
+ * @param {number} severanceAmount - 세전 퇴직금 총액 (원)
+ * @param {number} tenureYears - 근속연수 (년)
+ * @returns {Object} 퇴직소득세, 지방소득세, 총세액, 세후실수령액 및 상세 공제내역
+ */
+export const calculateSeveranceTax = (severanceAmount = 0, tenureYears = 1) => {
+  const gross = Math.max(0, parseFloat(severanceAmount) || 0);
+  const years = Math.max(1, Math.ceil(parseFloat(tenureYears) || 1));
+
+  if (gross <= 0) {
+    return {
+      tenureDeduction: 0,
+      convertedSalary: 0,
+      convertedSalaryDeduction: 0,
+      taxBase: 0,
+      incomeTax: 0,
+      localTax: 0,
+      totalTax: 0,
+      netSeverancePay: 0
+    };
+  }
+
+  // 1. 근속연수 공제 (2023~2026+ 개정 소득세법 기준)
+  let tenureDeduction = 0;
+  if (years <= 5) {
+    tenureDeduction = years * 1000000;
+  } else if (years <= 10) {
+    tenureDeduction = 5000000 + (years - 5) * 2000000;
+  } else if (years <= 20) {
+    tenureDeduction = 15000000 + (years - 10) * 2500000;
+  } else {
+    tenureDeduction = 40000000 + (years - 20) * 3000000;
+  }
+
+  // 2. 환산급여 산출: (퇴직금 - 근속연수공제) * 12 / 근속연수
+  const taxableSeverance = Math.max(0, gross - tenureDeduction);
+  const convertedSalary = (taxableSeverance * 12) / years;
+
+  // 3. 환산급여 공제
+  let convertedSalaryDeduction = 0;
+  if (convertedSalary <= 8000000) {
+    convertedSalaryDeduction = convertedSalary;
+  } else if (convertedSalary <= 70000000) {
+    convertedSalaryDeduction = 8000000 + (convertedSalary - 8000000) * 0.6;
+  } else if (convertedSalary <= 150000000) {
+    convertedSalaryDeduction = 45200000 + (convertedSalary - 70000000) * 0.55;
+  } else if (convertedSalary <= 300000000) {
+    convertedSalaryDeduction = 89200000 + (convertedSalary - 150000000) * 0.45;
+  } else {
+    convertedSalaryDeduction = 156700000 + (convertedSalary - 300000000) * 0.35;
+  }
+
+  // 4. 과세표준
+  const taxBase = Math.max(0, convertedSalary - convertedSalaryDeduction);
+
+  // 5. 기본 소득세율 산출세액 (소득세법 제55조)
+  let convertedCalculatedTax = 0;
+  if (taxBase <= 14000000) {
+    convertedCalculatedTax = taxBase * 0.06;
+  } else if (taxBase <= 50000000) {
+    convertedCalculatedTax = 840000 + (taxBase - 14000000) * 0.15;
+  } else if (taxBase <= 88000000) {
+    convertedCalculatedTax = 6240000 + (taxBase - 50000000) * 0.24;
+  } else if (taxBase <= 150000000) {
+    convertedCalculatedTax = 15360000 + (taxBase - 88000000) * 0.35;
+  } else if (taxBase <= 300000000) {
+    convertedCalculatedTax = 37060000 + (taxBase - 150000000) * 0.38;
+  } else if (taxBase <= 500000000) {
+    convertedCalculatedTax = 94060000 + (taxBase - 300000000) * 0.40;
+  } else if (taxBase <= 1000000000) {
+    convertedCalculatedTax = 174060000 + (taxBase - 500000000) * 0.42;
+  } else {
+    convertedCalculatedTax = 384060000 + (taxBase - 1000000000) * 0.45;
+  }
+
+  // 6. 최종 퇴직소득세 = (환산 산출세액 / 12) * 근속연수 (10원 단위 절사)
+  const incomeTax = Math.floor(Math.max(0, (convertedCalculatedTax / 12) * years) / 10) * 10;
+  // 7. 지방소득세 = 퇴직소득세의 10% (10원 단위 절사)
+  const localTax = Math.floor((incomeTax * 0.1) / 10) * 10;
+  const totalTax = incomeTax + localTax;
+  const netSeverancePay = Math.max(0, gross - totalTax);
+
+  return {
+    tenureDeduction: Math.round(tenureDeduction),
+    convertedSalary: Math.round(convertedSalary),
+    convertedSalaryDeduction: Math.round(convertedSalaryDeduction),
+    taxBase: Math.round(taxBase),
+    incomeTax,
+    localTax,
+    totalTax,
+    netSeverancePay
+  };
+};
+
+// 퇴직금 계산 (근로기준법 제34조, 제2조 제2항 통상임금 소급적용, 동법 시행령 제2조 제외기간 반영, DB형 vs DC형)
 export const calculateSeverancePay = ({
   hireDateStr,
   resignDateStr,
   recentThreeMonthsPay, // 최근 3개월 임금 총액
   recentThreeMonthsDays, // 최근 3개월 총 일수 (달력일 기준)
+  excludedDays = 0, // 산재 요양/육아휴직/승인 병가 등 평균임금 제외 일수 (근로기준법 시행령 제2조)
+  excludedPay = 0, // 제외 기간 중 지급받은 임금 (평균임금 산정 제외)
+  deductedTenureDays = 0, // 재직일수(근속기간) 차감 일수 (군 복무, 개인 무급휴직, 정직, 무단결근 등)
   annualBonus = 0, // 최근 1년간 지급된 상여금 총액
-  annualLeavePay = 0 // 최근 1년간 지급된 연차수당 총액
+  annualLeavePay = 0, // 최근 1년간 지급된 연차수당 총액
+  hourlyWage = 0, // 통상시급 (원)
+  dailyWorkHours = 8, // 1일 소정근로시간 (기본 8시간)
+  wageCalcMethod = 'auto', // 'auto'(법정 자동 비교), 'average'(평균임금 전용), 'ordinary'(통상임금 전용)
+  pensionType = 'db', // 'db'(확정급여형/법정) vs 'dc'(확정기여형)
+  annualSalaryDC = 0 // DC형 연간 임금 총액
 }) => {
   const tenure = getTenure(hireDateStr, resignDateStr);
   if (!tenure) return null;
 
-  const pay = parseFloat(recentThreeMonthsPay) || 0;
-  const days = parseFloat(recentThreeMonthsDays) || 0;
+  const rawPay = parseFloat(recentThreeMonthsPay) || 0;
+  const rawDays = parseFloat(recentThreeMonthsDays) || 0;
+  const excDays = parseFloat(excludedDays) || 0;
+  const excPay = parseFloat(excludedPay) || 0;
+  const dedTenureDays = parseFloat(deductedTenureDays) || 0;
+
+  // 1. 재직일수 계산 (총 달력 재직일수 - 군복무/개인무급휴직/정직 등 차감일수)
+  const rawTenureDays = tenure.totalDays;
+  const netTenureDays = Math.max(rawTenureDays - dedTenureDays, 0);
+
+  // 근로기준법 시행령 제2조: 산재·육아휴직·승인 병가 기간 및 해당 임금은 3개월 총일수 및 임금 총액에서 차감(산외)
+  const netDays = Math.max(rawDays - excDays, 1);
+  const netPay = Math.max(rawPay - excPay, 0);
+
   const bonus = parseFloat(annualBonus) || 0;
   const leavePay = parseFloat(annualLeavePay) || 0;
+  const tenureYears = Math.max(1, Math.ceil(netTenureDays / 365));
 
-  if (days <= 0) {
-    return { totalDays: tenure.totalDays, isEligible: tenure.totalDays >= 365, averageDailyWage: 0, severancePay: 0 };
+  let severancePay = 0;
+  let averageDailyWage = 0;
+  let ordinaryDailyWage = 0;
+  let appliedDailyWage = 0;
+  let isOrdinaryWageApplied = false;
+
+  const userHourlyWage = parseFloat(hourlyWage) || 0;
+  const userDailyHours = parseFloat(dailyWorkHours) || 8;
+  if (userHourlyWage > 0) {
+    ordinaryDailyWage = userHourlyWage * userDailyHours;
   }
 
-  const averageDailyWage = (pay + (bonus * 3 / 12) + (leavePay * 3 / 12)) / days;
-  const severancePay = roundDownToTen(averageDailyWage * 30 * (tenure.totalDays / 365));
+  if (pensionType === 'dc') {
+    // DC형 (확정기여형): 연간 임금 총액의 1/12 (약 8.33%)
+    const dcAnnualTotal = parseFloat(annualSalaryDC) || (netPay * 4);
+    severancePay = roundDownToTen(dcAnnualTotal / 12);
+    averageDailyWage = netDays > 0 ? roundDownToTen((netPay + (bonus * 3 / 12) + (leavePay * 3 / 12)) / netDays) : 0;
+    appliedDailyWage = averageDailyWage;
+  } else {
+    // DB형 (확정급여형 / 법정퇴직금): 평균임금 * 30 * (실재직일수 / 365)
+    if (netDays <= 0 || netTenureDays < 365) {
+      return {
+        totalDays: netTenureDays,
+        rawTenureDays,
+        deductedTenureDays: dedTenureDays,
+        isEligible: netTenureDays >= 365,
+        averageDailyWage: 0,
+        ordinaryDailyWage: 0,
+        appliedDailyWage: 0,
+        isOrdinaryWageApplied: false,
+        severancePay: 0,
+        taxInfo: calculateSeveranceTax(0, tenureYears)
+      };
+    }
+
+    averageDailyWage = (netPay + (bonus * 3 / 12) + (leavePay * 3 / 12)) / netDays;
+
+    // 선택 방식에 따른 1일 임금 산정
+    if (wageCalcMethod === 'ordinary') {
+      appliedDailyWage = ordinaryDailyWage > 0 ? ordinaryDailyWage : averageDailyWage;
+      isOrdinaryWageApplied = ordinaryDailyWage > 0;
+    } else if (wageCalcMethod === 'average') {
+      appliedDailyWage = averageDailyWage;
+      isOrdinaryWageApplied = false;
+    } else {
+      // 'auto': 근로기준법 제2조 제2항 (평균임금이 통상임금보다 적으면 통상임금 적용)
+      if (ordinaryDailyWage > 0 && ordinaryDailyWage > averageDailyWage) {
+        appliedDailyWage = ordinaryDailyWage;
+        isOrdinaryWageApplied = true;
+      } else {
+        appliedDailyWage = averageDailyWage;
+        isOrdinaryWageApplied = false;
+      }
+    }
+
+    severancePay = roundDownToTen(appliedDailyWage * 30 * (netTenureDays / 365));
+  }
+
+  const grossPay = Math.max(severancePay, 0);
+  const taxInfo = calculateSeveranceTax(grossPay, tenureYears);
 
   return {
-    totalDays: tenure.totalDays,
-    isEligible: tenure.totalDays >= 365,
+    pensionType,
+    wageCalcMethod,
+    totalDays: netTenureDays,
+    rawTenureDays,
+    deductedTenureDays: dedTenureDays,
+    tenureYears,
+    isEligible: netTenureDays >= 365,
     averageDailyWage: roundDownToTen(averageDailyWage),
-    severancePay: Math.max(severancePay, 0)
+    ordinaryDailyWage: roundDownToTen(ordinaryDailyWage),
+    appliedDailyWage: roundDownToTen(appliedDailyWage),
+    isOrdinaryWageApplied,
+    severancePay: grossPay,
+    netDays,
+    netPay,
+    excludedDays: excDays,
+    excludedPay: excPay,
+    taxInfo
   };
 };
+
 
 // 주휴수당 계산 (근로기준법 제55조)
 export const calculateWeeklyHolidayPay = ({ hourlyWage, weeklyWorkDays, weeklyWorkHours }) => {
@@ -754,4 +938,190 @@ export const formatMinutesAsHM = (totalMinutes) => {
   if (rest === 0) return `${h}시간`;
   return `${h}시간 ${rest}분`;
 };
+
+/**
+ * 시급/일급/주급/월급 기반 4대 수당(기본급, 주휴, 연차, 휴일근로) 세부 분해 및 시간당 단가 계산 헬퍼
+ * @param {Object} params
+ * @returns {Object} 4대 수당 분해 내역 (월/주/일 금액 및 시간당 단가)
+ */
+export const calculate4ComponentsBreakdown = ({
+  effectiveHourlyRate = 10320,
+  weeklyNetWorkHours = 40,
+  dailyHours = 8,
+  annualLeaveDays = 15,
+  holidayWorkDaysYear = 0,
+  is5Over = true,
+  includeAnnualLeave = true,
+  payType = 'monthly'
+} = {}) => {
+  const hourly = Math.max(0, parseFloat(effectiveHourlyRate) || 10320);
+  const workHoursWeekly = Math.max(0, parseFloat(weeklyNetWorkHours) || 40);
+  const dailyH = Math.max(0, parseFloat(dailyHours) || 8);
+  const is15Over = workHoursWeekly >= 15;
+
+  // 1. 기본급 (주 40시간 이상 월 174시간 고정, 파트타임 주근로시간 * 4.345)
+  const baseMonthlyHours = workHoursWeekly >= 40 ? 174 : Number((workHoursWeekly * 4.345).toFixed(2));
+  const basePayMonthly = Math.round(baseMonthlyHours * hourly);
+  const baseHourlyRate = hourly;
+
+  // 2. 주휴수당 (주 15시간 이상 시, 40시간 기준 월 35시간, 비례 적용)
+  let holidayMonthlyHours = 0;
+  if (workHoursWeekly >= 40) {
+    holidayMonthlyHours = 35;
+  } else if (is15Over) {
+    holidayMonthlyHours = Number(((workHoursWeekly / 40) * 35).toFixed(2));
+  }
+  const weeklyHolidayPayMonthly = Math.round(holidayMonthlyHours * hourly);
+  // 209시간(또는 총 소정월근로시간) 기준 시간당 주휴수당 환산 단가
+  const totalDivisor = workHoursWeekly >= 40 ? 209 : (baseMonthlyHours + holidayMonthlyHours);
+  const weeklyHolidayHourlyRate = totalDivisor > 0 ? Math.round(weeklyHolidayPayMonthly / totalDivisor) : 0;
+
+  // 3. 연차수당 (연간 annualLeaveDays 기준 1/12 분할)
+  const leaveDays = parseFloat(annualLeaveDays) || 0;
+  const annualLeaveMonthlyHours = is15Over && includeAnnualLeave ? (leaveDays * dailyH) / 12 : 0;
+  const annualLeavePayMonthly = Math.round(annualLeaveMonthlyHours * hourly);
+  const annualLeaveHourlyRate = totalDivisor > 0 ? Math.round(annualLeavePayMonthly / totalDivisor) : 0;
+
+  // 4. 휴일근로수당 (연간 holidayWorkDaysYear 기준 1/12 분할, 5인 이상 1.5배 가산)
+  const holDays = parseFloat(holidayWorkDaysYear) || 0;
+  const holidayWorkMultiplier = is5Over ? 1.5 : 1.0;
+  const holidayWorkMonthlyHours = (holDays * dailyH) / 12;
+  const holidayWorkPayMonthly = Math.round(holidayWorkMonthlyHours * hourly * holidayWorkMultiplier);
+  const holidayWorkHourlyRate = totalDivisor > 0 ? Math.round(holidayWorkPayMonthly / totalDivisor) : 0;
+
+  // 총액합계
+  const grossMonthlyPay = basePayMonthly + weeklyHolidayPayMonthly + annualLeavePayMonthly + holidayWorkPayMonthly;
+  const effectiveTotalHourlyRate = totalDivisor > 0 ? Math.round(grossMonthlyPay / totalDivisor) : hourly;
+
+  // 💡 지급 형태별(월급/주급/일급/시급) 세부 수당 금액 분해
+  const activeWeeklyDays = dailyH > 0 ? (workHoursWeekly / dailyH) : 5;
+  const monthlyActiveDays = activeWeeklyDays * 4.345;
+
+  const dailyBasePay = Math.round(hourly * dailyH);
+  const dailyWeeklyHolidayPay = monthlyActiveDays > 0 ? Math.round(weeklyHolidayPayMonthly / monthlyActiveDays) : 0;
+  const dailyAnnualLeavePay = monthlyActiveDays > 0 ? Math.round(annualLeavePayMonthly / monthlyActiveDays) : 0;
+  const dailyHolidayWorkPay = monthlyActiveDays > 0 ? Math.round(holidayWorkPayMonthly / monthlyActiveDays) : 0;
+  const grossDailyPay = dailyBasePay + dailyWeeklyHolidayPay + dailyAnnualLeavePay + dailyHolidayWorkPay;
+
+  const weeklyBasePay = Math.round(hourly * workHoursWeekly);
+  const weeklyWeeklyHolidayPay = Math.round(weeklyHolidayPayMonthly / 4.345);
+  const weeklyAnnualLeavePay = Math.round(annualLeavePayMonthly / 4.345);
+  const weeklyHolidayWorkPay = Math.round(holidayWorkPayMonthly / 4.345);
+  const grossWeeklyPay = weeklyBasePay + weeklyWeeklyHolidayPay + weeklyAnnualLeavePay + weeklyHolidayWorkPay;
+
+  return {
+    payType,
+    baseMonthlyHours,
+    basePayMonthly,
+    baseHourlyRate,
+    holidayMonthlyHours,
+    weeklyHolidayPayMonthly,
+    weeklyHolidayHourlyRate,
+    leaveDays,
+    annualLeaveMonthlyHours: Number(annualLeaveMonthlyHours.toFixed(2)),
+    annualLeavePayMonthly,
+    annualLeaveHourlyRate,
+    holidayWorkDaysYear: holDays,
+    holidayWorkMonthlyHours: Number(holidayWorkMonthlyHours.toFixed(2)),
+    holidayWorkPayMonthly,
+    holidayWorkHourlyRate,
+    totalDivisor,
+    grossMonthlyPay,
+    effectiveTotalHourlyRate,
+    
+    // 일급 분해
+    dailyBasePay,
+    dailyWeeklyHolidayPay,
+    dailyAnnualLeavePay,
+    dailyHolidayWorkPay,
+    grossDailyPay,
+
+    // 주급 분해
+    weeklyBasePay,
+    weeklyWeeklyHolidayPay,
+    weeklyAnnualLeavePay,
+    weeklyHolidayWorkPay,
+    grossWeeklyPay
+  };
+};
+
+/**
+ * 포괄임금제 약정 금액 대 법정 최소 정당 금액 검증 및 미달 체불액 산출 헬퍼
+ */
+export const verifyComprehensiveWage = ({
+  targetGrossSalary = 0,
+  effectiveHourlyRate = 10320,
+  weeklyNetWorkHours = 40,
+  dailyHours = 8,
+  annualLeaveDays = 15,
+  holidayWorkDaysYear = 0,
+  is5Over = true,
+  includeAnnualLeave = true,
+  weeklyNightHours = 0
+} = {}) => {
+  const target = parseFloat(targetGrossSalary) || 0;
+  const four = calculate4ComponentsBreakdown({
+    effectiveHourlyRate,
+    weeklyNetWorkHours,
+    dailyHours,
+    annualLeaveDays,
+    holidayWorkDaysYear,
+    is5Over,
+    includeAnnualLeave
+  });
+
+  const weeklyOvertimeHours = Math.max(0, weeklyNetWorkHours - 40);
+  const monthlyOvertimeHours = weeklyOvertimeHours * 4.345;
+  const overtimeMult = is5Over ? 1.5 : 1.0;
+  const monthlyOvertimePay = Math.round(monthlyOvertimeHours * effectiveHourlyRate * overtimeMult);
+
+  const monthlyNightHours = (weeklyNightHours || 0) * 4.345;
+  const nightAllowance = is5Over ? Math.round(monthlyNightHours * effectiveHourlyRate * 0.5) : 0;
+
+  const statutoryGross = four.grossMonthlyPay + monthlyOvertimePay + nightAllowance;
+  const gapAmount = Math.max(0, statutoryGross - target);
+  const isCompliant = target > 0 ? (target >= statutoryGross) : true;
+
+  return {
+    isCompliant,
+    targetGrossSalary: target,
+    statutoryGross,
+    gapAmount,
+    overtimePay: monthlyOvertimePay,
+    nightAllowance,
+    components: four
+  };
+};
+
+/**
+ * 입사일 ~ 퇴사일 기준 근속기간 및 발생 연차 일수 계산 헬퍼 (근로기준법 제60조)
+ */
+export const calculateAnnualLeaveByTenure = (hireDateStr, resignDateStr = new Date().toISOString().slice(0, 10)) => {
+  if (!hireDateStr) return { tenureYears: 0, tenureMonths: 0, leaveDays: 15, isUnderOneYear: false };
+
+  const hire = new Date(hireDateStr);
+  const resign = new Date(resignDateStr);
+
+  if (isNaN(hire.getTime()) || isNaN(resign.getTime()) || resign < hire) {
+    return { tenureYears: 0, tenureMonths: 0, leaveDays: 15, isUnderOneYear: false };
+  }
+
+  const diffMs = resign - hire;
+  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const tenureYears = Math.floor(totalDays / 365);
+  const tenureMonths = Math.floor(totalDays / 30.4375);
+
+  if (tenureYears < 1) {
+    const leaveDays = Math.min(11, Math.max(0, tenureMonths));
+    return { tenureYears: 0, tenureMonths, leaveDays, isUnderOneYear: true, totalDays };
+  }
+
+  const additionalDays = Math.floor((tenureYears - 1) / 2);
+  const leaveDays = Math.min(25, 15 + additionalDays);
+
+  return { tenureYears, tenureMonths, leaveDays, isUnderOneYear: false, totalDays };
+};
+
+
+
 

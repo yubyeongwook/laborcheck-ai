@@ -22,6 +22,8 @@ export default function PayslipModal({ data = {}, onClose }) {
     payPeriod = `${currentYear}년 ${currentMonth}월 (01일~말일)`,
     payDate = `${currentYear}년 ${currentMonth}월 25일`,
     companyName = '노무체크 검증 사업장',
+    payType = data.calculatedResult?.payType || 'monthly',
+    deductionType = data.calculatedResult?.deductionType || '4대보험',
     pureBaseHoursMonthly,
     pureBasePay,
     weeklyHolidayHoursMonthly,
@@ -61,8 +63,12 @@ export default function PayslipModal({ data = {}, onClose }) {
     ? propAbsenceDeduction 
     : (data.calculatedResult?.absenceDeduction || 0);
 
-  // 공제액 계 자동 계산 (4대보험 + 세금 + 결근조퇴공제)
-  const calcTotalDeduction = nationalPension + healthInsurance + longtermCare + employmentInsurance + incomeTax + localIncomeTax + calcAbsenceDeduction;
+  // 공제액 계 자동 계산 (공제 방식별 안전 연산)
+  const calcTotalDeduction = (deductionType === '3.3%')
+    ? (incomeTax + localIncomeTax + calcAbsenceDeduction)
+    : (deductionType === '일용직')
+    ? (employmentInsurance + incomeTax + localIncomeTax + calcAbsenceDeduction)
+    : (nationalPension + healthInsurance + longtermCare + employmentInsurance + incomeTax + localIncomeTax + calcAbsenceDeduction);
 
   // 실수령액 자동 계산 (지급 총액 - 총 공제액)
   const calcNetPay = totalGrossSalary - calcTotalDeduction;
@@ -91,6 +97,8 @@ export default function PayslipModal({ data = {}, onClose }) {
     ? annualLeaveHours 
     : (annualLeaveAllowance > 0 ? Math.round((annualLeaveAllowance / (hourlyRate || 10320)) * 100) / 100 : 0);
 
+  const fourComp = data.calculatedResult?.fourComponents;
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 99999,
@@ -105,7 +113,7 @@ export default function PayslipModal({ data = {}, onClose }) {
         {/* 닫기 및 인쇄 버튼 (인쇄 시 숨김) */}
         <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0284c7', fontWeight: 700 }}>
-            <ShieldCheck size={22} /> 근로기준법 제48조 규격 정식 급여명세서
+            <ShieldCheck size={22} /> 근로기준법 제48조 규격 정식 급여명세서 ({payType === 'hourly' ? '시급제' : payType === 'daily' ? '일급제' : payType === 'weekly' ? '주급제' : '월급제'} · {deductionType})
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
@@ -147,7 +155,7 @@ export default function PayslipModal({ data = {}, onClose }) {
               임 금 명 세 서
             </h2>
             <div style={{ fontSize: '0.85rem', color: '#0284c7', fontWeight: 800, marginBottom: '0.4rem' }}>
-              [2026년 법정 근로기준법 제48조 제2항 적용 전자 급여명세서]
+              [2026년 법정 근로기준법 제48조 제2항 적용 전자 급여명세서] ({payType === 'hourly' ? '시급제' : payType === 'daily' ? '일급제' : payType === 'weekly' ? '주급제' : '월급제'} / {deductionType} 적용)
             </div>
             <p style={{ fontSize: '0.88rem', color: '#64748b', margin: 0 }}>
               지급대상기간: {payPeriod} | 급여지급일: {payDate}
@@ -164,10 +172,10 @@ export default function PayslipModal({ data = {}, onClose }) {
                 <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', width: '35%' }}>{companyName}</td>
               </tr>
               <tr>
+                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', background: '#f8fafc', fontWeight: 700 }}>급여 방식</td>
+                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>{payType === 'hourly' ? '⏱️ 시급제' : payType === 'daily' ? '📆 일급제' : payType === 'weekly' ? '🗓️ 주급제' : '📅 월급제'} ({deductionType})</td>
                 <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', background: '#f8fafc', fontWeight: 700 }}>통상 시급</td>
-                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>{hourlyRate.toLocaleString()} 원</td>
-                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', background: '#f8fafc', fontWeight: 700 }}>법정 기본기준시간</td>
-                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>{calcPureBaseHours} 시간 (주휴 35h 포함 총 {baseHours}h)</td>
+                <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>{hourlyRate.toLocaleString()} 원/시간</td>
               </tr>
             </tbody>
           </table>
@@ -177,30 +185,38 @@ export default function PayslipModal({ data = {}, onClose }) {
             {/* 지급 내역 */}
             <div>
               <h4 style={{ margin: '0 0 0.5rem 0', background: '#e0f2fe', color: '#0369a1', padding: '0.5rem', textAlign: 'center', fontSize: '0.95rem', fontWeight: 800 }}>
-                지 급 내 역 (세전)
+                지 급 내 역 ({payType === 'hourly' ? '시급 기준' : payType === 'daily' ? '일급 기준' : payType === 'weekly' ? '주급 기준' : '월 세전'})
               </h4>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ background: '#f1f5f9' }}>
                     <th style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>지급 항목</th>
-                    <th style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>산출시간</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>산출기준</th>
                     <th style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>금액 (원)</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 600 }}>
-                      기본급 ({calcPureBaseHours}h × {hourlyRate ? hourlyRate.toLocaleString() : '10,320'}원)
+                      {payType === 'hourly' ? '기본 시급' : payType === 'daily' ? '1일 기본일급' : payType === 'weekly' ? '1주 기본주급' : `기본급 (${calcPureBaseHours}h)`}
                     </td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#64748b' }}>{calcPureBaseHours}h</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 700 }}>{calcPureBasePay.toLocaleString()}</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#64748b' }}>
+                      {payType === 'hourly' ? `${hourlyRate.toLocaleString()}원/h` : payType === 'daily' ? '1일 실근로' : payType === 'weekly' ? '1주 소정근로' : `${calcPureBaseHours}h`}
+                    </td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 700 }}>
+                      {payType === 'hourly' ? hourlyRate.toLocaleString() : payType === 'daily' ? (fourComp?.dailyBasePay || calcPureBasePay).toLocaleString() : payType === 'weekly' ? (fourComp?.weeklyBasePay || calcPureBasePay).toLocaleString() : calcPureBasePay.toLocaleString()}
+                    </td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 700, color: '#047857', background: '#ecfdf5' }}>
-                      주휴수당 ({calcWeeklyHolidayHours}h × {hourlyRate ? hourlyRate.toLocaleString() : '10,320'}원)
+                      주휴수당
                     </td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#047857', fontWeight: 700, background: '#ecfdf5' }}>{calcWeeklyHolidayHours}h</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 800, color: '#047857', background: '#ecfdf5' }}>{calcWeeklyHolidayPay.toLocaleString()}</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', color: '#047857', fontWeight: 700, background: '#ecfdf5' }}>
+                      {payType === 'hourly' ? `+${fourComp?.weeklyHolidayHourlyRate || 0}원/h` : `${calcWeeklyHolidayHours}h`}
+                    </td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 800, color: '#047857', background: '#ecfdf5' }}>
+                      {payType === 'hourly' ? (fourComp?.weeklyHolidayPayMonthly || 0).toLocaleString() : payType === 'daily' ? (fourComp?.dailyWeeklyHolidayPay || 0).toLocaleString() : payType === 'weekly' ? (fourComp?.weeklyWeeklyHolidayPay || 0).toLocaleString() : calcWeeklyHolidayPay.toLocaleString()}
+                    </td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>연장근로수당 (1.5배)</td>
@@ -213,7 +229,7 @@ export default function PayslipModal({ data = {}, onClose }) {
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{(nightAllowance || 0).toLocaleString()}</td>
                   </tr>
                   <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>휴일근로수당 (1.5배 가산)</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>휴일근로수당</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>{displayHolidayHours}h</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{holidayAllowance.toLocaleString()}</td>
                   </tr>
@@ -235,26 +251,25 @@ export default function PayslipModal({ data = {}, onClose }) {
                   )}
                   <tr style={{ background: '#f8fafc' }}>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', color: '#16a34a' }}>🍚 식대 (비과세)</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>-</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>월 한도 20만</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', color: '#16a34a' }}>{mealAllowanceTaxExempt.toLocaleString()}</td>
                   </tr>
-                  <tr style={{ background: '#f8fafc' }}>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', color: '#16a34a' }}>🚗 자가운전 (비과세)</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>-</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', color: '#16a34a' }}>{drivingAllowanceTaxExempt.toLocaleString()}</td>
-                  </tr>
                   <tr style={{ background: '#e0f2fe', fontWeight: 800 }}>
-                    <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>지급액 계</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', textAlign: 'right', color: '#0369a1' }}>{totalGrossSalary.toLocaleString()} 원</td>
+                    <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>
+                      {payType === 'hourly' ? '시간당 실효 시급 (월 세전)' : payType === 'daily' ? '1일 세전 총일급 (월 세전)' : payType === 'weekly' ? '1주 세전 총주급 (월 세전)' : '지급액 계 (세전)'}
+                    </td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', textAlign: 'right', color: '#0369a1' }}>
+                      {payType === 'hourly' ? `${fourComp?.effectiveTotalHourlyRate?.toLocaleString() || hourlyRate.toLocaleString()}원/h` : payType === 'daily' ? `${fourComp?.grossDailyPay?.toLocaleString() || totalGrossSalary.toLocaleString()}원/일` : payType === 'weekly' ? `${fourComp?.grossWeeklyPay?.toLocaleString() || totalGrossSalary.toLocaleString()}원/주` : `${totalGrossSalary.toLocaleString()} 원`}
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* 공제 내역 */}
+            {/* 공제 내역 (공제 방식별 맞춤 전환) */}
             <div>
               <h4 style={{ margin: '0 0 0.5rem 0', background: '#ffedd5', color: '#c2410c', padding: '0.5rem', textAlign: 'center', fontSize: '0.95rem', fontWeight: 800 }}>
-                공 제 내 역 (4대보험 & 세금)
+                공 제 내 역 ({deductionType})
               </h4>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
@@ -265,41 +280,80 @@ export default function PayslipModal({ data = {}, onClose }) {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ background: '#f8fafc' }}>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', fontSize: '0.78rem', color: '#0369a1', fontWeight: 700 }}>💡 국민연금 부과 대상 금액</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', textAlign: 'center', fontSize: '0.78rem', color: '#0369a1' }}>과세소득 기준</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', textAlign: 'right', fontSize: '0.78rem', color: '#0369a1', fontWeight: 700 }}>{((totalGrossSalary || 0) - (mealAllowanceTaxExempt || 0)).toLocaleString()} 원</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>국민연금 (근로자 부담)</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>4.75%</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{nationalPension.toLocaleString()}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>건강보험 (근로자 부담)</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>3.595%</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{healthInsurance.toLocaleString()}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>장기요양보험</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>13.14%</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{longtermCare.toLocaleString()}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>고용보험 (근로자 부담)</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>0.9%</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{employmentInsurance.toLocaleString()}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>근로소득세</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>간이세액표</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{incomeTax.toLocaleString()}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>지방소득세</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>10%</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{localIncomeTax.toLocaleString()}</td>
-                  </tr>
+                  {deductionType === '3.3%' ? (
+                    <>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 700 }}>사업소득세 (원천징수)</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#c2410c' }}>3.0%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 700 }}>{incomeTax.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', fontWeight: 700 }}>지방소득세 (사업소득)</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#c2410c' }}>0.3% (소득세 10%)</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right', fontWeight: 700 }}>{localIncomeTax.toLocaleString()}</td>
+                      </tr>
+                      <tr style={{ background: '#f8fafc' }}>
+                        <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.45rem', fontSize: '0.78rem', color: '#64748b' }}>💡 3.3% 사업소득 프리랜서 공제 적용됨</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', textAlign: 'right', fontSize: '0.78rem', color: '#64748b' }}>4대보험 면제</td>
+                      </tr>
+                    </>
+                  ) : deductionType === '일용직' ? (
+                    <>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>고용보험 (근로자 부담)</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700 }}>0.9%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{employmentInsurance.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>일용 근로소득세</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontSize: '0.75rem' }}>1일 15만 비과세/55% 감면</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{incomeTax.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>지방소득세</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>10%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{localIncomeTax.toLocaleString()}</td>
+                      </tr>
+                    </>
+                  ) : (
+                    <>
+                      <tr style={{ background: '#f8fafc' }}>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', fontSize: '0.78rem', color: '#0369a1', fontWeight: 700 }}>💡 국민연금 부과 대상 금액</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', textAlign: 'center', fontSize: '0.78rem', color: '#0369a1' }}>과세소득 기준</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.45rem', textAlign: 'right', fontSize: '0.78rem', color: '#0369a1', fontWeight: 700 }}>{((totalGrossSalary || 0) - (mealAllowanceTaxExempt || 0)).toLocaleString()} 원</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>국민연금 (근로자 부담)</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>4.75%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{nationalPension.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>건강보험 (근로자 부담)</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>3.595%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{healthInsurance.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>장기요양보험</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>13.14%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{longtermCare.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>고용보험 (근로자 부담)</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center', fontWeight: 700, color: '#1e293b' }}>0.9%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{employmentInsurance.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>근로소득세</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>간이세액표</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{incomeTax.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem' }}>지방소득세</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'center' }}>10%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', textAlign: 'right' }}>{localIncomeTax.toLocaleString()}</td>
+                      </tr>
+                    </>
+                  )}
                   {calcAbsenceDeduction > 0 && (
                     <tr style={{ background: '#fff7ed' }}>
                       <td style={{ border: '1px solid #cbd5e1', padding: '0.5rem', color: '#ea580c', fontWeight: 800 }}>🔻 결근·조퇴 차감 공제</td>
@@ -308,7 +362,7 @@ export default function PayslipModal({ data = {}, onClose }) {
                     </tr>
                   )}
                   <tr style={{ background: '#ffedd5', fontWeight: 800 }}>
-                    <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>공제액 계</td>
+                    <td colSpan={2} style={{ border: '1px solid #cbd5e1', padding: '0.6rem' }}>공제액 계 ({deductionType})</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: '0.6rem', textAlign: 'right', color: '#c2410c' }}>{calcTotalDeduction.toLocaleString()} 원</td>
                   </tr>
                 </tbody>
@@ -333,6 +387,8 @@ export default function PayslipModal({ data = {}, onClose }) {
             <p style={{ margin: '0 0 0.3rem 0', fontWeight: 700, color: '#334155' }}>
               ⚖️ [근로기준법 제48조 계산방법 명시]
             </p>
+            • 기본 임금 지급 방식: {payType === 'hourly' ? '시급제' : payType === 'daily' ? '일급제' : payType === 'weekly' ? '주급제' : '월급제'} (통상시급 {hourlyRate.toLocaleString()}원/h 기준)<br/>
+            • 공제 방식: {deductionType}<br/>
             • 연장근로수당 = 통상시급({hourlyRate.toLocaleString()}원) × 연장근로시간({overtimeHours}h) × 1.5배<br/>
             • 휴일근로수당 = 통상시급({hourlyRate.toLocaleString()}원) × 휴일근로시간({holidayHours}h) × 가산율(8h이하 1.5배, 8h초과 2.0배)<br/>
             • 본 명세서는 근로기준법 제48조 제2항에 따라 발행된 정식 전자 임금명세서입니다.

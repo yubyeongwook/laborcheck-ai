@@ -9,6 +9,7 @@ import {
 import PayslipModal from '../components/PayslipModal';
 import WageCalculatorModal from '../components/WageCalculatorModal';
 import ContactForm from './ContactForm';
+import { calculate4ComponentsBreakdown, verifyComprehensiveWage, calculateAnnualLeaveByTenure } from '../utils/laborCalc';
 
 const SMART_QUICK_PROMPTS = [
   '산재 불승인 시 이의신청 절차 및 판례 모음 알려줘',
@@ -185,6 +186,7 @@ const STEP_CHOICE_OPTIONS = {
     { label: '💡 월급제', value: '월급' },
     { label: '⏱️ 시급제', value: '시급' },
     { label: '📅 일급제', value: '일급' },
+    { label: '🗓️ 주급제', value: '주급' },
     { label: '💼 포괄임금제', value: '포괄임금' }
   ],
   2: [
@@ -644,11 +646,59 @@ export default function Home() {
       }
     }
 
+    // 💡 급여 형태(시급 / 일급 / 주급 / 월급) 정밀 판정 및 4대 수당 분해
+    const payTypeAnswer = answersObj[1] || '';
+    let selectedPayType = 'monthly';
+    let payTypeLabel = '📅 월급제';
+    if (payTypeAnswer.includes('시급')) {
+      selectedPayType = 'hourly';
+      payTypeLabel = '⏱️ 시급제';
+    } else if (payTypeAnswer.includes('일급')) {
+      selectedPayType = 'daily';
+      payTypeLabel = '📆 일급제';
+    } else if (payTypeAnswer.includes('주급')) {
+      selectedPayType = 'weekly';
+      payTypeLabel = '🗓️ 주급제';
+    }
+
+    // 💡 공제 방식 (4대보험 vs 3.3% 프리랜서 vs 일용직) 판정
+    let deductionType = '4대보험';
+    if (allText.includes('3.3') || allText.includes('프리랜서') || allText.includes('사업소득')) {
+      deductionType = '3.3%';
+    } else if (allText.includes('일용') || allText.includes('일용직')) {
+      deductionType = '일용직';
+    }
+
+    const fourComponents = calculate4ComponentsBreakdown({
+      effectiveHourlyRate: minWage,
+      weeklyNetWorkHours: weeklyWorkHoursTotal,
+      dailyHours: dailyWorkHours,
+      annualLeaveDays: unusedLeaveDays,
+      holidayWorkDaysYear,
+      is5Over,
+      includeAnnualLeave: includeAnnualLeavePay,
+      payType: selectedPayType
+    });
+
+    const comprehensiveCheck = verifyComprehensiveWage({
+      targetGrossSalary: totalGross,
+      effectiveHourlyRate: minWage,
+      weeklyNetWorkHours: weeklyWorkHoursTotal,
+      dailyHours: dailyWorkHours,
+      annualLeaveDays: unusedLeaveDays,
+      holidayWorkDaysYear,
+      is5Over,
+      includeAnnualLeave: includeAnnualLeavePay,
+      weeklyNightHours: weeklyNightHoursTotal
+    });
+
     const calcResultObj = {
       employeeName: '신청 근로자',
       payPeriod: `${new Date().getFullYear()}년 ${String(new Date().getMonth() + 1).padStart(2, '0')}월 (01일~말일)`,
       payDate: `${new Date().getFullYear()}년 ${String(new Date().getMonth() + 1).padStart(2, '0')}월 25일`,
       companyName: '노무체크 검증 사업장',
+      payType: selectedPayType,
+      deductionType,
       hourlyRate: minWage,
       baseHours: 209,
       baseSalary: actualBasePay,
@@ -686,7 +736,9 @@ export default function Home() {
       annualLeaveMonthlyPay,
       dailyWorkHours,
       monthlyOvertime,
-      is5Over
+      is5Over,
+      fourComponents,
+      comprehensiveCheck
     };
 
     setLatestCalcResult(calcResultObj);
@@ -703,7 +755,43 @@ export default function Home() {
 
     const updatePrefix = updatedStepInfo ? `✅ **[${updatedStepInfo}단계 조건 수정 반영 완료]**\n수정하신 조건만 쏙 반영하여 **이후 질의 반복 없이 즉시 0% 오차 최종 계산 결과를 재산출**하였습니다:\n\n---\n\n` : '';
 
-    const replyText = `${updatePrefix}### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 급여 진단]\n\n답변해주신 내용(**${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 월~금 9시~18시 (하루 실근로 ${dailyWorkHours.toFixed(2)}h, 휴게 ${breakHours.toFixed(2)}h 차감)${hasMeal ? ' · 식대 비과세 기본급 분할 세팅' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 및 최저임금법(제6조) 정밀 분석\n- 💡 **최저시급 약정 월급(2,156,880원) 기준 식대 비과세 분할 세팅 적용**: 최저임금법 제6조에 따라 복리후생비(식대)가 100% 최저임금에 산입되므로, **기본급 1,956,880원 + 식대 200,000원 = 세전 총월급 2,156,880원** 세팅은 100% 합법적이며 완벽히 적법합니다.\n- 4대보험료 및 소득세 부과 대상(과세액)이 **1,956,880원**으로 낮아져 매달 약 3.5만원의 합법 절세 혜택이 발생합니다.\n\n---\n\n### 📊 2. 근무시간 및 식사·휴게시간 정밀 합산 분석\n- **근무 시간 (9시~18시)**: 총 9시간 중 식사/휴게시간 **${breakHours.toFixed(2)}시간 차감** = **하루 실제 일하는 시간 ${dailyWorkHours.toFixed(2)}시간**\n- **주 5일(월~금) 소정근로시간**: **주 40시간** (기본 8h × 5일 = 연장근로 0시간!)\n- **월 기준 근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- **월 연장 근로시간**: **0.00시간** (8시간 초과분 없음)\n\n---\n\n### 💰 3. 2026년 최저시급(10,320원) 기준 최종 예상 월급 (${includeAnnualLeavePay ? '미사용 연차수당 정산 포함' : '연차수당 미포함 [휴가사용전제]'})\n- 💰 **법정 세전 월급 총액**: **${totalGross.toLocaleString()}원**\n  - 📄 **기본급 (과세 대상)**: **${actualBasePay.toLocaleString()}원** (월 209시간분 중 식대 20만원 분리 세팅)\n  - 🍚 **비과세 식대 수당**: **${mealPay.toLocaleString()}원** (절세 적용)\n  - ⏰ **연장근로수당 (0시간)**: **0원**\n${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : '  - 📅 **연차유급휴가 수당**: **0원** (연차 수당 미포함 요청 반영)\n'}\n---\n\n### 🕵️‍♂️ 4. 근로자 필수 체크 [연차수당·휴일수당 월급 포함 여부 & 법정 월급 검증 리포트]\n- 💡 **법정 100% 정당한 세전 월급액**: **${totalGross.toLocaleString()}원** (예상 실수령액 약 **${netPayCalc.toLocaleString()}원**)\n- ❓ **근로자 필수 확인 질의 2가지**:\n  - 🌴 **질문 ① (연차수당 포함 여부)**: 받으시는 월급에 미사용 연차수당이 이미 정액으로 포함된 포괄임금인가요, 아니면 남아도 연말에 안 주시나요? *(포괄계약서에 연차수당 세부 시간·금액 미기재 시 무효!)*\n  - 🏢 **질문 ② (휴일/공휴일근로수당 포함 여부)**: 빨간날(공휴일/대체공휴일) 일한 수당이 월급 포함인가요, 아니면 나올 때마다 1.5배로 별도 받으시나요?\n- 💬 **체불 검증 실행**: 채팅창에 **"실제 월급 230만원인데 연차수당 포함이래"** 또는 **"세전 250만원에 휴일수당 포함인지 궁금해"** 라고 입력해 보세요! 0.1초 만에 법적 효력과 미달 체불액을 정확히 분석해 드립니다.\n\n---\n\n### 💡 5. 비과세 절세 혜택 & 급여명세서\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 **[근로기준법 제48조 법정 급여명세서 보기/출력]** 버튼을 누르시면 위 산출 결과 그대로 명세서가 출력됩니다!`;
+    let payTypeBreakdownSection = '';
+    if (selectedPayType === 'hourly') {
+      payTypeBreakdownSection = `### ⏱️ 3. 시급제 기준 4대 수당 (기본+주휴+연차+휴일) 시간당 구성 명세
+- ⏱️ **① 기본 시급**: **${fourComponents.baseHourlyRate.toLocaleString()}원/시간** (월 기본급 ${actualBasePay.toLocaleString()}원)
+- 🏖️ **② 주휴 시급 (시간당 환산)**: **+${fourComponents.weeklyHolidayHourlyRate.toLocaleString()}원/시간** (월 주휴수당 ${weeklyHolidayPayMonthly.toLocaleString()}원)
+- 🌴 **③ 연차 시급 (시간당 환산)**: **+${fourComponents.annualLeaveHourlyRate.toLocaleString()}원/시간** (월 연차수당 ${annualLeaveMonthlyPay.toLocaleString()}원)
+- 💥 **④ 휴일근로 가산 시급**: **+${fourComponents.holidayWorkHourlyRate.toLocaleString()}원/시간** (월 휴일수당 ${holidayPayMonthly.toLocaleString()}원)
+- ⚡ **최종 시간당 실효 총시급**: **${fourComponents.effectiveTotalHourlyRate.toLocaleString()}원/시간**
+- 💰 **월 세전 총액 환산**: **${totalGross.toLocaleString()}원** (예상 실수령액 약 **${netPayCalc.toLocaleString()}원**)`;
+    } else if (selectedPayType === 'daily') {
+      const dailyNetPayEst = Math.round(netPayCalc / Math.max(1, (activeWorkDaysList.length || 5) * 4.345));
+      payTypeBreakdownSection = `### 📆 3. 일급제 기준 4대 수당 (기본+주휴+연차+휴일) 1일당 명세
+- 📆 **① 1일 기본일급**: **${fourComponents.dailyBasePay.toLocaleString()}원/일** (시급 ${minWage.toLocaleString()}원 × ${dailyWorkHours.toFixed(1)}시간)
+- 🏖️ **② 1일 주휴수당 (분할분)**: **+${fourComponents.dailyWeeklyHolidayPay.toLocaleString()}원/일**
+- 🌴 **③ 1일 연차수당 (분할분)**: **+${fourComponents.dailyAnnualLeavePay.toLocaleString()}원/일**
+- 💥 **④ 1일 휴일수당 (분할분)**: **+${fourComponents.dailyHolidayWorkPay.toLocaleString()}원/일**
+- ⚡ **1일 세전 총일급**: **${fourComponents.grossDailyPay.toLocaleString()}원/일**
+- 💰 **1일 세후 실수령 일급**: 약 **${dailyNetPayEst.toLocaleString()}원/일** (월 세전 ${totalGross.toLocaleString()}원 / 월 실수령 ${netPayCalc.toLocaleString()}원)`;
+    } else if (selectedPayType === 'weekly') {
+      const weeklyNetPayEst = Math.round(netPayCalc / 4.345);
+      payTypeBreakdownSection = `### 🗓️ 3. 주급제 기준 4대 수당 (기본+주휴+연차+휴일) 1주당 명세
+- 🗓️ **① 1주 기본주급**: **${fourComponents.weeklyBasePay.toLocaleString()}원/주** (주 ${weeklyWorkHoursTotal.toFixed(1)}시간 × ${minWage.toLocaleString()}원)
+- 🏖️ **② 1주 주휴수당**: **+${fourComponents.weeklyWeeklyHolidayPay.toLocaleString()}원/주**
+- 🌴 **③ 1주 연차수당 (분할분)**: **+${fourComponents.weeklyAnnualLeavePay.toLocaleString()}원/주**
+- 💥 **④ 1주 휴일수당 (분할분)**: **+${fourComponents.weeklyHolidayWorkPay.toLocaleString()}원/주**
+- ⚡ **1주 세전 총주급**: **${fourComponents.grossWeeklyPay.toLocaleString()}원/주**
+- 💰 **1주 세후 실수령 주급**: 약 **${weeklyNetPayEst.toLocaleString()}원/주** (월 세전 ${totalGross.toLocaleString()}원 / 월 실수령 ${netPayCalc.toLocaleString()}원)`;
+    } else {
+      payTypeBreakdownSection = `### 💰 3. 2026년 최저시급(${minWage.toLocaleString()}원) 기준 최종 예상 월급 (${includeAnnualLeavePay ? '미사용 연차수당 정산 포함' : '연차수당 미포함 [휴가사용전제]'})
+- 💰 **법정 세전 월급 총액**: **${totalGross.toLocaleString()}원**
+  - 📄 **기본급 (과세 대상)**: **${actualBasePay.toLocaleString()}원** (월 209시간분 중 식대 20만원 분리 세팅)
+  - 🍚 **비과세 식대 수당**: **${mealPay.toLocaleString()}원** (절세 적용)
+  - ⏰ **연장근로수당 (${monthlyOvertime}h)**: **${overtimePay.toLocaleString()}원**
+${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당**: ${annualLeaveMonthlyPay.toLocaleString()}원\n` : '  - 📅 **연차유급휴가 수당**: **0원** (연차 수당 미포함 요청 반영)\n'}`;
+    }
+
+    const replyText = `${updatePrefix}### 🎩 노무비서실장의 [고정밀 8단계 검증 완료 ${payTypeLabel} 급여 진단]\n\n답변해주신 내용(**${payTypeLabel} · ${is5Over ? '5인 이상 사업장 [사장님·동거가족 제외]' : '5인 미만 사업장'} · 주 ${activeWorkDaysList.length || 5}일 (하루 실근로 ${dailyWorkHours.toFixed(2)}h, 휴게 ${breakHours.toFixed(2)}h 차감)${hasMeal ? ' · 식대 비과세 포함' : ''}**)을 바탕으로 최종 정밀 계산된 결과입니다:\n\n---\n\n### ⚖️ 1. 근로기준법 및 최저임금법(제6조) 정밀 분석\n- 💡 **${payTypeLabel} 맞춤 계산 세팅 적용**: 근로기준법 제55조(주휴), 제56조(가산수당), 제60조(연차휴가)에 따라 **${selectedPayType === 'hourly' ? '시간당 수당' : selectedPayType === 'daily' ? '일급 수당' : selectedPayType === 'weekly' ? '주급 수당' : '월급 수당'}**을 법정 요율 100% 정밀 반영하여 산출하였습니다.\n- 식대 비과세 20만원 적용 시 4대보험료 및 소득세 부과 대상(과세액)이 낮아져 매달 약 3.5만원의 합법 절세 혜택이 발생합니다.\n\n---\n\n### 📊 2. 총체류시간 · 휴게시간 · 실근로시간 100% 정밀 연동 분석\n- ⏰ **하루 총 체류(구속)시간**: **${(dailyWorkHours + breakHours).toFixed(2)}시간** (시업~종업 경과시간)\n- ☕ **하루 휴게/식사시간**: **-${breakHours.toFixed(2)}시간 차감** (무급)\n- ⚡ **하루 실근로시간 (100% 연동)**: **${dailyWorkHours.toFixed(2)}시간** (총 체류 ${(dailyWorkHours + breakHours).toFixed(2)}h - 휴게 ${breakHours.toFixed(2)}h)\n- 📅 **1주 총 실근로시간**: **주 ${weeklyWorkHoursTotal.toFixed(1)}시간** (${dailyWorkHours.toFixed(2)}h × 주 ${activeWorkDaysList.length || 5}일)\n- 🗓️ **월 기준 소정근로시간**: **174.00시간** (주휴수당 35시간 합산 시 **209.00시간**)\n- ⏰ **월 연장 근로시간**: **${monthlyOvertime.toFixed(2)}시간**\n\n---\n\n${payTypeBreakdownSection}\n\n---\n\n### 🕵️‍♂️ 4. 근로자 필수 체크 [선택 형태 수당 포함 여부 & 법정 검증 리포트]\n- 💡 **법정 세전 총액 (월환산)**: **${totalGross.toLocaleString()}원** (예상 월 실수령액 약 **${netPayCalc.toLocaleString()}원**)\n- ❓ **근로자 필수 확인 질의 2가지**:\n  - 🌴 **질문 ① (연차수당 포함 여부)**: 받으시는 ${payTypeLabel}에 미사용 연차수당이 이미 정액으로 포함된 포괄임금인가요, 아니면 남으면 연말에 안 주시나요?\n  - 🏢 **질문 ② (휴일/공휴일근로수당 포함 여부)**: 빨간날(공휴일/대체공휴일) 일한 수당이 급여 포함인가요, 아니면 나올 때마다 별도 받으시나요?\n\n---\n\n### 💡 5. 비과세 절세 혜택 & 급여명세서\n- 식대 20만원을 비과세로 세팅하여 매월 4대보험료 및 소득세 약 **35,000원**이 합법 절세됩니다.\n- 아래 **[근로기준법 제48조 법정 급여명세서 보기/출력]** 버튼을 누르시면 위 산출 결과 그대로 명세서가 출력됩니다!`;
 
     setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
     setIsCalculatedOnce(true);
