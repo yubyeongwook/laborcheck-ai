@@ -19,7 +19,8 @@ export const calculateHolidayDayPay = (dailyHours, wage, is5Over) => {
   return (within8 * wage * 1.5) + (beyond8 * wage * 2.0);
 };
 
-// 연도별 법정 최저시급 (원) - 고용노동부 고시 기준. 목록에 없는 연도는 가장 가까운 연도 값을 사용
+// 연도별 법정 최저시급 (원) - 고용노동부 매년 고시 기준 (2017~2026+)
+// 신규 연도 고시 발표 시 연도 키값을 등록하여 온시스템에 자동 반영
 export const MIN_WAGE_BY_YEAR = {
   2017: 6470,
   2018: 7530,
@@ -41,6 +42,8 @@ export const getMinWageForYear = (year) => {
   return MIN_WAGE_BY_YEAR[closest];
 };
 
+// 연도별 법정 4대보험 공제 요율 - 보건복지부 및 고용노동부 매년 고시 기준 (2017~2026+)
+// 매년 최신 고시 요율을 탐색 및 적용하도록 연도별 매핑 테이블 유지
 export const DEDUCTION_RATES_BY_YEAR = {
   2017: { health: 0.0306, care: 0.0655, pension: 0.045, employment: 0.0065 },
   2018: { health: 0.0312, care: 0.0738, pension: 0.045, employment: 0.0065 },
