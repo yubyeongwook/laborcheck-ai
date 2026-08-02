@@ -21,13 +21,13 @@ const SMART_QUICK_PROMPTS = [
 ];
 
 const AGENT_TEAM = [
-  { name: '노무·근로기준법 수석', role: '209시간·중복가산 정밀 계산 및 근로계약서 양식', icon: <Coins size={24} color="#38bdf8" /> },
-  { name: '산재보상·재해 수석', role: '요양/휴업급여 산정 및 산재 자가진단 가이드', icon: <HeartPulse size={24} color="#f87171" /> },
-  { name: '판사·법원재판 수석', role: '주요 법원 노동 판례 대조 및 자가진단 정보', icon: <Scale size={24} color="#a5b4fc" /> },
-  { name: '의사·의학감정 수석', role: '진단서 및 의무기록 의학 용어 표준 분석', icon: <Stethoscope size={24} color="#f43f5e" /> },
-  { name: '노동청 지도감독 수석', role: '근로감독 자율 점검 및 4대보험 리스크 체크', icon: <ShieldAlert size={24} color="#fbbf24" /> },
-  { name: '대한민국 정책자금 수석', role: '2026 고용장려금, R&D 출연금, 융자 지원금 맞춤 매칭', icon: <PiggyBank size={24} color="#34d399" /> },
-  { name: '재무제표·신용진단 수석', role: '재무제표 진단 및 신보/기보 보증서 승인 시뮬레이션', icon: <Wallet size={24} color="#a78bfa" /> }
+  { name: '근로기준법 AI 분석 에이전트', role: '209시간·중복가산 정밀 계산 및 근로계약서 양식 검증', icon: <Coins size={24} color="#38bdf8" /> },
+  { name: '산재보상 AI 시뮬레이터', role: '요양/휴업급여 산정 및 산재 승인 확률 자가진단 리포트', icon: <HeartPulse size={24} color="#f87171" /> },
+  { name: '대법원 판례 대조 에이전트', role: '주요 노동 판례 텍스트 대조 및 법리 분석 자가진단', icon: <Scale size={24} color="#a5b4fc" /> },
+  { name: '의학용어·진단서 AI 분석 에이전트', role: '진단서 및 의무기록 의학 용어 텍스트 표준 추출 분석', icon: <Stethoscope size={24} color="#f43f5e" /> },
+  { name: '근로감독 자율점검 에이전트', role: '노동청 지침 기반 사업장 자율 점검 및 4대보험 리스크 분석', icon: <ShieldAlert size={24} color="#fbbf24" /> },
+  { name: '정부지원금 맞춤매칭 에이전트', role: '2026 고용장려금, R&D 출연금, 융자 지원금 시뮬레이션', icon: <PiggyBank size={24} color="#34d399" /> },
+  { name: '기업재무 AI 진단 에이전트', role: '재무제표 항목 분석 및 신보/기보 보증 승인 가이드', icon: <Wallet size={24} color="#a78bfa" /> }
 ];
 
 const LEGAL_FAQS = [
@@ -1966,13 +1966,13 @@ export default function Home() {
       <section style={{ marginBottom: '3.5rem', background: 'rgba(15, 23, 42, 0.5)', padding: '2.5rem 1.8rem', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div className="glow-badge" style={{ marginBottom: '0.75rem', borderColor: '#a5b4fc', color: '#a5b4fc', background: 'rgba(165, 180, 252, 0.12)' }}>
-            <Users size={15} color="#a5b4fc" /> AI 노무 전문 변호/의학/감정 에이전트
+            <Users size={15} color="#a5b4fc" /> 노무 BigData AI 자가진단 에이전트
           </div>
           <h2 style={{ fontSize: '1.7rem', fontWeight: 900, color: '#f8fafc', margin: '0 0 0.5rem 0' }}>
-            노무체크 AI <span style={{ color: '#38bdf8' }}>7대 전문 수석 에이전트 팀</span>
+            노무체크 AI <span style={{ color: '#38bdf8' }}>7대 전용 분석 에이전트</span>
           </h2>
           <p style={{ color: '#94a3b8', fontSize: '0.92rem', margin: 0 }}>
-            근로기준법, 산재의학, 대법원 판례, 노동청 감독 전문 AI 수석이 24시간 실시간 교차 검증합니다.
+            근로기준법, 산재의학, 대법원 판례, 노동청 지침 BigData를 AI 알고리즘이 24시간 교차 분석합니다.
           </p>
         </div>
 
@@ -1981,7 +1981,7 @@ export default function Home() {
             <div
               key={idx}
               className="agent-card"
-              onClick={() => startChatWithSecretary(`${agent.name} 팀장 자문 요청`)}
+              onClick={() => startChatWithSecretary(`${agent.name} 분석 요청`)}
             >
               <div className="agent-avatar">
                 {agent.icon}
@@ -1989,7 +1989,7 @@ export default function Home() {
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
                   <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>{agent.name}</h4>
-                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, background: 'rgba(56, 189, 248, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>1:1 자문 가능</span>
+                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, background: 'rgba(56, 189, 248, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>AI 리포트 분석</span>
                 </div>
                 <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
                   {agent.role}
