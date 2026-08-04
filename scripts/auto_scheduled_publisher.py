@@ -757,7 +757,16 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
     category = topic["category"]
     law = topic["law"]
     fact = topic["fact"]
-    img_url = topic.get("img") or pick_random_image(category)
+    img_url = pick_random_image(category)
+    
+    # 앵글 및 테마 동적 다각화 (매 발행 시 100% 다른 색상/서식/배지 적용)
+    angles = [
+        {"prefix": "[근로자 권리 구제]", "intro_title": "💡 근로자 핵심 권리 점검 포인트", "bg": "#f0fff5", "border": "#1a7a4a", "badge_bg": "#1a7a4a"},
+        {"prefix": "[사업주 리스크 예방]", "intro_title": "🛡️ 사업주 필독 인사노무 관리 수칙", "bg": "#f0f4ff", "border": "#1a3a6b", "badge_bg": "#1a3a6b"},
+        {"prefix": "[최신 판례 해설]", "intro_title": "⚖️ 대법원 판례 및 노동청 행정해석 포인트", "bg": "#fffbe6", "border": "#d48806", "badge_bg": "#d48806"},
+    ]
+    angle = random.choice(angles)
+
     # 소제목 특수문자 (I ·, II ·, III ·, IV · 등) 제거 정제
     def clean_title(t):
         for prefix in ["I · ", "II · ", "III · ", "IV · ", "V · ", "VI · ", "I. ", "II. ", "III. ", "IV. "]:
@@ -769,10 +778,11 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
     clean_h3 = clean_title(topic['h3'])
     clean_h4 = clean_title(topic['h4'])
 
-    # 애드센스 고품질 FAQ 추출
+    # 애드센스 고품질 FAQ 추출 (랜덤 순서 조율)
     faqs = CATEGORY_FAQS.get(category, CATEGORY_FAQS["산재보상"])
+    shuffled_faqs = random.sample(faqs, len(faqs))
     faq_html = ""
-    for q, a in faqs:
+    for q, a in shuffled_faqs:
         faq_html += f"""
 <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:16px;border-radius:8px;margin-bottom:12px;">
 <strong style="color:#1e3a8a;font-size:15px;">{q}</strong>
@@ -780,16 +790,19 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 </div>
 """
 
+    today_str = datetime.now().strftime("%Y년 %m월 %d일")
+
     html = f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Pretendard',sans-serif;color:#1a1a1a;line-height:1.95;max-width:780px;margin:0 auto;background:#fff;">
 
 <!-- 시리즈 명찰 헤더 -->
-<div style="background:#1a3a6b;color:#ffffff;padding:8px 14px;border-radius:4px;font-size:13px;font-weight:700;display:inline-block;margin-bottom:12px;">
-[{series_tag}]
+<div style="margin-bottom:12px;">
+  <span style="background:#1a3a6b;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:13px;font-weight:700;display:inline-block;margin-right:6px;">[{series_tag}]</span>
+  <span style="background:{angle['badge_bg']};color:#ffffff;padding:6px 12px;border-radius:4px;font-size:13px;font-weight:700;display:inline-block;">{angle['prefix']}</span>
 </div>
 
 <!-- 오늘의 핵심 요약 박스 -->
-<div style="background:#f0fff5;border-left:4px solid #1a7a4a;padding:16px;margin:16px 0;border-radius:0 6px 6px 0">
-<strong style="color:#1a7a4a;font-size:15px;">핵심 요약</strong><br>
+<div style="background:{angle['bg']};border-left:4px solid {angle['border']};padding:16px;margin:16px 0;border-radius:0 6px 6px 0">
+<strong style="color:{angle['border']};font-size:15px;">{angle['intro_title']} ({today_str} 기준)</strong><br>
 1. {topic['summary_1']}<br>
 2. {topic['summary_2']}<br>
 3. {topic['summary_3']}
