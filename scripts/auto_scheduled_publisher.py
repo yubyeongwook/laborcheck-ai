@@ -394,6 +394,7 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
     category = topic["category"]
     law = topic["law"]
     fact = topic["fact"]
+    img_url = topic.get("img") or pick_random_image(category)
     # 소제목 특수문자 (I ·, II ·, III ·, IV · 등) 제거 정제
     def clean_title(t):
         for prefix in ["I · ", "II · ", "III · ", "IV · ", "V · ", "VI · ", "I. ", "II. ", "III. ", "IV. "]:
