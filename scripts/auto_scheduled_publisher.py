@@ -1112,6 +1112,15 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 
 </div>
 
+<!-- 둥둥 떠다니는 플로팅 AI 자가진단 퀵 버튼 (Floating Sticky Banner) -->
+<div style="position:fixed;bottom:24px;right:24px;z-index:999999;box-shadow:0 6px 20px rgba(26,122,74,0.4);border-radius:30px;background:#1a7a4a;">
+<a href="https://노무체크ai.com" target="_blank" rel="noopener" style="display:flex;align-items:center;padding:12px 24px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:-0.3px;">
+<span>AI 노무 무료 자가진단 받기 →</span>
+</a>
+</div>
+
+</div>
+
 <!-- 💬 블로그 우측 하단 상담문의 플로팅 버튼 -->
 <style>
 @keyframes lcBounce{{0%,100%{{transform:translateY(0);}}50%{{transform:translateY(-2px);}}}}
