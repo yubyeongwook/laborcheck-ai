@@ -64,7 +64,7 @@ SERIES_MAP = {
     "휴가·연차": "연차휴가 실무 가이드",
     "임금체불": "최저임금·주휴수당 팩트체크",
     "근로계약": "근로계약·수습기간 해설",
-    "해고분쟁": "해고분쟁 완벽 대응",
+    "부당해고·해고예고": "부당해고·해고예고 완벽 대응",
     "4대보험": "실업급여·4대보험 실무",
     "직장내괴롭힘·성희롱": "직장 내 괴롭힘·인권 지침",
     "육아휴직·출산휴가": "육아휴직·모성보호 실무",
@@ -108,7 +108,7 @@ CATEGORY_FAQS = {
         ("Q3. 수습기간 중에는 자유롭게 해고할 수 있나요?",
          "수습 근로자라 하더라도 해고 시에는 객관적이고 정당한 사유가 존재해야 하며, 5인 이상 사업장은 서면 해고 통지 의무가 동일하게 적용됩니다.")
     ],
-    "해고분쟁": [
+    "부당해고·해고예고": [
         ("Q1. 5인 미만 사업장에서 갑자기 해고 통보를 받았는데 예고수당을 받을 수 있나요?",
          "네, 5인 미만 사업장이라 하더라도 30일 전 해고예고 의무(근로기준법 제26조)는 100% 적용되므로 예고 없이 해고 시 30일분 통상임금을 해고예고수당으로 청구할 수 있습니다."),
         ("Q2. 회사가 권고사직서를 쓰라고 강요하는데 서명해야 하나요?",
@@ -938,17 +938,12 @@ CATEGORY_IMAGE_POOL = {
         "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80",
         "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
     ],
-    "해고분쟁": [
+    "부당해고·해고예고": [
         "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=1200&q=80",
         "https://images.unsplash.com/photo-1501290741922-b56c0d0884af?auto=format&fit=crop&w=1200&q=80",
         "https://images.unsplash.com/photo-1521791055366-0d553872952f?auto=format&fit=crop&w=1200&q=80",
         "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1562564055-71e051d33c19?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1200&q=80",
-        "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1200&q=80"
     ],
     "4대보험": [
         "https://images.unsplash.com/photo-1559526324-593bc073d938?auto=format&fit=crop&w=1200&q=80",
