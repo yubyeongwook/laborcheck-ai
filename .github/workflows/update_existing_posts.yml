@@ -1,0 +1,32 @@
+name: 기존 블로그 글 26개 일괄 최신화 (특수기호 제거 및 이중 CTA 적용)
+
+on:
+  workflow_dispatch: # 버튼 클릭 시 즉시 실행
+
+jobs:
+  update_all_existing_posts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 저장소 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 3.11 환경 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 필수 패키지 설치
+        run: |
+          python -m pip install --upgrade pip
+          pip install python-wordpress-xmlrpc requests urllib3 google-genai
+
+      - name: 기존 블로그 글 일괄 보강 스크립트 실행
+        env:
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_PASS: ${{ secrets.WP_PASS }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python scripts/seo_optimize_posts.py
+          python scripts/enrich_existing_posts.py
