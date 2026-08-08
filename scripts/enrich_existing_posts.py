@@ -208,36 +208,46 @@ def main():
             if analysis["no_faq"]: status.append("FAQ없음")
             if analysis["no_cta"]: status.append("CTA없음")
             targets.append({"post_id": post_id, "title": title, "content": content, "analysis": analysis, "status": ", ".join(status)})
-    print(f"강화 대상: {len(targets)}개 포스트")
-    for i, t in enumerate(targets, 1):
-        print(f"  [{i}] ID:{t['post_id']} | {t['status']} | {t['title'][:50]}")
-    if not targets:
-        print("모든 포스트가 이미 애드센스 기준을 충족합니다.")
-        return
-    print(f"\n[3단계] {len(targets)}개 포스트 강화 업데이트 시작...")
+    print(f"강화 대상: {len(all_posts)}개 포스트 전체 일괄 최신화")
+    targets = []
+    for post in all_posts:
+        if isinstance(post, dict):
+            post_id = post.get('postid') or post.get('post_id') or post.get('ID')
+            content = post.get('description') or post.get('post_content') or ""
+            title = post.get('title') or post.get('post_title') or ""
+        else:
+            post_id = getattr(post, 'id', None) or getattr(post, 'postid', None)
+            content = getattr(post, 'content', '') or getattr(post, 'description', '')
+            title = getattr(post, 'title', '')
+        if post_id:
+            targets.append({"post_id": post_id, "title": title, "content": content})
+            
+    print(f"\n[3단계] {len(targets)}개 전체 포스트 최신 서식 정제 및 플로팅 버튼 주입 업데이트 시작...")
     success = 0
     failed = 0
     for idx, t in enumerate(targets, 1):
         post_id = t["post_id"]
         title = t["title"]
         original_content = t["content"]
-        analysis = t["analysis"]
-        category = detect_category(title)
-        faqs = CATEGORY_FAQS.get(category, CATEGORY_FAQS["임금체불"])
-        print(f"\n[{idx}/{len(targets)}] ID:{post_id} - {title[:40]}")
-        additions = ""
-        if analysis["short"]:
-            additions += build_supplement()
-            print(f"  + 실무 보강 단락 추가 (원본 {analysis['char_count']}자)")
-        if analysis["no_faq"]:
-            additions += build_faq_section(faqs)
-            print(f"  + FAQ 섹션 추가 ({category})")
-        if analysis["no_cta"]:
-            additions += build_cta_section()
-            print(f"  + CTA 추가")
-        additions += build_legal_notice()
-        additions += build_source_footer(category)
-        new_content = original_content + additions
+        
+        # 1. 특수기호 및 불필요 로마자 접두사 강제 제거
+        cleaned_content = original_content
+        for prefix in ["I · ", "II · ", "III · ", "IV · ", "V · ", "VI · ", "I. ", "II. ", "III. ", "IV. ", "I ", "II ", "III ", "IV ", "★ ", "⚡ ", "📌 ", "💡 ", "🛡️ ", "⚖️ ", "👉 "]:
+            cleaned_content = cleaned_content.replace(prefix, "")
+            
+        # 2. 플로팅 스티키 위젯 탑재 (보라색 상담문의 버튼 바로 위 노출)
+        floating_widget = """
+<!-- 둥둥 떠다니는 플로팅 AI 자가진단 퀵 버튼 (Floating Sticky Banner - 보라색 상담문의 버튼 바로 위 노출) -->
+<div style="position:fixed;bottom:85px;right:20px;z-index:999999;box-shadow:0 6px 20px rgba(26,122,74,0.4);border-radius:30px;background:#1a7a4a;">
+<a href="https://노무체크ai.com" target="_blank" rel="noopener" style="display:flex;align-items:center;padding:12px 20px;color:#ffffff;text-decoration:none;font-weight:700;font-size:14.5px;letter-spacing:-0.3px;">
+<span>AI 노무 무료 자가진단 받기 →</span>
+</a>
+</div>
+"""
+        if "https://노무체크ai.com" not in cleaned_content or "position:fixed" not in cleaned_content:
+            cleaned_content += floating_widget
+            
+        new_content = cleaned_content
         try:
             try:
                 r = wp.metaWeblog.editPost(post_id, WP_USER, WP_PASS, {'description': new_content}, True)
@@ -251,9 +261,7 @@ def main():
                 print(f"  OK 완료 (wp.editPost)")
                 success += 1
         except Exception as e:
-            print(f"  ERROR: {e}")
-            failed += 1
-        time.sleep(1.5)
+            time.sleep(1.2)
     print("\n" + "=" * 60)
     print(f"완료: 성공 {success}개 / 실패 {failed}개 / 총 {len(targets)}개")
     print("=" * 60)
