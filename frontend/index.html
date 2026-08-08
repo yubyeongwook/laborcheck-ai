@@ -17,20 +17,14 @@
       })();
     </script>
 
-    <!-- Google Analytics (GA4) 연동 스크립트 -->
+    <!-- Google Analytics (GA4) 연동 스크립트 (G-K9CCB9MBGB) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-K9CCB9MBGB"></script>
     <script>
-      const gaId = window.__GA_MEASUREMENT_ID__ || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GA_MEASUREMENT_ID) || '';
-      if (gaId && gaId !== 'G-MEASUREMENT_ID') {
-        const s = document.createElement('script');
-        s.async = true;
-        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
-        document.head.appendChild(s);
-
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', gaId, { send_page_view: true });
-      }
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      const gaId = window.__GA_MEASUREMENT_ID__ || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GA_MEASUREMENT_ID) || 'G-K9CCB9MBGB';
+      gtag('config', gaId, { send_page_view: true });
     </script>
 
     <!-- Open Graph (카카오톡, 페이스북 등 공유 미리보기 설정) -->
