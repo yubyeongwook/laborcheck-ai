@@ -366,7 +366,7 @@ function SeveranceCalculator() {
                   <div>
                     <div style={{ fontWeight: 900, fontSize: '0.88rem' }}>⚖️ 근로기준법 제2조 제2항 통상임금 유리성 소급 적용</div>
                     <div style={{ fontSize: '0.76rem', opacity: 0.95 }}>
-                      평균 1일 임금({result.averageDailyWage.toLocaleString()}원)보다 통상 1일 임금({result.ordinaryDailyWage.toLocaleString()}원)이 더 높아 <strong>통상임금이 법정 자동 소급 적용</strong>되었습니다.
+                      평균 1일 임금({(result?.averageDailyWage || 0).toLocaleString()}원)보다 통상 1일 임금({(result?.ordinaryDailyWage || 0).toLocaleString()}원)이 더 높아 <strong>통상임금이 법정 자동 소급 적용</strong>되었습니다.
                     </div>
                   </div>
                 </div>
@@ -378,10 +378,10 @@ function SeveranceCalculator() {
                   {pensionType === 'dc' ? '💳 DC형 예상 세후 실수령액' : '🏛️ DB형 예상 세후 실수령액'}
                 </div>
                 <div className="result-highlight-value" style={{ color: '#ffffff', fontSize: '1.9rem', fontWeight: 900 }}>
-                  {result.taxInfo.netSeverancePay.toLocaleString()} 원
+                  {(result?.taxInfo?.netSeverancePay || 0).toLocaleString()} 원
                 </div>
                 <div className="result-highlight-sub" style={{ color: '#d1fae5' }}>
-                  세전 퇴직금 {result.severancePay.toLocaleString()}원 | 공제 세금 총 -{result.taxInfo.totalTax.toLocaleString()}원
+                  세전 퇴직금 {(result?.severancePay || 0).toLocaleString()}원 | 공제 세금 총 -{(result?.taxInfo?.totalTax || 0).toLocaleString()}원
                 </div>
               </div>
 
@@ -417,27 +417,27 @@ function SeveranceCalculator() {
               {/* 세부 내역 */}
               <div className="result-row">
                 <span className="result-row-label">세전 예상 퇴직금</span>
-                <span className="result-row-value" style={{ color: '#38bdf8', fontWeight: 800 }}>{result.severancePay.toLocaleString()}원</span>
+                <span className="result-row-value" style={{ color: '#38bdf8', fontWeight: 800 }}>{(result?.severancePay || 0).toLocaleString()}원</span>
               </div>
 
               {pensionType === 'db' && (
                 <>
                   <div className="result-row">
                     <span className="result-row-label">산출 1일 평균임금</span>
-                    <span className="result-row-value">{result.averageDailyWage.toLocaleString()}원</span>
+                    <span className="result-row-value">{(result?.averageDailyWage || 0).toLocaleString()}원</span>
                   </div>
-                  {result.ordinaryDailyWage > 0 && (
+                  {(result?.ordinaryDailyWage || 0) > 0 && (
                     <div className="result-row">
                       <span className="result-row-label">입력 1일 통상임금</span>
-                      <span className="result-row-value" style={{ color: result.isOrdinaryWageApplied ? '#34d399' : '#94a3b8', fontWeight: 800 }}>
-                        {result.ordinaryDailyWage.toLocaleString()}원 {result.isOrdinaryWageApplied && '(적용)'}
+                      <span className="result-row-value" style={{ color: result?.isOrdinaryWageApplied ? '#34d399' : '#94a3b8', fontWeight: 800 }}>
+                        {(result?.ordinaryDailyWage || 0).toLocaleString()}원 {result?.isOrdinaryWageApplied && '(적용)'}
                       </span>
                     </div>
                   )}
                   <div className="result-row">
                     <span className="result-row-label">최종 적용 1일 임금</span>
                     <span className="result-row-value" style={{ color: '#38bdf8', fontWeight: 900 }}>
-                      {result.appliedDailyWage.toLocaleString()}원
+                      {(result?.appliedDailyWage || 0).toLocaleString()}원
                     </span>
                   </div>
                 </>
@@ -446,9 +446,9 @@ function SeveranceCalculator() {
               <div className="result-row">
                 <span className="result-row-label">인정 근속연수 (인정 재직일수)</span>
                 <span className="result-row-value">
-                  {result.tenureYears}년 ({result.totalDays}일)
-                  {result.deductedTenureDays > 0 && (
-                    <span style={{ fontSize: '0.7rem', color: '#38bdf8', marginLeft: '0.3rem' }}>(총 {result.rawTenureDays}일 중 -{result.deductedTenureDays}일 차감)</span>
+                  {result?.tenureYears || 0}년 ({result?.totalDays || 0}일)
+                  {(result?.deductedTenureDays || 0) > 0 && (
+                    <span style={{ fontSize: '0.7rem', color: '#38bdf8', marginLeft: '0.3rem' }}>(총 {result?.rawTenureDays || 0}일 중 -{result?.deductedTenureDays}일 차감)</span>
                   )}
                 </span>
               </div>
@@ -462,23 +462,23 @@ function SeveranceCalculator() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', color: '#cbd5e1' }}>
                   <span>근속연수 공제액:</span>
-                  <span style={{ fontWeight: 700 }}>-{result.taxInfo.tenureDeduction.toLocaleString()} 원</span>
+                  <span style={{ fontWeight: 700 }}>-{(result?.taxInfo?.tenureDeduction || 0).toLocaleString()} 원</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', color: '#cbd5e1' }}>
                   <span>환산급여 과세표준:</span>
-                  <span>{result.taxInfo.taxBase.toLocaleString()} 원</span>
+                  <span>{(result?.taxInfo?.taxBase || 0).toLocaleString()} 원</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', color: '#f87171', fontWeight: 700 }}>
                   <span>🔻 퇴직소득세:</span>
-                  <span>-{result.taxInfo.incomeTax.toLocaleString()} 원</span>
+                  <span>-{(result?.taxInfo?.incomeTax || 0).toLocaleString()} 원</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', color: '#f87171', fontWeight: 700 }}>
                   <span>🔻 지방소득세 (10%):</span>
-                  <span>-{result.taxInfo.localTax.toLocaleString()} 원</span>
+                  <span>-{(result?.taxInfo?.localTax || 0).toLocaleString()} 원</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.3rem', borderTop: '1px solid #334155', color: '#ef4444', fontWeight: 900 }}>
                   <span>총 공제 세금:</span>
-                  <span>-{result.taxInfo.totalTax.toLocaleString()} 원</span>
+                  <span>-{(result?.taxInfo?.totalTax || 0).toLocaleString()} 원</span>
                 </div>
               </div>
 
