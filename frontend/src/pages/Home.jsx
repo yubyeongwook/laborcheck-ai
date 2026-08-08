@@ -295,6 +295,13 @@ export default function Home() {
   const [chatStep, setChatStep] = useState(1);
   const [chatCategory, setChatCategory] = useState('salary'); // 'salary' | 'severance' | 'injury' | 'case' | 'contract'
   const [latestCalcResult, setLatestCalcResult] = useState(null);
+
+  // 💰 퇴직금 전용 구조화 입력 폼 상태
+  const [sevHireDate, setSevHireDate] = useState('2023-01-01');
+  const [sevResignDate, setSevResignDate] = useState('2026-08-08');
+  const [sevMonthlyPay, setSevMonthlyPay] = useState('3000000');
+  const [sevBonus, setSevBonus] = useState('0');
+  const [sevLeavePay, setSevLeavePay] = useState('0');
   
   // 💡 수정한 칸만 반영하고 다음 질문을 다시 묻지 않는 스마트 상태 관리
   const [stepAnswers, setStepAnswers] = useState({});
@@ -504,7 +511,7 @@ export default function Home() {
       initialGreeting = `안녕하세요! **노무체크 AI 근로계약서·취업규칙 검증**입니다. 📄\n\n"${initialText}" 맞춤 양식 작성을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 사장님을 제외하고 **같이 일하는 직원이 몇 분** 정도 되시며 어떤 업종이신가요?`;
     } else if (initialText.includes('퇴직금') || initialText.includes('퇴사')) {
       setChatCategory('severance');
-      initialGreeting = `안녕하세요! **노무체크 AI 법정 퇴직금 정산**입니다. 💰\n\n"${initialText}" 법정 퇴직금 정밀 산출을 위해 전용 질문을 하나씩 여쭤볼게요!\n\n1️⃣ **첫 번째 질문**: **입사일과 퇴사일(또는 예상 퇴사일)**은 언제이신가요?\n*(예: 2023-01-01 입사, 2026-08-08 퇴사)*`;
+      initialGreeting = `안녕하세요! **노무체크 AI 법정 퇴직금 정산**입니다. 💰\n\n0% 오차 정밀 정산을 위해 **아래 퇴직금 계산 폼에서 입사일, 퇴사일, 최근 3개월 세전월급**을 입력하신 후 **[⚡ 법정 퇴직금 3초 정산]** 버튼을 눌러주세요!`;
     } else {
       setChatCategory('salary');
       initialGreeting = `안녕하세요! **노무체크 AI 급여·수당 정산**입니다. 🎩\n\n"${initialText}" 정밀 산출을 위해 **고정밀 8단계 질문**을 하나씩 차근차근 드릴게요! 대화하듯 편하게 답변해 주세요.\n\n1️⃣ **첫 번째 질문**: **시급, 일급, 월급, 포괄임금** 중 어떤 방식으로 급여를 받으시나요?`;
@@ -1422,6 +1429,127 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
                   style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem' }}
                 >
                   ✕ 취소
+                </button>
+              </div>
+            )}
+
+            {/* 💰 퇴직금 전용 스마트 구조화 입력 폼 */}
+            {isChatActive && chatCategory === 'severance' && (
+              <div style={{
+                padding: '1.1rem 1.25rem',
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98))',
+                borderTop: '2px solid #10b981',
+                boxShadow: '0 -10px 25px rgba(0, 0, 0, 0.4)'
+              }}>
+                <div style={{ color: '#10b981', marginBottom: '0.75rem', fontSize: '0.9rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  💰 법정 퇴직금 정밀 정산 폼 (날짜 & 세전 월급 선택)
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.76rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 700 }}>📅 입사일</label>
+                    <input
+                      type="date"
+                      value={sevHireDate}
+                      onChange={(e) => setSevHireDate(e.target.value)}
+                      style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#0f172a', color: '#fff', border: '1px solid #334155', fontSize: '0.82rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.76rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 700 }}>📆 퇴사일 (예상일)</label>
+                    <input
+                      type="date"
+                      value={sevResignDate}
+                      onChange={(e) => setSevResignDate(e.target.value)}
+                      style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#0f172a', color: '#fff', border: '1px solid #334155', fontSize: '0.82rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem', marginBottom: '0.85rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.74rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 700 }}>💵 최근 3개월 세전월급</label>
+                    <input
+                      type="number"
+                      step="100000"
+                      value={sevMonthlyPay}
+                      onChange={(e) => setSevMonthlyPay(e.target.value)}
+                      placeholder="예: 3000000"
+                      style={{ width: '100%', padding: '0.45rem 0.5rem', borderRadius: '6px', background: '#0f172a', color: '#fff', border: '1px solid #334155', fontSize: '0.82rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.74rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 700 }}>🎁 최근 1년 상여금 총액</label>
+                    <input
+                      type="number"
+                      step="100000"
+                      value={sevBonus}
+                      onChange={(e) => setSevBonus(e.target.value)}
+                      placeholder="예: 0"
+                      style={{ width: '100%', padding: '0.45rem 0.5rem', borderRadius: '6px', background: '#0f172a', color: '#fff', border: '1px solid #334155', fontSize: '0.82rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.74rem', color: '#cbd5e1', display: 'block', marginBottom: '0.25rem', fontWeight: 700 }}>🌴 최근 1년 연차수당</label>
+                    <input
+                      type="number"
+                      step="100000"
+                      value={sevLeavePay}
+                      onChange={(e) => setSevLeavePay(e.target.value)}
+                      placeholder="예: 0"
+                      style={{ width: '100%', padding: '0.45rem 0.5rem', borderRadius: '6px', background: '#0f172a', color: '#fff', border: '1px solid #334155', fontSize: '0.82rem' }}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!sevHireDate || !sevResignDate) {
+                      alert('입사일과 퇴사일을 정확히 선택해 주세요.');
+                      return;
+                    }
+                    const monthlyPayNum = parseFloat(sevMonthlyPay) || 0;
+                    if (monthlyPayNum <= 0) {
+                      alert('최근 3개월 세전월급을 입력해 주세요.');
+                      return;
+                    }
+
+                    const bonusNum = parseFloat(sevBonus) || 0;
+                    const leavePayNum = parseFloat(sevLeavePay) || 0;
+
+                    const recentThreeMonthsPay = monthlyPayNum * 3;
+                    const recentThreeMonthsDays = 92;
+
+                    const sevResult = calculateSeverancePay({
+                      hireDateStr: sevHireDate,
+                      resignDateStr: sevResignDate,
+                      recentThreeMonthsPay,
+                      recentThreeMonthsDays,
+                      annualBonus: bonusNum,
+                      annualLeavePay: leavePayNum,
+                      companySize: '5인 이상'
+                    });
+
+                    if (!sevResult || (!sevResult.isEligible && sevResult.totalDays < 365)) {
+                      const errorMsg = `### 💰 법정 퇴직금 정산 리포트\n\n- 📅 **총 재직일수**: **${sevResult ? sevResult.totalDays : 0}일**\n- 🔴 **퇴직금 지급 대상 미달**: 근로자퇴직급여 보장법 제4조에 따라 계속 근로기간이 **1년(365일) 이상**이어야 법정 퇴직금이 발생합니다.`;
+                      setMessages(prev => [...prev, { sender: 'secretary', text: errorMsg }]);
+                      return;
+                    }
+
+                    const replyText = `### 💰 법정 퇴직금 정산 리포트\n\n입력해주신 폼 조건(**입사일: ${sevHireDate} / 퇴사일: ${sevResignDate} / 세전월급: ${monthlyPayNum.toLocaleString()}원 / 상여금: ${bonusNum.toLocaleString()}원 / 연차수당: ${leavePayNum.toLocaleString()}원**)을 바탕으로 **근로자퇴직급여 보장법 정산 엔진**이 산출한 100% 동적 결과입니다:\n\n- 📅 **총 재직일수**: **${sevResult.totalDays.toLocaleString()}일** (${(sevResult.totalDays / 365).toFixed(2)}년 재직)\n- 💵 **3개월 평균임금 (1일당)**: **${sevResult.averageDailyWage.toLocaleString()}원/일** ${sevResult.isOrdinaryWageApplied ? '(※ 통상임금 하한선 보장 적용)' : ''}\n- 💰 **최종 법정 세전 퇴직금**: **${sevResult.severancePay.toLocaleString()}원**\n- 🏦 **예상 퇴직소득세 (참고용)**: 약 **${sevResult.taxInfo ? sevResult.taxInfo.estimatedTax.toLocaleString() : 0}원** (실수령 약 **${(sevResult.severancePay - (sevResult.taxInfo ? sevResult.taxInfo.estimatedTax : 0)).toLocaleString()}원**)\n\n*(※ 1년 이상 계속 근로 및 주 15시간 이상 근무 시 100% 발생하며 퇴사 후 14일 이내 지급 의무가 적용됩니다)*`;
+
+                    setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+                    setIsCalculatedOnce(true);
+                  }}
+                  style={{
+                    width: '100%', padding: '0.65rem', borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #059669, #10b981)',
+                    color: '#ffffff', fontWeight: 800, border: 'none', cursor: 'pointer', fontSize: '0.9rem',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
+                  }}
+                >
+                  ⚡ 법정 퇴직금 3초 정산하기
                 </button>
               </div>
             )}
