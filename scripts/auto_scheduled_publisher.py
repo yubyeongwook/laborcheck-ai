@@ -4,6 +4,7 @@ import random
 import time
 import ssl
 import re
+import hashlib
 from datetime import datetime
 import collections
 import collections.abc
@@ -649,13 +650,18 @@ def get_wp_client():
             
     raise Exception("모든 워드프레스 XML-RPC 접속 URL에 실패했습니다.")
 
+def topic_key(topic):
+    """주제의 안정적인 식별자. base_title 텍스트가 나중에 안 바뀌는 한 고유하게 유지됨."""
+    return hashlib.md5(topic["base_title"].encode("utf-8")).hexdigest()[:12]
+
 def fetch_existing_posts(wp):
-    """기존 발행된 글 목록 및 카테고리별 개수 분석"""
+    """기존 발행된 글 목록, 카테고리별 개수, 이미 사용된 주제 키 분석"""
     try:
-        recent_posts = wp.call(GetPosts({'number': 50, 'post_type': 'post'}))
+        recent_posts = wp.call(GetPosts({'number': 50, 'post_type': 'post'}, ['post_title', 'custom_fields']))
         titles = set()
         category_counts = collections.defaultdict(int)
-        
+        used_topic_keys = set()
+
         for p in recent_posts:
             if hasattr(p, 'title') and p.title:
                 clean_title = p.title.strip()
@@ -663,11 +669,15 @@ def fetch_existing_posts(wp):
             if hasattr(p, 'terms_names') and 'category' in p.terms_names:
                 for cat in p.terms_names['category']:
                     category_counts[cat] += 1
-                    
-        return recent_posts, titles, category_counts
+            if hasattr(p, 'custom_fields') and p.custom_fields:
+                for cf in p.custom_fields:
+                    if cf.get('key') == 'lc_topic_key':
+                        used_topic_keys.add(cf.get('value'))
+
+        return recent_posts, titles, category_counts, used_topic_keys
     except Exception as e:
         log(f"WARNING: 기존 포스트 목록 조회 실패 - {e}")
-        return [], set(), collections.defaultdict(int)
+        return [], set(), collections.defaultdict(int), set()
 
 # 카테고리별 Unsplash 이미지 풀 (매 발행마다 랜덤 선택)
 CATEGORY_IMAGE_POOL = {
@@ -913,7 +923,7 @@ def publish():
         log(f"CRITICAL ERROR: 워드프레스 서버 접속 불가 - {e}")
         return False
 
-    recent_posts, existing_titles, category_counts = fetch_existing_posts(wp)
+    recent_posts, existing_titles, category_counts, used_topic_keys = fetch_existing_posts(wp)
 
     # 현재 시간대에 적합한 주제 선별
     if hour < 10:
@@ -923,15 +933,8 @@ def publish():
     else:
         slot = "evening"
 
-    # 기존 발행된 글에 포함된 base_title 확인
-    used_base_titles = set()
-    for et in existing_titles:
-        for t_item in HIGH_TRAFFIC_TOPICS:
-            if t_item["base_title"][:15] in et:
-                used_base_titles.add(t_item["base_title"])
-
-    # 아직 안 쓴 미발행 토픽만 선별
-    fresh_candidates = [t for t in HIGH_TRAFFIC_TOPICS if t["base_title"] not in used_base_titles]
+    # 이미 발행된 주제는 워드프레스 custom_fields(lc_topic_key)로 추적 (제목이 나중에 바뀌어도 안전)
+    fresh_candidates = [t for t in HIGH_TRAFFIC_TOPICS if topic_key(t) not in used_topic_keys]
 
     if fresh_candidates:
         slot_candidates = [t for t in fresh_candidates if t["slot"] == slot]
@@ -976,6 +979,7 @@ def publish():
         post.excerpt = clean_excerpt
         post.terms_names = {'category': [category]}
         post.post_status = 'publish'
+        post.custom_fields = [{'key': 'lc_topic_key', 'value': topic_key(topic)}]
 
         post_id = wp.call(NewPost(post))
         post_url = f"http://www.laborcheckai.co.kr/?p={post_id}"
