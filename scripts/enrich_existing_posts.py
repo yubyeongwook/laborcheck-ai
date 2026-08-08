@@ -239,22 +239,32 @@ def main():
         title = t["title"]
         original_content = t["content"]
         
-        # 1. 특수기호 및 불필요 로마자 접두사 강제 제거
+        # 1. 기존 중복된 짙은 초록색 통박스 및 특수기호/로마자 강제 싹 제거
         cleaned_content = original_content
         for prefix in ["I · ", "II · ", "III · ", "IV · ", "V · ", "VI · ", "I. ", "II. ", "III. ", "IV. ", "I ", "II ", "III ", "IV ", "★ ", "⚡ ", "📌 ", "💡 ", "🛡️ ", "⚖️ ", "👉 "]:
             cleaned_content = cleaned_content.replace(prefix, "")
             
-        # 2. 첫 화면 상단 100% 노출형 대형 AI 무료 자가진단 카드 (글을 열자마자 첫 화면에서 보임!)
-        top_ai_box = """
-<!-- ⚡ 첫 화면 상단 100% 노출형 AI 무료 자가진단 카드 -->
-<div style="background:linear-gradient(135deg, #1a7a4a 0%, #0d4a2b 100%);color:#ffffff;padding:18px 20px;margin:18px 0 24px 0;border-radius:10px;text-align:center;box-shadow:0 6px 18px rgba(26,122,74,0.25);">
-  <strong style="font-size:17px;color:#ffffff;display:block;margin-bottom:6px;">⚡ 노무체크 AI 3초 무료 자가진단 서비스</strong>
-  <p style="margin:0 0 12px 0;font-size:14px;color:#e0f2fe;line-height:1.5;">내 근로수당, 퇴직금, 해고예고수당 정당성 여부를 AI가 3초 만에 무상으로 자동 정산해 드립니다.</p>
-  <a href="https://노무체크ai.com" target="_blank" rel="noopener" style="background:#ffffff;color:#1a7a4a;padding:12px 24px;border-radius:30px;text-decoration:none;font-weight:800;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-    👉 노무체크 AI 무료 자가진단 시작하기 (노무체크ai.com) →
+        # 기존 중복 주입된 모든 자가진단 박스 HTML 싹 삭제 정제
+        cleaned_content = re.sub(r'<!-- ⚡.*?</div>', '', cleaned_content, flags=re.DOTALL)
+        cleaned_content = re.sub(r'<div[^>]*background:\s*linear-gradient.*?</div>\s*</div>', '', cleaned_content, flags=re.DOTALL)
+        cleaned_content = re.sub(r'<div[^>]*background:\s*#1a7a4a.*?</div>\s*</div>', '', cleaned_content, flags=re.DOTALL)
+            
+        # 2. 오직 단 1개의 세련되고 깔끔한 본문 자가진단 카드만 정갈하게 배치
+        single_slim_card = """
+<!-- ⚡ 세련되고 깔끔한 본문 상단 AI 무료 자가진단 카드 (단 1개만 배치) -->
+<div style="background:#f0fff5;border:1.5px solid #1a7a4a;padding:16px 20px;margin:20px 0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <div>
+    <strong style="color:#1a7a4a;font-size:15.5px;display:block;margin-bottom:3px;">노무체크 AI 3초 무료 자가진단 서비스</strong>
+    <span style="color:#4a5568;font-size:13.5px;">내 퇴직금, 주휴수당, 해고예고수당 정당성 여부를 3초 만에 무상으로 자동 정산해 드립니다.</span>
+  </div>
+  <a href="https://노무체크ai.com" target="_blank" rel="noopener" style="background:#1a7a4a;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;white-space:nowrap;box-shadow:0 3px 8px rgba(26,122,74,0.2);">
+    무료 자가진단 시작하기 (노무체크ai.com) →
   </a>
 </div>
 """
+        # 상단 요약 박스 직후에 단 1개의 카드를 깨끗하게 결합
+        cleaned_content = single_slim_card + cleaned_content
+            
         # 3. 플로팅 스티키 위젯 탑재 (보라색 상담문의 버튼 바로 위 노출)
         floating_widget = """
 <!-- 둥둥 떠다니는 플로팅 AI 자가진단 퀵 버튼 (Floating Sticky Banner - 보라색 상담문의 버튼 바로 위 노출) -->
@@ -264,11 +274,7 @@ def main():
 </a>
 </div>
 """
-        # 상단 카드가 없으면 상단에 강제 삽입
-        if "노무체크 AI 3초 무료 자가진단 서비스" not in cleaned_content:
-            cleaned_content = top_ai_box + cleaned_content
-
-        if "https://노무체크ai.com" not in cleaned_content or "position:fixed" not in cleaned_content:
+        if "position:fixed" not in cleaned_content:
             cleaned_content += floating_widget
             
         new_content = cleaned_content
