@@ -495,19 +495,19 @@ export default function Home() {
     
     if (initialText.includes('판사') || initialText.includes('소송') || initialText.includes('재판') || initialText.includes('변호사') || initialText.includes('민사') || initialText.includes('불승인')) {
       setChatCategory('case');
-      initialGreeting = `안녕하세요! 노무체크 AI **판사·법원재판 수석**입니다. ⚖️\n\n"${initialText}" 관련 대법원 판례 대조 및 승소 가능성 정밀 진단을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 어떤 사안(산재 불승인, 부당해고, 임금체불 등)으로 정밀 법률 진단이 필요하신가요?`;
+      initialGreeting = `안녕하세요! **노무체크 AI 법원 판례 분석**입니다. ⚖️\n\n"${initialText}" 관련 대법원 판례 대조 및 정밀 진단을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 어떤 사안(산재 불승인, 부당해고, 임금체불 등)으로 정밀 법률 진단이 필요하신가요?`;
     } else if (initialText.includes('산재') || initialText.includes('진단서') || initialText.includes('다침') || initialText.includes('첨부파일')) {
       setChatCategory('injury');
-      initialGreeting = `안녕하세요! 노무check AI **산재보상 수석 에이전트**입니다. 🩺\n\n"${initialText}" 산재 승인 및 예상 휴업급여 정밀 분석을 위해 질문을 하나씩 차근차근 드릴게요!\n\n1️⃣ **첫 번째 질문**: 언제, 어떤 상황(작업 중 부상, 출퇴근 길 사고, 직업병 등)에서 사고/질병이 발생하셨나요?`;
+      initialGreeting = `안녕하세요! **노무체크 AI 산재보상 진단**입니다. 🩺\n\n"${initialText}" 산재 승인 및 예상 휴업급여 정밀 분석을 위해 질문을 하나씩 차근차근 드릴게요!\n\n1️⃣ **첫 번째 질문**: 언제, 어떤 상황(작업 중 부상, 출퇴근 길 사고, 직업병 등)에서 사고/질병이 발생하셨나요?`;
     } else if (initialText.includes('취업규칙') || initialText.includes('계약서') || initialText.includes('유통') || initialText.includes('마트') || initialText.includes('기간제')) {
       setChatCategory('contract');
-      initialGreeting = `안녕하세요! 노무체크 AI **근로계약서·취업규칙 수석**입니다. 📄\n\n"${initialText}" 맞춤 양식 작성을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 사장님을 제외하고 **같이 일하는 직원이 몇 분** 정도 되시며 어떤 업종이신가요?`;
+      initialGreeting = `안녕하세요! **노무체크 AI 근로계약서·취업규칙 검증**입니다. 📄\n\n"${initialText}" 맞춤 양식 작성을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 사장님을 제외하고 **같이 일하는 직원이 몇 분** 정도 되시며 어떤 업종이신가요?`;
     } else if (initialText.includes('퇴직금') || initialText.includes('퇴사')) {
       setChatCategory('severance');
-      initialGreeting = `안녕하세요! 노무체크 AI **퇴직금 수석 에이전트**입니다. 💰\n\n"${initialText}" 법정 퇴직금 정밀 산출을 위해 전용 질문을 하나씩 여쭤볼게요!\n\n1️⃣ **첫 번째 질문**: **입사일과 퇴사일(또는 예상 퇴사일)**은 언제이신가요?\n*(예: 2023-01-01 입사, 2026-08-08 퇴사)*`;
+      initialGreeting = `안녕하세요! **노무체크 AI 법정 퇴직금 정산**입니다. 💰\n\n"${initialText}" 법정 퇴직금 정밀 산출을 위해 전용 질문을 하나씩 여쭤볼게요!\n\n1️⃣ **첫 번째 질문**: **입사일과 퇴사일(또는 예상 퇴사일)**은 언제이신가요?\n*(예: 2023-01-01 입사, 2026-08-08 퇴사)*`;
     } else {
       setChatCategory('salary');
-      initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 0% 오차 정밀 산출을 위해 **고정밀 8단계 질문**을 하나씩 차근차근 드릴게요! 대화하듯 편하게 답변해 주세요.\n\n1️⃣ **첫 번째 질문**: **시급, 일급, 월급, 포괄임금** 중 어떤 방식으로 급여를 받으시나요?`;
+      initialGreeting = `안녕하세요! **노무체크 AI 급여·수당 정산**입니다. 🎩\n\n"${initialText}" 정밀 산출을 위해 **고정밀 8단계 질문**을 하나씩 차근차근 드릴게요! 대화하듯 편하게 답변해 주세요.\n\n1️⃣ **첫 번째 질문**: **시급, 일급, 월급, 포괄임금** 중 어떤 방식으로 급여를 받으시나요?`;
     }
 
     setMessages([
@@ -962,7 +962,7 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
               companySize: '5인 이상'
             });
 
-            replyText = `### 💰 퇴직금 수석 에이전트 [동적 법정 퇴직금 정산 리포트]\n\n입력해주신 정보(**재직기간: ${startStr} ~ ${endStr} (${sevResult.totalDays.toLocaleString()}일) / 세전월급: ${monthlySalaryInput.toLocaleString()}원 / 상여금: ${annualBonusInput.toLocaleString()}원**)를 바탕으로 **실제 근로자퇴직급여 보장법 정산 엔진**이 산출한 동적 결과입니다:\n\n- 📅 **총 재직일수**: **${sevResult.totalDays.toLocaleString()}일** (${(sevResult.totalDays / 365).toFixed(2)}년 재직)\n- 💵 **3개월 평균임금 (1일당)**: **${sevResult.dailyAvgWage.toLocaleString()}원/일**\n- 💰 **최종 법정 세전 퇴직금**: **${sevResult.severancePay.toLocaleString()}원**\n\n*(※ 1년 이상 계속 근로 및 주 15시간 이상 근무 시 100% 발생하며 퇴사 후 14일 이내 지급 의무가 적용됩니다)*`;
+            replyText = `### 💰 법정 퇴직금 정산 리포트\n\n입력해주신 정보(**재직기간: ${startStr} ~ ${endStr} (${sevResult.totalDays.toLocaleString()}일) / 세전월급: ${monthlySalaryInput.toLocaleString()}원 / 상여금: ${annualBonusInput.toLocaleString()}원**)를 바탕으로 **실제 근로자퇴직급여 보장법 정산 엔진**이 산출한 동적 결과입니다:\n\n- 📅 **총 재직일수**: **${sevResult.totalDays.toLocaleString()}일** (${(sevResult.totalDays / 365).toFixed(2)}년 재직)\n- 💵 **3개월 평균임금 (1일당)**: **${sevResult.dailyAvgWage.toLocaleString()}원/일**\n- 💰 **최종 법정 세전 퇴직금**: **${sevResult.severancePay.toLocaleString()}원**\n\n*(※ 1년 이상 계속 근로 및 주 15시간 이상 근무 시 100% 발생하며 퇴사 후 14일 이내 지급 의무가 적용됩니다)*`;
             setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
             setIsCalculatedOnce(true);
           }
@@ -979,7 +979,7 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
           const injuryPayDailyEst = Math.round(dailyAvgEst * 0.7);
           const injuryPayMonthlyEst = Math.round(injuryPayDailyEst * 30);
 
-          replyText = `### 🩺 산재보상 수석 에이전트 [동적 70% 휴업급여 진단]\n\n입력해주신 내용(**"${userText}"**) 기반 동적 산재 휴업급여 추정 결과입니다:\n\n- 💰 **추정 평균임금(1일)**: 약 **${dailyAvgEst.toLocaleString()}원/일**\n- 🏥 **1일당 휴업급여 (평균임금 70%)**: **${injuryPayDailyEst.toLocaleString()}원/일**\n- 📅 **월 환산 예상 휴업급여 (30일 기준)**: **${injuryPayMonthlyEst.toLocaleString()}원**\n\n*(※ 요양급여(치료비 전액)는 공단 100% 승인 시 전액 비과세 지원됩니다)*`;
+          replyText = `### 🩺 산재보상 70% 휴업급여 진단 리포트\n\n입력해주신 내용(**"${userText}"**) 기반 동적 산재 휴업급여 추정 결과입니다:\n\n- 💰 **추정 평균임금(1일)**: 약 **${dailyAvgEst.toLocaleString()}원/일**\n- 🏥 **1일당 휴업급여 (평균임금 70%)**: **${injuryPayDailyEst.toLocaleString()}원/일**\n- 📅 **월 환산 예상 휴업급여 (30일 기준)**: **${injuryPayMonthlyEst.toLocaleString()}원**\n\n*(※ 요양급여(치료비 전액)는 공단 100% 승인 시 전액 비과세 지원됩니다)*`;
           setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
         } 
         else if (userText.includes('판사') || userText.includes('소송') || userText.includes('재판') || userText.includes('변호사') || userText.includes('민사') || userText.includes('불승인')) {
@@ -1243,10 +1243,10 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
                 </div>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
-                    노무비서실장 <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 600 }}>(1:1 실시간 자문 & 서류 AI 분석)</span>
+                    노무체크 AI <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: 600 }}>(1:1 실시간 자문 & 서류 AI 분석)</span>
                   </h3>
                   <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>
-                    5대 전문 수석 에이전트 & 산재 진단서/급여 서류 Vision 분석
+                    노무 전문 AI & 산재 진단서/급여 서류 Vision 분석
                   </p>
                 </div>
               </div>
@@ -2227,7 +2227,7 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
         </div>
       </section>
 
-      {/* 👥 AI 7대 전문 수석 에이전트 팀 전면 공개 */}
+      {/* 👥 노무체크 AI 전문 솔루션 팀 */}
       <section style={{ marginBottom: '3.5rem', background: 'rgba(15, 23, 42, 0.5)', padding: '2.5rem 1.8rem', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div className="glow-badge" style={{ marginBottom: '0.75rem', borderColor: '#a5b4fc', color: '#a5b4fc', background: 'rgba(165, 180, 252, 0.12)' }}>

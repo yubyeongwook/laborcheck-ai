@@ -311,7 +311,7 @@ export default function GovernmentGrantModal({ isOpen, onClose }) {
               고용지원금 무료 매칭 신청이 등록되었습니다!
             </h4>
             <p style={{ color: '#cbd5e1', fontSize: '0.88rem', margin: '0 0 1rem' }}>
-              정책자금 전문 수석 매니저가 1시간 내로 (<strong>{phone}</strong>)로 매칭 가능 여부를 안내드립니다.
+              정책자금 전문 매니저가 1시간 내로 (<strong>{phone}</strong>)로 매칭 가능 여부를 안내드립니다.
             </p>
             <button onClick={() => setApplied(false)} style={{ padding: '0.5rem 1.2rem', borderRadius: '8px', background: '#334155', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}>
               추가 신청하기
