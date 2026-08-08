@@ -293,6 +293,7 @@ export default function Home() {
   const [showPayslipModal, setShowPayslipModal] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
   const [chatStep, setChatStep] = useState(1);
+  const [chatCategory, setChatCategory] = useState('salary'); // 'salary' | 'severance' | 'injury' | 'case' | 'contract'
   const [latestCalcResult, setLatestCalcResult] = useState(null);
   
   // 💡 수정한 칸만 반영하고 다음 질문을 다시 묻지 않는 스마트 상태 관리
@@ -493,14 +494,19 @@ export default function Home() {
     let initialGreeting = '';
     
     if (initialText.includes('판사') || initialText.includes('소송') || initialText.includes('재판') || initialText.includes('변호사') || initialText.includes('민사') || initialText.includes('불승인')) {
+      setChatCategory('case');
       initialGreeting = `안녕하세요! 노무체크 AI **판사·법원재판 수석**입니다. ⚖️\n\n"${initialText}" 관련 대법원 판례 대조 및 승소 가능성 정밀 진단을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 어떤 사안(산재 불승인, 부당해고, 임금체불 등)으로 정밀 법률 진단이 필요하신가요?`;
     } else if (initialText.includes('산재') || initialText.includes('진단서') || initialText.includes('다침') || initialText.includes('첨부파일')) {
+      setChatCategory('injury');
       initialGreeting = `안녕하세요! 노무check AI **산재보상 수석 에이전트**입니다. 🩺\n\n"${initialText}" 산재 승인 및 예상 휴업급여 정밀 분석을 위해 질문을 하나씩 차근차근 드릴게요!\n\n1️⃣ **첫 번째 질문**: 언제, 어떤 상황(작업 중 부상, 출퇴근 길 사고, 직업병 등)에서 사고/질병이 발생하셨나요?`;
     } else if (initialText.includes('취업규칙') || initialText.includes('계약서') || initialText.includes('유통') || initialText.includes('마트') || initialText.includes('기간제')) {
+      setChatCategory('contract');
       initialGreeting = `안녕하세요! 노무체크 AI **근로계약서·취업규칙 수석**입니다. 📄\n\n"${initialText}" 맞춤 양식 작성을 위해 질문을 하나씩 드릴게요!\n\n1️⃣ **첫 번째 질문**: 사장님을 제외하고 **같이 일하는 직원이 몇 분** 정도 되시며 어떤 업종이신가요?`;
     } else if (initialText.includes('퇴직금') || initialText.includes('퇴사')) {
-      initialGreeting = `안녕하세요! 노무체크 AI **퇴직금 수석 에이전트**입니다. 💰\n\n"${initialText}" 0% 오차 정밀 산출을 위해 질문을 하나씩 여쭤볼게요!\n\n1️⃣ **첫 번째 질문**: **입사일과 퇴사일(또는 예상 퇴사일)**은 언제이신가요?`;
+      setChatCategory('severance');
+      initialGreeting = `안녕하세요! 노무체크 AI **퇴직금 수석 에이전트**입니다. 💰\n\n"${initialText}" 법정 퇴직금 정밀 산출을 위해 전용 질문을 하나씩 여쭤볼게요!\n\n1️⃣ **첫 번째 질문**: **입사일과 퇴사일(또는 예상 퇴사일)**은 언제이신가요?\n*(예: 2023-01-01 입사, 2026-08-08 퇴사)*`;
     } else {
+      setChatCategory('salary');
       initialGreeting = `안녕하세요! 노무체크 AI **노무비서실장**입니다. 🎩\n\n"${initialText}" 0% 오차 정밀 산출을 위해 **고정밀 8단계 질문**을 하나씩 차근차근 드릴게요! 대화하듯 편하게 답변해 주세요.\n\n1️⃣ **첫 번째 질문**: **시급, 일급, 월급, 포괄임금** 중 어떤 방식으로 급여를 받으시나요?`;
     }
 
@@ -895,7 +901,73 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
 
         let replyText = '';
 
-        if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
+        if (chatCategory === 'severance') {
+          if (activeStep === 1) {
+            setChatStep(2);
+            replyText = `네, 입사일/퇴사일(**"${userText}"**)을 정밀 확인했습니다! 💰\n\n2️⃣ **두 번째 질문**: 퇴사 전 최근 3개월 동안 받으셨던 **세전 월급(기본급+수당)**은 얼마이신가요?\n*(예: 세전 300만원 또는 250만)*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+          } else if (activeStep === 2) {
+            setChatStep(3);
+            replyText = `네, 최근 3개월 세전 월급(**"${userText}"**)을 확인했습니다! 💰\n\n3️⃣ **세 번째 질문**: 매년 정기적으로 받으시는 **연간 상여금 총액**이나 **미사용 연차수당**이 있으신가요?\n*(예: 상여금 200만원, 연차 50만원 / 없으시면 "0원" 또는 "없음")*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+          } else {
+            // 💡 3단계 답변 완료: 실제 입력받은 입사일/퇴사일, 세전월급, 상여금을 기반으로 calculateSeverancePay() 동적 호출!
+            const dateText = stepAnswers[1] || '';
+            const salaryText = stepAnswers[2] || userText;
+            const bonusText = userText;
+
+            // 1. 월급 파싱
+            const salMatch = salaryText.replace(/,/g, '').match(/\d+/);
+            let monthlySalaryInput = 3000000;
+            if (salMatch) {
+              let p = parseInt(salMatch[0], 10);
+              if (p < 10000 && p >= 100) p *= 10000;
+              if (p >= 100000) monthlySalaryInput = p;
+            }
+
+            // 2. 상여금/연차 파싱
+            const bonusMatch = bonusText.replace(/,/g, '').match(/\d+/);
+            let annualBonusInput = 0;
+            if (bonusMatch) {
+              let b = parseInt(bonusMatch[0], 10);
+              if (b < 10000 && b >= 10) b *= 10000;
+              annualBonusInput = b;
+            }
+
+            // 3. 입사일/퇴사일 연도 및 날짜 파싱
+            const dateMatches = dateText.match(/(20\d{2}[.\-/년\s]*\d{1,2}[.\-/월\s]*\d{1,2})|(20\d{2})/g);
+            let startStr = '2023-01-01';
+            let endStr = '2026-08-08';
+
+            if (dateMatches && dateMatches.length >= 2) {
+              const parseSingleDate = (rawStr) => {
+                const nums = rawStr.match(/\d+/g);
+                if (nums && nums.length >= 3) {
+                  return `${nums[0]}-${String(nums[1]).padStart(2, '0')}-${String(nums[2]).padStart(2, '0')}`;
+                } else if (nums && nums.length >= 1) {
+                  return `${nums[0]}-01-01`;
+                }
+                return '2023-01-01';
+              };
+              startStr = parseSingleDate(dateMatches[0]);
+              endStr = parseSingleDate(dateMatches[1]);
+            }
+
+            const sevResult = calculateSeverancePay({
+              startDate: startStr,
+              endDate: endStr,
+              monthlySalary: monthlySalaryInput,
+              annualBonus: annualBonusInput,
+              annualLeaveAllowance: 0,
+              companySize: '5인 이상'
+            });
+
+            replyText = `### 💰 퇴직금 수석 에이전트 [동적 법정 퇴직금 정산 리포트]\n\n입력해주신 정보(**재직기간: ${startStr} ~ ${endStr} (${sevResult.totalDays.toLocaleString()}일) / 세전월급: ${monthlySalaryInput.toLocaleString()}원 / 상여금: ${annualBonusInput.toLocaleString()}원**)를 바탕으로 **실제 근로자퇴직급여 보장법 정산 엔진**이 산출한 동적 결과입니다:\n\n- 📅 **총 재직일수**: **${sevResult.totalDays.toLocaleString()}일** (${(sevResult.totalDays / 365).toFixed(2)}년 재직)\n- 💵 **3개월 평균임금 (1일당)**: **${sevResult.dailyAvgWage.toLocaleString()}원/일**\n- 💰 **최종 법정 세전 퇴직금**: **${sevResult.severancePay.toLocaleString()}원**\n\n*(※ 1년 이상 계속 근로 및 주 15시간 이상 근무 시 100% 발생하며 퇴사 후 14일 이내 지급 의무가 적용됩니다)*`;
+            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
+            setIsCalculatedOnce(true);
+          }
+        }
+        else if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
           const numMatch = userText.replace(/,/g, '').match(/\d+/);
           let monthlyEst = 2500000;
           if (numMatch) {
@@ -918,41 +990,8 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
           replyText = `### 📄 근로계약서·취업규칙 AI 검증 [독소조항 자율점검]\n\n입력해주신 사안(**"${userText}"**)에 대한 근로기준법 강행규정 대조 결과입니다:\n\n- ⚠️ **필수 확인 3대 독소조항**: (1) 무단 퇴사 시 임금 감액 위약금 약정 ➔ **무효 (근로기준법 제20조)** (2) 휴게시간 미부여 ➔ **위반** (3) 주휴수당 미지급 포괄 약정 ➔ **무효**.\n- 💡 **맞춤 서식 작성을 위해 전용 서류센터 이동을 권장합니다.**`;
           setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
         }
-        else if (userText.includes('퇴직금') || userText.includes('퇴사')) {
-          // 💡 진짜 동적 수학 정산 엔진 calculateSeverancePay() 바인딩
-          const numMatch = userText.replace(/,/g, '').match(/\d+/);
-          let monthlySalaryInput = 3000000;
-          if (numMatch) {
-            let parsed = parseInt(numMatch[0], 10);
-            if (parsed < 10000 && parsed >= 100) parsed *= 10000;
-            if (parsed >= 100000) monthlySalaryInput = parsed;
-          }
-
-          // 입력받은 유저 텍스트 내 연도/날짜 추출 (없으면 2023-01-01 ~ 오늘 동적 산출)
-          const yearMatch = userText.match(/(20\d{2})/g);
-          let startY = 2023, endY = 2026;
-          if (yearMatch && yearMatch.length >= 2) {
-            startY = parseInt(yearMatch[0], 10);
-            endY = parseInt(yearMatch[1], 10);
-          }
-
-          const startDateStr = `${startY}-01-01`;
-          const endDateStr = `${endY}-08-08`;
-
-          const sevResult = calculateSeverancePay({
-            startDate: startDateStr,
-            endDate: endDateStr,
-            monthlySalary: monthlySalaryInput,
-            annualBonus: 0,
-            annualLeaveAllowance: 0,
-            companySize: '5인 이상'
-          });
-
-          replyText = `### 💰 퇴직금 수석 에이전트 [동적 법정 퇴직금 정산 리포트]\n\n입력해주신 정보(**재직기간: ${startDateStr} ~ ${endDateStr} / 세전월급: ${monthlySalaryInput.toLocaleString()}원**)를 기반으로 **실제 근로자퇴직급여 보장법 정산 엔진**이 산출한 결과입니다:\n\n- 📅 **총 재직일수**: **${sevResult.totalDays.toLocaleString()}일** (${(sevResult.totalDays / 365).toFixed(2)}년 재직)\n- 💵 **3개월 평균임금 (1일당)**: **${sevResult.dailyAvgWage.toLocaleString()}원/일**\n- 💰 **최종 법정 세전 퇴직금**: **${sevResult.severancePay.toLocaleString()}원**\n\n*(※ 1년 이상 계속 근로 및 주 15시간 이상 근무 시 100% 발생하며 퇴사 후 14일 이내 지급 의무가 적용됩니다)*`;
-          setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
-        }
         else {
-          // 최초 순차 질문 진행
+          // 최초 순차 질문 진행 (급여 계산용)
           if (activeStep === 1) {
             setChatStep(2);
             const typeStr = userText.includes('시급') ? '시급' : userText.includes('일급') ? '일급' : userText.includes('포괄') ? '포괄임금' : '월급';
@@ -1857,38 +1896,61 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
                 <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <Sparkles size={14} color="#38bdf8" /> 원클릭 답변 선택:
                 </span>
-                {STEP_CHOICE_OPTIONS[editingStep || chatStep].map((opt, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSendMessage(null, opt.value)}
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))',
-                      border: '1px solid rgba(56, 189, 248, 0.45)',
-                      color: '#ffffff',
-                      borderRadius: '20px',
-                      padding: '0.45rem 0.9rem',
-                      fontSize: '0.82rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(56, 189, 248, 0.3)';
-                      e.currentTarget.style.borderColor = '#38bdf8';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))';
-                      e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.45)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                {(() => {
+                  let options = STEP_CHOICE_OPTIONS[editingStep || chatStep] || [];
+                  if (chatCategory === 'severance') {
+                    const step = editingStep || chatStep;
+                    if (step === 1) {
+                      options = [
+                        { label: '📅 2023-01-01 입사 ~ 2026-08-08 퇴사', value: '2023-01-01 입사, 2026-08-08 퇴사' },
+                        { label: '📆 2020-05-01 입사 ~ 2025-05-01 퇴사', value: '2020-05-01 입사, 2025-05-01 퇴사' }
+                      ];
+                    } else if (step === 2) {
+                      options = [
+                        { label: '💰 세전 300만원', value: '세전 300만원' },
+                        { label: '💵 세전 250만원', value: '세전 250만원' },
+                        { label: '💎 세전 400만원', value: '세전 400만원' }
+                      ];
+                    } else if (step === 3) {
+                      options = [
+                        { label: '🎁 상여금 200만원 / 연차수당 50만원', value: '상여금 200만원, 연차수당 50만원' },
+                        { label: '❌ 상여금 및 연차수당 없음 (0원)', value: '상여금 및 연차수당 없음' }
+                      ];
+                    }
+                  }
+                  return options.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSendMessage(null, opt.value)}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))',
+                        border: '1px solid rgba(56, 189, 248, 0.45)',
+                        color: '#ffffff',
+                        borderRadius: '20px',
+                        padding: '0.45rem 0.9rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(56, 189, 248, 0.3)';
+                        e.currentTarget.style.borderColor = '#38bdf8';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))';
+                        e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.45)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ));
+                })()}
               </div>
             )}
 
