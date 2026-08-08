@@ -914,18 +914,7 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
           setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
         }
         else if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
-          const numMatch = userText.replace(/,/g, '').match(/\d+/);
-          let monthlyEst = 2500000;
-          if (numMatch) {
-            let parsed = parseInt(numMatch[0], 10);
-            if (parsed < 10000 && parsed >= 100) parsed *= 10000;
-            if (parsed >= 1000000) monthlyEst = parsed;
-          }
-          const dailyAvgEst = Math.round(monthlyEst / 30);
-          const injuryPayDailyEst = Math.round(dailyAvgEst * 0.7);
-          const injuryPayMonthlyEst = Math.round(injuryPayDailyEst * 30);
-
-          replyText = `### 🩺 산재보상 70% 휴업급여 진단 리포트\n\n입력해주신 내용(**"${userText}"**) 기반 동적 산재 휴업급여 추정 결과입니다:\n\n- 💰 **추정 평균임금(1일)**: 약 **${dailyAvgEst.toLocaleString()}원/일**\n- 🏥 **1일당 휴업급여 (평균임금 70%)**: **${injuryPayDailyEst.toLocaleString()}원/일**\n- 📅 **월 환산 예상 휴업급여 (30일 기준)**: **${injuryPayMonthlyEst.toLocaleString()}원**\n\n*(※ 요양급여(치료비 전액)는 공단 100% 승인 시 전액 비과세 지원됩니다)*`;
+          replyText = `### 🩺 산재보상 70% 휴업급여 안내\n\n산재 요양급여(치료비 전액 비과세) 및 휴업급여(평균임금 70%)의 승인 여부는 의무기록 및 근로복지공단의 전문 심사가 필요합니다.\n\n- 🏥 **휴업급여 지원 요건**: 업무상 재해로 4일 이상 요양이 필요한 경우 지급 (산업재해보상보험법 제52조)\n- 💰 **휴업급여 산정 기준**: 평균임금의 70% (단, 최저임금액 미달 시 최저임금액을 최저보장액으로 지급)\n- 📋 **신청 절차**: 병원 진단서 첨부 ➔ 근로복지공단 요양급여 신청서 제출`;
           setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
         } 
         else if (userText.includes('판사') || userText.includes('소송') || userText.includes('재판') || userText.includes('변호사') || userText.includes('민사') || userText.includes('불승인')) {
