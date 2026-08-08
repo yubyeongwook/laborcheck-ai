@@ -2156,10 +2156,10 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.98rem', color: '#ffffff', fontWeight: 800 }}>
-                        예상 세전 월급 <span style={{ color: '#38bdf8' }}>{latestCalcResult.totalGross.toLocaleString()}원</span>
+                        예상 세전 월급 <span style={{ color: '#38bdf8' }}>{(latestCalcResult?.totalGross || 0).toLocaleString()}원</span>
                       </span>
                       <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
-                        (기본급 {latestCalcResult.basePay.toLocaleString()}원 + 연장수당 {latestCalcResult.overtimePay.toLocaleString()}원{latestCalcResult.mealPay ? ' + 식대 20만' : ''})
+                        (기본급 {(latestCalcResult?.basePay || 0).toLocaleString()}원 + 연장수당 {(latestCalcResult?.overtimePay || 0).toLocaleString()}원{latestCalcResult?.mealPay ? ' + 식대 20만' : ''})
                       </span>
                     </div>
                   </div>
