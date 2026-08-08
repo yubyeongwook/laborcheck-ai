@@ -31,13 +31,12 @@ jobs:
 
       - name: 노무체크 AI 시리즈 포스팅 자동 발행 실행
         env:
-          WP_USER: ${{ secrets.WP_USER }}
-          WP_PASS: ${{ secrets.WP_PASS }}
+          WP_USER: ${{ secrets.WP_USER || 'user' }}
+          WP_PASS: ${{ secrets.WP_PASS || '***REMOVED_PASSWORD***' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           KAKAO_ACCESS_TOKEN: ${{ secrets.KAKAO_ACCESS_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          python scripts/enrich_existing_posts.py
           python scripts/auto_scheduled_publisher.py
