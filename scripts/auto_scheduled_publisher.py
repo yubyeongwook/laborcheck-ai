@@ -998,33 +998,35 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
     fact = topic["fact"]
     img_url = pick_random_image(category)
     
-    # 앵글 및 테마 동적 다각화 (매 발행 시 100% 다른 색상/서식/배지 적용)
+    # 앵글 및 테마 동적 다각화 (특수기호 없이 정갈한 서식 적용)
     angles = [
-        {"prefix": "[근로자 권리 구제]", "intro_title": "💡 근로자 핵심 권리 점검 포인트", "bg": "#f0fff5", "border": "#1a7a4a", "badge_bg": "#1a7a4a"},
-        {"prefix": "[사업주 리스크 예방]", "intro_title": "🛡️ 사업주 필독 인사노무 관리 수칙", "bg": "#f0f4ff", "border": "#1a3a6b", "badge_bg": "#1a3a6b"},
-        {"prefix": "[최신 판례 해설]", "intro_title": "⚖️ 대법원 판례 및 노동청 행정해석 포인트", "bg": "#fffbe6", "border": "#d48806", "badge_bg": "#d48806"},
+        {"prefix": "[근로자 권리 구제]", "intro_title": "근로자 핵심 권리 점검 포인트", "bg": "#f0fff5", "border": "#1a7a4a", "badge_bg": "#1a7a4a"},
+        {"prefix": "[사업주 리스크 예방]", "intro_title": "사업주 필독 인사노무 관리 수칙", "bg": "#f0f4ff", "border": "#1a3a6b", "badge_bg": "#1a3a6b"},
+        {"prefix": "[최신 판례 해설]", "intro_title": "대법원 판례 및 노동청 행정해석 포인트", "bg": "#fffbe6", "border": "#d48806", "badge_bg": "#d48806"},
     ]
     angle = random.choice(angles)
 
-    # 소제목 특수문자 (I ·, II ·, III ·, IV · 등) 제거 정제
+    # 특수기호 및 불필요한 이모티콘/로마자 접두사 정제 함수
     def clean_title(t):
-        for prefix in ["I · ", "II · ", "III · ", "IV · ", "V · ", "VI · ", "I. ", "II. ", "III. ", "IV. "]:
+        special_prefixes = ["I · ", "II · ", "III · ", "IV · ", "V · ", "VI · ", "I. ", "II. ", "III. ", "IV. ", "★ ", "⚡ ", "📌 ", "💡 ", "🛡️ ", "⚖️ ", "👉 "]
+        for prefix in special_prefixes:
             t = t.replace(prefix, "")
-        return t.strip()
+        return re.sub(r"[^\w\s\d\.\,\(\)\-\%가-힣]", "", t).strip()
 
     clean_h1 = clean_title(topic['h1'])
     clean_h2 = clean_title(topic['h2'])
     clean_h3 = clean_title(topic['h3'])
     clean_h4 = clean_title(topic['h4'])
 
-    # 애드센스 고품질 FAQ 추출 (랜덤 순서 조율)
+    # 애드센스 고품질 FAQ 추출 (특수기호 정제)
     faqs = CATEGORY_FAQS.get(category, CATEGORY_FAQS["산재보상"])
     shuffled_faqs = random.sample(faqs, len(faqs))
     faq_html = ""
     for q, a in shuffled_faqs:
+        clean_q = clean_title(q)
         faq_html += f"""
 <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:16px;border-radius:8px;margin-bottom:12px;">
-<strong style="color:#1e3a8a;font-size:15px;">{q}</strong>
+<strong style="color:#1e3a8a;font-size:15px;">{clean_q}</strong>
 <p style="margin:8px 0 0 0;color:#334155;font-size:14.5px;line-height:1.7;">{a}</p>
 </div>
 """
@@ -1078,20 +1080,20 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 
 {faq_html}
 
-<!-- 📌 함께 읽으면 돈이 되는 연관 노무 가이드 (내부 링크 SEO 강화) -->
+<!-- 함께 읽으면 도움이 되는 연관 노무 가이드 -->
 <div style="background:#f8f9fa;border:1px solid #e9ecef;border-left:4px solid #1a3a6b;padding:16px;margin:24px 0;border-radius:6px;">
-<strong style="color:#1a3a6b;font-size:15px;">📌 함께 읽으면 도움이 되는 연관 노무 가이드</strong>
+<strong style="color:#1a3a6b;font-size:15px;">함께 읽으면 도움이 되는 연관 노무 가이드</strong>
 <ul style="margin:10px 0 0 0;padding-left:20px;line-height:1.8;font-size:14px;color:#333;">
-  <li><a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="color:#1a7a4a;font-weight:600;text-decoration:underline;">👉 2026 최저임금 10320원 209시간 월급 산식 및 실수령액 정산 가이드</a></li>
-  <li><a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="color:#1a7a4a;font-weight:600;text-decoration:underline;">👉 5인 미만 사업장 갑작스러운 구두 해고 시 30일분 해고예고수당 100% 청구법</a></li>
-  <li><a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="color:#1a7a4a;font-weight:600;text-decoration:underline;">👉 주 15시간 미만 쪼개기 계약 초단기 알바 주휴수당 소급 정산 실무 가이드</a></li>
+  <li><a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="color:#1a7a4a;font-weight:600;text-decoration:underline;">2026 최저임금 10320원 209시간 월급 산식 및 실수령액 정산 가이드</a></li>
+  <li><a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="color:#1a7a4a;font-weight:600;text-decoration:underline;">5인 미만 사업장 갑작스러운 구두 해고 시 30일분 해고예고수당 100% 청구법</a></li>
+  <li><a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="color:#1a7a4a;font-weight:600;text-decoration:underline;">주 15시간 미만 쪼개기 계약 초단기 알바 주휴수당 소급 정산 실무 가이드</a></li>
 </ul>
 </div>
 
-<!-- ⚡ 노무체크 AI 3초 무료 진단 CTA -->
+<!-- 노무체크 AI 3초 무료 진단 CTA -->
 <div style="text-align:center;margin:28px 0">
 <a href="https://노무체크ai.com/?calc=1" target="_blank" rel="noopener" style="background:#1a7a4a;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(26,122,74,0.3);">
-⚡ 노무체크 AI 3초 무료 진단받기 →
+노무체크 AI 무료 자가진단 시작하기 →
 </a>
 </div>
 
@@ -1103,7 +1105,7 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 
 <!-- 출처 푸터 -->
 <p style="font-size:12px;color:#888;border-top:1px solid #eee;padding-top:10px;margin-top:20px">
-📌 <strong>검증된 출처 및 참고 링크</strong><br>
+<strong>검증된 출처 및 참고 링크</strong><br>
 - 근거 법령: {law}<br>
 - 공식 기관: <a href="https://www.moel.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">고용노동부 (moel.go.kr)</a> | <a href="https://www.comwel.or.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">근로복지공단 (comwel.or.kr)</a> | <a href="https://www.law.go.kr" target="_blank" rel="noopener" style="color:#1a7a4a;text-decoration:underline;">국가법령정보센터 (law.go.kr)</a>
 </p>
