@@ -1426,8 +1426,8 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
               </div>
             )}
 
-            {/* 🕒 3단계 전용: 고정 vs 요일별 변동 근무 스케줄러 스마트 입력 폼 */}
-            {isChatActive && (editingStep || chatStep) === 3 && (
+            {/* 🕒 3단계 전용: 급여 계산 시 고정 vs 요일별 변동 근무 스케줄러 스마트 입력 폼 */}
+            {isChatActive && chatCategory === 'salary' && (editingStep || chatStep) === 3 && (
               <div style={{
                 padding: '1.1rem 1.25rem',
                 background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98))',
