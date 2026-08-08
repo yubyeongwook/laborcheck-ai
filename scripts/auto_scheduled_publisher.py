@@ -914,11 +914,11 @@ def verify_quality_checklist(html_content, title):
     return all_passed
 
 def generate_ai_article(existing_titles, category_counts):
-    """Claude API로 매번 새로운 노무 글감(주제)과 본문 소재를 생성.
+    """Gemini API로 매번 새로운 노무 글감(주제)과 본문 소재를 생성.
     반환값은 generate_v2_post_html()이 기대하는 topic dict와 동일한 형태."""
-    import anthropic
+    from google import genai as google_genai
 
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    client = google_genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     valid_categories = list(SERIES_MAP.keys())
     recent_sample = list(existing_titles)[:40]
 
@@ -960,14 +960,17 @@ def generate_ai_article(existing_titles, category_counts):
         "실질적으로 도움되는 주제를 우선하세요.)"
     )
 
-    response = client.messages.create(
-        model="claude-sonnet-5",
-        max_tokens=2000,
-        system=system_prompt,
-        messages=[{"role": "user", "content": user_prompt}],
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=user_prompt,
+        config={
+            "system_instruction": system_prompt,
+            "response_mime_type": "application/json",
+            "max_output_tokens": 2000,
+        },
     )
 
-    raw_text = response.content[0].text.strip()
+    raw_text = response.text.strip()
     if raw_text.startswith("```"):
         raw_text = re.sub(r"^```[a-zA-Z]*\n", "", raw_text)
         raw_text = re.sub(r"\n```\s*$", "", raw_text)
@@ -1007,17 +1010,17 @@ def publish():
     else:
         slot = "evening"
 
-    # 1순위: Claude API로 매번 새 글감을 직접 생성. 실패하면 사전 정의 주제 DB로 대체.
+    # 1순위: Gemini API로 매번 새 글감을 직접 생성. 실패하면 사전 정의 주제 DB로 대체.
     topic = None
-    if os.environ.get("ANTHROPIC_API_KEY"):
+    if os.environ.get("GEMINI_API_KEY"):
         try:
             topic = generate_ai_article(existing_titles, category_counts)
             topic["slot"] = slot
-            log(f"SUCCESS: Claude API로 신규 글감 생성 완료 -> {topic['base_title']}")
+            log(f"SUCCESS: Gemini API로 신규 글감 생성 완료 -> {topic['base_title']}")
         except Exception as e:
             log(f"WARNING: AI 글감 생성 실패, 사전 정의 주제 DB로 대체 - {e}")
     else:
-        log("NOTICE: ANTHROPIC_API_KEY 미설정 - 사전 정의 주제 DB 사용")
+        log("NOTICE: GEMINI_API_KEY 미설정 - 사전 정의 주제 DB 사용")
 
     if topic is None:
         # 이미 발행된 주제는 워드프레스 custom_fields(lc_topic_key)로 추적 (제목이 나중에 바뀌어도 안전)
