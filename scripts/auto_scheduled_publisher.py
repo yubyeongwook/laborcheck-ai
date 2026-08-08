@@ -1010,12 +1010,45 @@ def publish():
     else:
         slot = "evening"
 
+    def pick_db_topic():
+        # 이미 발행된 주제는 워드프레스 custom_fields(lc_topic_key)로 추적 (제목이 나중에 바뀌어도 안전)
+        fresh_candidates = [t for t in HIGH_TRAFFIC_TOPICS if topic_key(t) not in used_topic_keys]
+        if fresh_candidates:
+            slot_candidates = [t for t in fresh_candidates if t["slot"] == slot]
+            return random.choice(slot_candidates) if slot_candidates else random.choice(fresh_candidates)
+        slot_candidates = [t for t in HIGH_TRAFFIC_TOPICS if t["slot"] == slot] or HIGH_TRAFFIC_TOPICS
+        return random.choice(slot_candidates)
+
+    def build_from_topic(topic_dict):
+        category = topic_dict["category"]
+        series_tag = SERIES_MAP.get(category, f"{category} 시리즈")
+        episode_num = category_counts[category] + 1
+        raw_title = topic_dict["base_title"]
+        final_title = f"[{series_tag} #{episode_num}] {raw_title}"
+
+        # 기존 발행 제목과 중복 체크
+        if final_title in existing_titles or any(raw_title in t for t in existing_titles):
+            suffixes = [
+                "- 2026년 실무 적용 가이드",
+                "- 근로자 사업주 필수 체크사항",
+                "- 최신 판례 및 소급 정산 해설",
+                "- 노무 전문가 심화 해설"
+            ]
+            suffix = random.choice(suffixes)
+            final_title = f"[{series_tag} #{episode_num}] {raw_title} {suffix}"
+            log(f"NOTICE: 기존 제목 중복 감지되어 부제목 추가 변형 적용 -> {final_title}")
+
+        html = generate_v2_post_html(topic_dict, final_title, series_tag, episode_num)
+        return category, series_tag, episode_num, raw_title, final_title, html
+
     # 1순위: Gemini API로 매번 새 글감을 직접 생성. 실패하면 사전 정의 주제 DB로 대체.
     topic = None
+    ai_generated = False
     if os.environ.get("GEMINI_API_KEY"):
         try:
             topic = generate_ai_article(existing_titles, category_counts)
             topic["slot"] = slot
+            ai_generated = True
             log(f"SUCCESS: Gemini API로 신규 글감 생성 완료 -> {topic['base_title']}")
         except Exception as e:
             log(f"WARNING: AI 글감 생성 실패, 사전 정의 주제 DB로 대체 - {e}")
@@ -1023,43 +1056,24 @@ def publish():
         log("NOTICE: GEMINI_API_KEY 미설정 - 사전 정의 주제 DB 사용")
 
     if topic is None:
-        # 이미 발행된 주제는 워드프레스 custom_fields(lc_topic_key)로 추적 (제목이 나중에 바뀌어도 안전)
-        fresh_candidates = [t for t in HIGH_TRAFFIC_TOPICS if topic_key(t) not in used_topic_keys]
+        topic = pick_db_topic()
 
-        if fresh_candidates:
-            slot_candidates = [t for t in fresh_candidates if t["slot"] == slot]
-            topic = random.choice(slot_candidates) if slot_candidates else random.choice(fresh_candidates)
-        else:
-            slot_candidates = [t for t in HIGH_TRAFFIC_TOPICS if t["slot"] == slot] or HIGH_TRAFFIC_TOPICS
-            topic = random.choice(slot_candidates)
-
-    category = topic["category"]
-    series_tag = SERIES_MAP.get(category, f"{category} 시리즈")
-    episode_num = category_counts[category] + 1
-    raw_title = topic["base_title"]
-    final_title = f"[{series_tag} #{episode_num}] {raw_title}"
-
-    # 기존 발행 제목과 중복 체크
-    if final_title in existing_titles or any(raw_title in t for t in existing_titles):
-        suffixes = [
-            "- 2026년 실무 적용 가이드",
-            "- 근로자 사업주 필수 체크사항",
-            "- 최신 판례 및 소급 정산 해설",
-            "- 노무 전문가 심화 해설"
-        ]
-        suffix = random.choice(suffixes)
-        final_title = f"[{series_tag} #{episode_num}] {raw_title} {suffix}"
-        log(f"NOTICE: 기존 제목 중복 감지되어 부제목 추가 변형 적용 -> {final_title}")
+    category, series_tag, episode_num, raw_title, final_title, html_content = build_from_topic(topic)
 
     log(f"선정된 타깃 슬롯: [{slot}] | 카테고리: {category} | 회차: #{episode_num}")
     log(f"최종 발행 제목: {final_title}")
 
-    html_content = generate_v2_post_html(topic, final_title, series_tag, episode_num)
-
-    # 자가 품질 체크
+    # 자가 품질 체크. AI 생성 글이 미달이면 실제로 폐기하고 검증된 템플릿 DB로 대체 발행.
     quality_ok = verify_quality_checklist(html_content, final_title)
-    if not quality_ok:
-        log("WARNING: 품질 자가 체크 항목 중 일부분 미달. 보정 후 발행 진행.")
+    if not quality_ok and ai_generated:
+        log("WARNING: AI 생성 글이 품질 체크 미달 - 검증된 주제 DB로 대체 발행")
+        topic = pick_db_topic()
+        category, series_tag, episode_num, raw_title, final_title, html_content = build_from_topic(topic)
+        quality_ok = verify_quality_checklist(html_content, final_title)
+        log(f"대체본 품질 체크 결과: {'PASS' if quality_ok else 'FAIL (그래도 발행 진행)'}")
+        log(f"대체 발행 제목: {final_title}")
+    elif not quality_ok:
+        log("WARNING: 품질 자가 체크 항목 중 일부분 미달. 그대로 발행 진행 (사전 정의 템플릿).")
 
     try:
         clean_excerpt = f"1. {raw_title}\n2. 근로기준법 및 관련 법령 조문 기반 정밀 해설 가이드"
