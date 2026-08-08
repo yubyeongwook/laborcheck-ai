@@ -154,10 +154,19 @@ def detect_category(title):
 
 def connect_wp():
     ssl_ctx = ssl._create_unverified_context()
-    transport = xmlrpc.client.SafeTransport(context=ssl_ctx)
-    for url in WP_URLS:
+    safe_trans = xmlrpc.client.SafeTransport(context=ssl_ctx)
+    norm_trans = xmlrpc.client.Transport()
+    
+    urls = [
+        "http://www.laborcheckai.co.kr/xmlrpc.php",
+        "https://www.laborcheckai.co.kr/xmlrpc.php",
+        "http://43.200.245.223/xmlrpc.php",
+        "https://43.200.245.223/xmlrpc.php"
+    ]
+    for url in urls:
         try:
-            wp = xmlrpc.client.ServerProxy(url, transport=transport)
+            t = safe_trans if url.startswith("https") else norm_trans
+            wp = xmlrpc.client.ServerProxy(url, transport=t)
             wp.wp.getOptions(1, WP_USER, WP_PASS)
             print(f"[연결 성공] {url}")
             return wp, url
