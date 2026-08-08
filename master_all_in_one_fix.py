@@ -10,8 +10,8 @@ from wordpress_xmlrpc import Client, WordPressPost
 from wordpress_xmlrpc.methods.posts import GetPosts, GetPost, EditPost
 
 WP_URL = "https://www.laborcheckai.co.kr/xmlrpc.php"
-WP_USER = "user"
-WP_PASS = "***REMOVED_PASSWORD***"
+WP_USER = os.environ["WP_USER"]
+WP_PASS = os.environ["WP_PASS"]
 TARGET_SITE = "https://노무체크ai.com/?calc=1"
 
 # 1. 포스트별 100% 완벽한 정식 제목 및 가독성 요약문(엔터 줄바꿈 포함) 전수 테이블
