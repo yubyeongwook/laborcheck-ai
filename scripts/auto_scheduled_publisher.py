@@ -1121,22 +1121,35 @@ def verify_quality_checklist(html_content, title):
             
     return all_passed
 
-def research_labor_law_facts(recent_sample, category_counts):
-    """1단계(검색/리서치): 구글 검색 연동으로 실제 법 조문·판례를 찾아 근거 텍스트를 확보.
-    이 결과가 2단계 작성 프롬프트의 유일한 사실 출처가 되어 환각을 줄인다."""
+def research_labor_law_facts(recent_sample, category_counts, slot="morning"):
+    """1단계(검색/리서치): 슬롯별 전략적 구글 실시간 검색 연동.
+    - morning: 실시간 최다 검색량 1위 핫이슈 집중 바이럴 모드
+    - noon/evening: 12대 카테고리 순환 지속 노출 알짜 롱테일 모드
+    """
     from google import genai as google_genai
     from google.genai import types
 
     client = google_genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-
     valid_categories = list(SERIES_MAP.keys())
 
+    if slot == "morning":
+        mode_instruction = (
+            "🔥 [오전 실시간 핫 이슈 1위 모드] 오늘 날짜 기준 대한민국 네이버 및 구글에서 "
+            "사업주와 근로자가 가장 많이 검색하고 있는 실시간 검색량 1위 핫이슈 노무 키워드 및 "
+            "오늘의 최신 개정 노동 법령/판례 뉴스를 즉시 검색하여 분석하세요."
+        )
+    else:
+        mode_instruction = (
+            "📈 [점심/저녁 카테고리 롱테일 모드] 12대 전문 카테고리 중 아직 다루지 않은 "
+            "지속 유입형 알짜 롱테일 검색 키워드를 선택하고 구글 검색으로 실제 조문과 판례 팩트를 리서치하세요."
+        )
+
     research_prompt = (
-        f"오늘 날짜({datetime.now().strftime('%Y년 %m월 %d일')}) 기준 대한민국 네이버 및 구글에서 "
-        "사업주와 근로자가 실시간으로 가장 많이 검색하는 실질적 핫이슈 노무 키워드 및 최신 노동법령 이슈를 검색하여 분석하세요.\n\n"
+        f"오늘 날짜({datetime.now().strftime('%Y년 %m월 %d일')})\n"
+        f"{mode_instruction}\n\n"
         f"대상 12개 카테고리: {', '.join(valid_categories)}\n\n"
-        "아래 이미 발행된 주제와 겹치지 않는 오늘자 최신 핫 트렌드 질문 주제를 하나 선정하고, "
-        "구글 검색을 통해 관련 최신 근로기준법, 최저임금법, 대법원 판례, 노동부 보도자료 팩트를 정밀하게 조사하여 정리하세요.\n\n"
+        "아래 이미 발행된 주제와 겹치지 않는 주제를 선정하고, "
+        "구글 검색을 통해 관련 최신 근로기준법, 최저임금법, 대법원 판례, 노동부 보도자료 팩트를 조사하여 정리하세요.\n\n"
         "조문 번호나 판례가 실제 확인되지 않으면 절대 지어내지 말고 '조문 번호 미확인'으로 처리하세요.\n\n"
         "최근 발행 제목 목록:\n" + "\n".join(f"- {t}" for t in recent_sample)
         + f"\n\n카테고리별 기존 발행 수: {dict(category_counts)}"
@@ -1154,38 +1167,38 @@ def research_labor_law_facts(recent_sample, category_counts):
         raise ValueError("실시간 트렌드 리서치 단계에서 빈 응답을 받았습니다.")
     return research_text
 
-def generate_ai_article(existing_titles, category_counts):
-    """Gemini API로 그날그날 실시간 구글 검색 트렌드를 분석하여 최신 노무 이슈 글감과 본문 소재를 생성."""
+def generate_ai_article(existing_titles, category_counts, slot="morning"):
+    """Gemini API로 하이브리드 전략(오전: 실시간 1위 실검 핫이슈, 점심/저녁: 12대 카테고리 롱테일) 글감과 본문 소재를 생성."""
     from google import genai as google_genai
 
     client = google_genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     valid_categories = list(SERIES_MAP.keys())
     recent_sample = list(existing_titles)[:40]
 
-    # 1단계: 실시간 구글 검색 트렌드 탐색 및 실제 법령/판례 팩트 리서치
-    research_text = research_labor_law_facts(recent_sample, category_counts)
-    log("NOTICE: 실시간 트렌드 리서치 단계 결과 요약 -> " + research_text[:300].replace("\n", " "))
+    # 1단계: 하이브리드 실시간 구글 검색 트렌드 탐색 및 팩트 리서치
+    research_text = research_labor_law_facts(recent_sample, category_counts, slot=slot)
+    log(f"NOTICE: [{slot.upper()} 모드] 리서치 결과 요약 -> " + research_text[:300].replace("\n", " "))
 
-    system_prompt = f"""당신은 대한민국 실시간 노무 트렌드 전문 작가입니다. '노무체크 AI' 블로그에 들어갈 최신 실검색 팩트 글을 씁니다.
+    system_prompt = f"""당신은 대한민국 대표 노무 팩트 전문 작가입니다. '노무체크 AI' 블로그에 실릴 최고 품질의 글을 작성합니다.
 
-독자: 오늘 노무 문제로 구글/네이버에 질문을 검색하는 사업주와 근로자
-제목/소제목 톤: 오늘 실시간으로 검색창에 입력하는 친근한 질문형·실생활 언어를 사용하세요. (예: "알바 주휴수당 쪼개기 계약 청구 되나요?", "수습기간 3개월 최저임금 90% 위법인가요?").
+독자: 노무 문제로 구글/네이버에 질문을 검색하는 사업주와 근로자
+제목/소제목 톤: 친근한 질문형·실생활 언어를 사용하세요. (예: "알바 주휴수당 쪼개기 계약 청구 되나요?", "수습기간 3개월 최저임금 90% 위법인가요?").
 
 카테고리는 반드시 다음 12개 중 하나만 선택하세요: {', '.join(valid_categories)}
 
-**매우 중요**: 아래 [실시간 검색 리서치 결과]의 팩트만 근거로 작성하고 조문번호나 판례를 절대 새로 지어내지 마세요.
+**매우 중요**: 아래 [검색 리서치 결과]의 팩트만 근거로 작성하고 조문번호나 판례를 절대 새로 지어내지 마세요.
 
 다른 설명 없이 아래 JSON 객체 하나만 응답하세요:
 {{
-  "category": "위 6개 카테고리 중 하나",
+  "category": "위 12개 카테고리 중 하나",
   "base_title": "검색의도형 제목 (20~40자, 논문투 금지)",
-  "law": "핵심 근거 법령명 (리서치 결과에 조문번호가 있으면 포함, 예: 근로기준법 제26조)",
+  "law": "핵심 근거 법령명 (리서치 결과 조문번호 포함)",
   "fact": "핵심 팩트 한 줄 요약",
   "h1": "소제목 1 (실생활 언어)",
   "h2": "소제목 2",
   "h3": "소제목 3",
   "h4": "소제목 4",
-  "p1": "소제목1 본문 단락 (150~250자, 리서치 결과의 법령 근거 포함)",
+  "p1": "소제목1 본문 단락 (150~250자)",
   "p2": "소제목2 본문 단락",
   "p3": "소제목3 본문 단락",
   "p4": "소제목4 본문 단락",
@@ -1286,7 +1299,7 @@ def publish():
     ai_generated = False
     if os.environ.get("GEMINI_API_KEY"):
         try:
-            topic = generate_ai_article(existing_titles, category_counts)
+            topic = generate_ai_article(existing_titles, category_counts, slot=slot)
             topic["slot"] = slot
             ai_generated = True
             log(f"SUCCESS: Gemini API로 신규 글감 생성 완료 -> {topic['base_title']}")
