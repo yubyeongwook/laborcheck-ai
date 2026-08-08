@@ -909,70 +909,9 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
         let replyText = '';
 
         if (chatCategory === 'severance') {
-          if (activeStep === 1) {
-            setChatStep(2);
-            replyText = `네, 입사일/퇴사일(**"${userText}"**)을 정밀 확인했습니다! 💰\n\n2️⃣ **두 번째 질문**: 퇴사 전 최근 3개월 동안 받으셨던 **세전 월급(기본급+수당)**은 얼마이신가요?\n*(예: 세전 300만원 또는 250만)*`;
-            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
-          } else if (activeStep === 2) {
-            setChatStep(3);
-            replyText = `네, 최근 3개월 세전 월급(**"${userText}"**)을 확인했습니다! 💰\n\n3️⃣ **세 번째 질문**: 매년 정기적으로 받으시는 **연간 상여금 총액**이나 **미사용 연차수당**이 있으신가요?\n*(예: 상여금 200만원, 연차 50만원 / 없으시면 "0원" 또는 "없음")*`;
-            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
-          } else {
-            // 💡 3단계 답변 완료: 실제 입력받은 입사일/퇴사일, 세전월급, 상여금을 기반으로 calculateSeverancePay() 동적 호출!
-            const dateText = stepAnswers[1] || '';
-            const salaryText = stepAnswers[2] || userText;
-            const bonusText = userText;
-
-            // 1. 월급 파싱
-            const salMatch = salaryText.replace(/,/g, '').match(/\d+/);
-            let monthlySalaryInput = 3000000;
-            if (salMatch) {
-              let p = parseInt(salMatch[0], 10);
-              if (p < 10000 && p >= 100) p *= 10000;
-              if (p >= 100000) monthlySalaryInput = p;
-            }
-
-            // 2. 상여금/연차 파싱
-            const bonusMatch = bonusText.replace(/,/g, '').match(/\d+/);
-            let annualBonusInput = 0;
-            if (bonusMatch) {
-              let b = parseInt(bonusMatch[0], 10);
-              if (b < 10000 && b >= 10) b *= 10000;
-              annualBonusInput = b;
-            }
-
-            // 3. 입사일/퇴사일 연도 및 날짜 파싱
-            const dateMatches = dateText.match(/(20\d{2}[.\-/년\s]*\d{1,2}[.\-/월\s]*\d{1,2})|(20\d{2})/g);
-            let startStr = '2023-01-01';
-            let endStr = '2026-08-08';
-
-            if (dateMatches && dateMatches.length >= 2) {
-              const parseSingleDate = (rawStr) => {
-                const nums = rawStr.match(/\d+/g);
-                if (nums && nums.length >= 3) {
-                  return `${nums[0]}-${String(nums[1]).padStart(2, '0')}-${String(nums[2]).padStart(2, '0')}`;
-                } else if (nums && nums.length >= 1) {
-                  return `${nums[0]}-01-01`;
-                }
-                return '2023-01-01';
-              };
-              startStr = parseSingleDate(dateMatches[0]);
-              endStr = parseSingleDate(dateMatches[1]);
-            }
-
-            const sevResult = calculateSeverancePay({
-              startDate: startStr,
-              endDate: endStr,
-              monthlySalary: monthlySalaryInput,
-              annualBonus: annualBonusInput,
-              annualLeaveAllowance: 0,
-              companySize: '5인 이상'
-            });
-
-            replyText = `### 💰 법정 퇴직금 정산 리포트\n\n입력해주신 정보(**재직기간: ${startStr} ~ ${endStr} (${sevResult.totalDays.toLocaleString()}일) / 세전월급: ${monthlySalaryInput.toLocaleString()}원 / 상여금: ${annualBonusInput.toLocaleString()}원**)를 바탕으로 **실제 근로자퇴직급여 보장법 정산 엔진**이 산출한 동적 결과입니다:\n\n- 📅 **총 재직일수**: **${sevResult.totalDays.toLocaleString()}일** (${(sevResult.totalDays / 365).toFixed(2)}년 재직)\n- 💵 **3개월 평균임금 (1일당)**: **${sevResult.dailyAvgWage.toLocaleString()}원/일**\n- 💰 **최종 법정 세전 퇴직금**: **${sevResult.severancePay.toLocaleString()}원**\n\n*(※ 1년 이상 계속 근로 및 주 15시간 이상 근무 시 100% 발생하며 퇴사 후 14일 이내 지급 의무가 적용됩니다)*`;
-            setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
-            setIsCalculatedOnce(true);
-          }
+          // 💡 퇴직금은 패널 하단의 구조화 입력 폼에서 입사일/퇴사일/월급을 입력받아 정산합니다.
+          replyText = `💡 **[퇴직금 정밀 정산 폼 입력 안내]**\n\n아래 퇴직금 입력 폼에서 **입사일, 퇴사일, 최근 3개월 세전월급**을 입력하신 후 **[⚡ 법정 퇴직금 3초 정산하기]** 버튼을 눌러주세요!`;
+          setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
         }
         else if (currentFile || userText.includes('진단서') || userText.includes('산재') || userText.includes('소견서') || userText.includes('다침')) {
           const numMatch = userText.replace(/,/g, '').match(/\d+/);
