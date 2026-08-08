@@ -1044,14 +1044,13 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 3. {topic['summary_3']}
 </div>
 
-<!-- ⚡ 세련되고 깔끔한 본문 상단 AI 무료 자가진단 카드 -->
-<div style="background:#f0fff5;border:1.5px solid #1a7a4a;padding:16px 20px;margin:20px 0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-  <div>
-    <strong style="color:#1a7a4a;font-size:15.5px;display:block;margin-bottom:3px;">노무체크 AI 3초 무료 자가진단 서비스</strong>
-    <span style="color:#4a5568;font-size:13.5px;">내 퇴직금, 주휴수당, 해고예고수당 정당성 여부를 3초 만에 무상으로 자동 정산해 드립니다.</span>
-  </div>
-  <a href="https://노무체크ai.com" target="_blank" rel="noopener" style="background:#1a7a4a;color:#ffffff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;white-space:nowrap;box-shadow:0 3px 8px rgba(26,122,74,0.2);">
-    무료 자가진단 시작하기 (노무체크ai.com) →
+<!-- 💡 컴팩트하고 슬림하며 예쁜 노무체크 AI 자가진단 칩 바 -->
+<div style="background:#f2fbf7;border:1px solid #d1fae5;border-left:4px solid #10b981;padding:10px 16px;margin:16px 0;border-radius:6px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+  <span style="color:#065f46;font-size:14px;font-weight:600;">
+    💡 <strong>노무체크 AI 3초 무료 자가진단</strong> (내 수당·퇴직금·해고 3초 정산)
+  </span>
+  <a href="https://노무체크ai.com" target="_blank" rel="noopener" style="background:#10b981;color:#ffffff;padding:6px 14px;border-radius:20px;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:-0.3px;">
+    무료 진단하기 →
   </a>
 </div>
 
