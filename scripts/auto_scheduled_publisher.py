@@ -4,6 +4,7 @@ import random
 import time
 import ssl
 import re
+import json
 import hashlib
 from datetime import datetime
 import collections
@@ -912,6 +913,79 @@ def verify_quality_checklist(html_content, title):
             
     return all_passed
 
+def generate_ai_article(existing_titles, category_counts):
+    """Claude API로 매번 새로운 노무 글감(주제)과 본문 소재를 생성.
+    반환값은 generate_v2_post_html()이 기대하는 topic dict와 동일한 형태."""
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    valid_categories = list(SERIES_MAP.keys())
+    recent_sample = list(existing_titles)[:40]
+
+    system_prompt = f"""당신은 대한민국 노동법 전문 콘텐츠 기획자입니다. '노무체크 AI'라는 노무 자가진단 서비스 블로그에 실릴 글의 주제와 소재를 기획합니다.
+
+독자: 노무 문제로 실제 곤란을 겪는 사업주와 근로자 (법 전문가 아님)
+제목/소제목 톤: 반드시 검색창에 실제로 칠 법한 질문형·실생활 언어를 쓰세요 (예: "직원 해고할 때 이것부터 확인하세요", "알바생도 퇴직금 받을 수 있나요?"). "법리", "~에 관한 고찰", "~의 정당한 적용 범위" 같은 논문투 표현은 절대 쓰지 마세요.
+
+카테고리는 반드시 다음 6개 중 하나만 사용하세요: {', '.join(valid_categories)}
+
+반드시 실제 존재하는 대한민국 법령(근로기준법, 최저임금법, 산업재해보상보험법, 고용보험법, 근로자퇴직급여보장법 등)만 인용하세요. 조문 번호가 확실하지 않으면 조문 번호 없이 법령명만 언급하세요. 존재하지 않는 조문번호나 판례번호를 지어내지 마세요.
+
+다른 설명 없이 아래 JSON 객체 하나만 응답하세요:
+{{
+  "category": "위 6개 카테고리 중 하나",
+  "base_title": "검색의도형 제목 (20~40자, 논문투 금지)",
+  "law": "핵심 근거 법령명 (가능하면 조문 포함, 예: 근로기준법 제26조)",
+  "fact": "핵심 팩트 한 줄 요약",
+  "h1": "소제목 1 (실생활 언어)",
+  "h2": "소제목 2",
+  "h3": "소제목 3",
+  "h4": "소제목 4",
+  "p1": "소제목1 본문 단락 (150~250자, 법령 근거 포함)",
+  "p2": "소제목2 본문 단락",
+  "p3": "소제목3 본문 단락",
+  "p4": "소제목4 본문 단락",
+  "summary_1": "핵심요약 1번 항목",
+  "summary_2": "핵심요약 2번 항목",
+  "summary_3": "핵심요약 3번 항목"
+}}"""
+
+    user_prompt = (
+        "최근 이미 발행된 글 제목들입니다. 이것과 주제가 겹치지 않는 새로운 노무/노동법 글감을 "
+        "하나 기획해서 위 JSON 형식으로 작성해주세요.\n\n"
+        "최근 발행 제목 (최대 40개):\n"
+        + "\n".join(f"- {t}" for t in recent_sample)
+        + f"\n\n카테고리별 기존 글 수: {dict(category_counts)}\n"
+        "(글 수가 적은 카테고리를 우선 고려하되 강제는 아닙니다. 사업주/근로자 모두에게 "
+        "실질적으로 도움되는 주제를 우선하세요.)"
+    )
+
+    response = client.messages.create(
+        model="claude-sonnet-5",
+        max_tokens=2000,
+        system=system_prompt,
+        messages=[{"role": "user", "content": user_prompt}],
+    )
+
+    raw_text = response.content[0].text.strip()
+    if raw_text.startswith("```"):
+        raw_text = re.sub(r"^```[a-zA-Z]*\n", "", raw_text)
+        raw_text = re.sub(r"\n```\s*$", "", raw_text)
+
+    data = json.loads(raw_text)
+
+    required_keys = ["category", "base_title", "law", "fact", "h1", "h2", "h3", "h4",
+                      "p1", "p2", "p3", "p4", "summary_1", "summary_2", "summary_3"]
+    missing = [k for k in required_keys if not data.get(k)]
+    if missing:
+        raise ValueError(f"AI 응답에 누락된 필드: {missing}")
+
+    if data["category"] not in SERIES_MAP:
+        log(f"NOTICE: AI가 알 수 없는 카테고리를 반환({data['category']}) -> 기본값으로 대체")
+        data["category"] = "임금체불"
+
+    return data
+
 def publish():
     now = datetime.now()
     hour = now.hour
@@ -933,15 +1007,28 @@ def publish():
     else:
         slot = "evening"
 
-    # 이미 발행된 주제는 워드프레스 custom_fields(lc_topic_key)로 추적 (제목이 나중에 바뀌어도 안전)
-    fresh_candidates = [t for t in HIGH_TRAFFIC_TOPICS if topic_key(t) not in used_topic_keys]
-
-    if fresh_candidates:
-        slot_candidates = [t for t in fresh_candidates if t["slot"] == slot]
-        topic = random.choice(slot_candidates) if slot_candidates else random.choice(fresh_candidates)
+    # 1순위: Claude API로 매번 새 글감을 직접 생성. 실패하면 사전 정의 주제 DB로 대체.
+    topic = None
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            topic = generate_ai_article(existing_titles, category_counts)
+            topic["slot"] = slot
+            log(f"SUCCESS: Claude API로 신규 글감 생성 완료 -> {topic['base_title']}")
+        except Exception as e:
+            log(f"WARNING: AI 글감 생성 실패, 사전 정의 주제 DB로 대체 - {e}")
     else:
-        slot_candidates = [t for t in HIGH_TRAFFIC_TOPICS if t["slot"] == slot] or HIGH_TRAFFIC_TOPICS
-        topic = random.choice(slot_candidates)
+        log("NOTICE: ANTHROPIC_API_KEY 미설정 - 사전 정의 주제 DB 사용")
+
+    if topic is None:
+        # 이미 발행된 주제는 워드프레스 custom_fields(lc_topic_key)로 추적 (제목이 나중에 바뀌어도 안전)
+        fresh_candidates = [t for t in HIGH_TRAFFIC_TOPICS if topic_key(t) not in used_topic_keys]
+
+        if fresh_candidates:
+            slot_candidates = [t for t in fresh_candidates if t["slot"] == slot]
+            topic = random.choice(slot_candidates) if slot_candidates else random.choice(fresh_candidates)
+        else:
+            slot_candidates = [t for t in HIGH_TRAFFIC_TOPICS if t["slot"] == slot] or HIGH_TRAFFIC_TOPICS
+            topic = random.choice(slot_candidates)
 
     category = topic["category"]
     series_tag = SERIES_MAP.get(category, f"{category} 시리즈")
