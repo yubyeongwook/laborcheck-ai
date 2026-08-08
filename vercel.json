@@ -4,8 +4,8 @@
   "outputDirectory": "frontend/dist",
   "redirects": [
     {
-      "source": "/:path*",
-      "destination": "https://노무체크ai.com/:path*",
+      "source": "/(.*)",
+      "destination": "https://노무체크ai.com/$1",
       "permanent": true
     }
   ],

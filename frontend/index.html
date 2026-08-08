@@ -7,15 +7,30 @@
     <meta name="description" content="노무체크AI - 2026년 최저시급 10,320원, 209시간 월급 산식, 임금체불, 부당해고 30일 수당, 산재 70% 휴업급여, 4대보험 및 법정의무교육 실무 가이드. 1초 법정 서식 및 AI 자가진단 리포트를 무료로 제공합니다." />
     <meta name="keywords" content="노무체크ai, 노무체크, 2026최저임금, 10320원, 209시간, 임금체불, 부당해고구제, 산재신청, 70프로휴업급여, 주휴수당계산기, 최저임금계산, 퇴직금계산기, 4대보험계산기, 근로기준법, AI노무상담, 법정의무교육" />
 
-    <!-- Google Analytics (GA4) 연동 스크립트 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MEASUREMENT_ID"></script>
+    <!-- 도메인 이관 301 Canonicalizer 스크립트 (Vercel 서브도메인 접속 시 정식 도메인으로 즉시 이관) -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      // VITE_GA_MEASUREMENT_ID 또는 기본 추적 ID
-      const gaId = window.__GA_MEASUREMENT_ID__ || 'G-MEASUREMENT_ID';
-      gtag('config', gaId, { send_page_view: false }); // SPA 전용 수동 tracking 설정
+      (function() {
+        var h = window.location.hostname;
+        if (h && (h.indexOf('vercel.app') !== -1 || h.indexOf('laborcheck-ai') !== -1) && h.indexOf('localhost') === -1) {
+          window.location.replace('https://노무체크ai.com' + window.location.pathname + window.location.search);
+        }
+      })();
+    </script>
+
+    <!-- Google Analytics (GA4) 연동 스크립트 -->
+    <script>
+      const gaId = window.__GA_MEASUREMENT_ID__ || (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_GA_MEASUREMENT_ID) || '';
+      if (gaId && gaId !== 'G-MEASUREMENT_ID') {
+        const s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
+        document.head.appendChild(s);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', gaId, { send_page_view: true });
+      }
     </script>
 
     <!-- Open Graph (카카오톡, 페이스북 등 공유 미리보기 설정) -->
