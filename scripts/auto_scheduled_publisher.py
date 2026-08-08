@@ -1058,6 +1058,16 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 
 {faq_html}
 
+<!-- 📌 함께 읽으면 돈이 되는 연관 노무 가이드 (내부 링크 SEO 강화) -->
+<div style="background:#f8f9fa;border:1px solid #e9ecef;border-left:4px solid #1a3a6b;padding:16px;margin:24px 0;border-radius:6px;">
+<strong style="color:#1a3a6b;font-size:15px;">📌 함께 읽으면 도움이 되는 연관 노무 가이드</strong>
+<ul style="margin:10px 0 0 0;padding-left:20px;line-height:1.8;font-size:14px;color:#333;">
+  <li><a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="color:#1a7a4a;font-weight:600;text-decoration:underline;">👉 2026 최저임금 10320원 209시간 월급 산식 및 실수령액 정산 가이드</a></li>
+  <li><a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="color:#1a7a4a;font-weight:600;text-decoration:underline;">👉 5인 미만 사업장 갑작스러운 구두 해고 시 30일분 해고예고수당 100% 청구법</a></li>
+  <li><a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="color:#1a7a4a;font-weight:600;text-decoration:underline;">👉 주 15시간 미만 쪼개기 계약 초단기 알바 주휴수당 소급 정산 실무 가이드</a></li>
+</ul>
+</div>
+
 <!-- ⚡ 노무체크 AI 3초 무료 진단 CTA -->
 <div style="text-align:center;margin:28px 0">
 <a href="https://노무체크ai.com/?calc=1" target="_blank" rel="noopener" style="background:#1a7a4a;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(26,122,74,0.3);">
