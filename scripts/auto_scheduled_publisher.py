@@ -1185,16 +1185,86 @@ def verify_quality_checklist(html_content, title):
             
     return all_passed
 
+# 카테고리별로 참고할 법령명 + 조문 제목/본문 필터링 키워드
+# (법령 전체에서 무작위로 뽑으면 무관한 조문이 섞이므로, 키워드로 관련 조문만 좁힌다)
+CATEGORY_TO_LAW = {
+    "산재보상": (["산업재해보상보험법"], ["업무상재해", "요양급여", "휴업급여", "장해급여", "유족급여", "출퇴근재해", "산재"]),
+    "휴가·연차": (["근로기준법"], ["연차", "휴가", "휴게", "휴일"]),
+    "임금체불": (["근로기준법", "최저임금법"], ["임금", "최저임금", "체불", "통상임금", "평균임금"]),
+    "근로계약": (["근로기준법"], ["근로계약", "근로조건", "취업규칙", "수습"]),
+    "부당해고·해고예고": (["근로기준법"], ["해고", "예고", "퇴직"]),
+    "4대보험": (["고용보험법"], ["피보험자", "구직급여", "실업급여", "보험료"]),
+    "직장내괴롭힘·성희롱": (["근로기준법"], ["괴롭힘", "성희롱", "직장 내"]),
+    "육아휴직·출산휴가": (["근로기준법", "고용보험법"], ["육아휴직", "출산", "모성", "임산부"]),
+    "알바·단기직 노무": (["근로기준법", "고용보험법"], ["단시간", "기간제", "소정근로시간", "피보험자"]),
+    "취업규칙·노동청점검": (["근로기준법"], ["취업규칙", "근로감독", "신고"]),
+    "법정의무교육": (["근로기준법"], ["취업규칙", "안전", "보건"]),
+    "직종별 맞춤노무": (["근로기준법", "근로자퇴직급여 보장법"], ["퇴직금", "퇴직급여", "평균임금"]),
+}
+
+_LAW_DB_CACHE = None
+
+def load_law_db():
+    """국가법령정보센터(law.go.kr) 공식 API로 미리 받아둔 조문 원문 로컬 DB.
+    구글 검색 없이 이 데이터를 근거로 쓰면 API 호출 횟수(비용)를 줄이면서도
+    정부 공식 원문이라 정확도는 더 높다."""
+    global _LAW_DB_CACHE
+    if _LAW_DB_CACHE is None:
+        db_path = os.path.join(os.path.dirname(__file__), "law_db.json")
+        try:
+            with open(db_path, "r", encoding="utf-8") as f:
+                _LAW_DB_CACHE = json.load(f)
+        except Exception as e:
+            log(f"WARNING: law_db.json 로드 실패 - {e}")
+            _LAW_DB_CACHE = []
+    return _LAW_DB_CACHE
+
+def research_from_local_law_db(category):
+    """검색 없이 로컬 법령 DB에서 카테고리에 맞는 조문을 뽑아 '리서치 결과' 형식으로 반환.
+    법령명 + 키워드 두 단계로 필터링해서 무관한 조문이 섞이지 않도록 한다."""
+    db = load_law_db()
+    law_names, keywords = CATEGORY_TO_LAW.get(category, (["근로기준법"], []))
+
+    by_law = [a for a in db if a["law"] in law_names]
+    if keywords:
+        candidates = [
+            a for a in by_law
+            if any(kw in a["title"] or kw in a["text"][:200] for kw in keywords)
+        ]
+    else:
+        candidates = by_law
+
+    if not candidates:
+        candidates = by_law  # 키워드로 못 찾으면 법령 전체에서라도
+
+    if not candidates:
+        return None
+
+    picked = random.sample(candidates, min(6, len(candidates)))
+    lines = [f"[정부 공식 국가법령정보센터 원문 - {category} 관련 조문]\n"]
+    for a in picked:
+        lines.append(f"- {a['law']} {a['article_no']}({a['title']}): {a['text'][:400]}")
+    return "\n".join(lines)
+
 def research_labor_law_facts(recent_sample, category_counts, slot="morning"):
     """1단계(검색/리서치): 슬롯별 전략적 구글 실시간 검색 연동.
-    - morning: 실시간 최다 검색량 1위 핫이슈 집중 바이럴 모드
-    - noon/evening: 12대 카테고리 순환 지속 노출 알짜 롱테일 모드
+    - morning: 실시간 최다 검색량 1위 핫이슈 집중 바이럴 모드 (최신 이슈라 검색 필요)
+    - noon/evening: 12대 카테고리 순환 지속 노출 알짜 롱테일 모드 (정형화된 법 조문 설명이라
+      로컬 법령 DB만으로 충분 -> 구글 검색/API 호출 생략, 비용 절감)
     """
     from google import genai as google_genai
     from google.genai import types
 
     client = google_genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     valid_categories = list(SERIES_MAP.keys())
+
+    if slot != "morning":
+        # 롱테일 모드는 검색 없이 로컬 법령 DB만으로 처리 (API 호출 절감)
+        category_guess = random.choice(valid_categories)
+        local_result = research_from_local_law_db(category_guess)
+        if local_result:
+            log(f"NOTICE: [{slot.upper()} 모드] 구글 검색 생략, 로컬 법령DB 사용 (카테고리: {category_guess})")
+            return local_result
 
     if slot == "morning":
         mode_instruction = (
