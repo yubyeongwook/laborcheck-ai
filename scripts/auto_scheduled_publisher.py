@@ -1437,4 +1437,7 @@ def publish():
         return False
 
 if __name__ == "__main__":
-    publish()
+    success = publish()
+    if not success:
+        log("CRITICAL: 발행 실패로 종료 - GitHub Actions에 실패로 보고합니다.")
+        sys.exit(1)
