@@ -35,7 +35,7 @@ if os.path.exists(ENV_FILE):
 from auto_scheduled_publisher import generate_v2_post_html, CATEGORY_FAQS
 
 WP_USER = os.environ.get("WP_USER", "user")
-WP_PASS = os.environ.get("WP_PASS", "***REMOVED_PASSWORD***")
+WP_PASS = os.environ.get("WP_PASS", "")
 
 def connect_wp():
     ssl_ctx = ssl._create_unverified_context()

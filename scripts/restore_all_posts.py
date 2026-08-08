@@ -31,7 +31,7 @@ if os.path.exists(ENV_FILE):
                 os.environ.setdefault(k.strip(), v.strip())
 
 WP_USER = os.environ.get("WP_USER", "user")
-WP_PASS = os.environ.get("WP_PASS", "***REMOVED_PASSWORD***")
+WP_PASS = os.environ.get("WP_PASS", "")
 LABORCHECK_AI_URL = "https://노무체크ai.com"
 SITE_URL = "https://www.laborcheckai.co.kr"
 
