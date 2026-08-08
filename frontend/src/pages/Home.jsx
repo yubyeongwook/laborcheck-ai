@@ -1215,54 +1215,56 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
               </div>
             </div>
 
-            {/* 🎯 8단계 질문 진행 현황 및 자유 선택 수정 바 */}
-            <div style={{
-              padding: '0.6rem 1.2rem', background: '#0b0f19', borderBottom: '1px solid rgba(56, 189, 248, 0.15)',
-              display: 'flex', alignItems: 'center', gap: '0.45rem', overflowX: 'auto'
-            }}>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, whiteSpace: 'nowrap', marginRight: '0.2rem' }}>
-                ✏️ 질문 수정:
-              </span>
-              {STEP_NAV_ITEMS.map((item) => {
-                const isActiveStep = chatStep === item.step;
-                const isPassedStep = chatStep > item.step;
-                return (
-                  <button
-                    key={item.step}
-                    type="button"
-                    onClick={() => handleEditStep(item.step)}
-                    title={`${item.step}단계 질문 클릭 시 즉시 답변 수정 가능`}
-                    style={{
-                      padding: '0.25rem 0.65rem',
-                      borderRadius: '12px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      border: isActiveStep ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
-                      background: isActiveStep
-                        ? 'linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(99, 102, 241, 0.3))'
-                        : isPassedStep
-                        ? 'rgba(56, 189, 248, 0.15)'
-                        : 'rgba(255,255,255,0.03)',
-                      color: isActiveStep ? '#ffffff' : isPassedStep ? '#38bdf8' : '#94a3b8',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.2rem',
-                      transition: 'all 0.15s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActiveStep) e.currentTarget.style.borderColor = '#38bdf8';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActiveStep) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
+            {/* 🎯 8단계 질문 진행 현황 및 자유 선택 수정 바 (급여 정산 전용) */}
+            {chatCategory === 'salary' && (
+              <div style={{
+                padding: '0.6rem 1.2rem', background: '#0b0f19', borderBottom: '1px solid rgba(56, 189, 248, 0.15)',
+                display: 'flex', alignItems: 'center', gap: '0.45rem', overflowX: 'auto'
+              }}>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, whiteSpace: 'nowrap', marginRight: '0.2rem' }}>
+                  ✏️ 질문 수정:
+                </span>
+                {STEP_NAV_ITEMS.map((item) => {
+                  const isActiveStep = chatStep === item.step;
+                  const isPassedStep = chatStep > item.step;
+                  return (
+                    <button
+                      key={item.step}
+                      type="button"
+                      onClick={() => handleEditStep(item.step)}
+                      title={`${item.step}단계 질문 클릭 시 즉시 답변 수정 가능`}
+                      style={{
+                        padding: '0.25rem 0.65rem',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        border: isActiveStep ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
+                        background: isActiveStep
+                          ? 'linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(99, 102, 241, 0.3))'
+                          : isPassedStep
+                          ? 'rgba(56, 189, 248, 0.15)'
+                          : 'rgba(255,255,255,0.03)',
+                        color: isActiveStep ? '#ffffff' : isPassedStep ? '#38bdf8' : '#94a3b8',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActiveStep) e.currentTarget.style.borderColor = '#38bdf8';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActiveStep) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* 챗봇 대화 내용 출력 영역 */}
             <div style={{
@@ -1923,8 +1925,8 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
               </div>
             )}
 
-            {/* 💡 1, 2, 4~8단계 원클릭 보기 선택지 칩 (Quick Choice Chips) */}
-            {isChatActive && (editingStep || chatStep) !== 3 && chatStep >= 1 && chatStep <= 8 && STEP_CHOICE_OPTIONS[editingStep || chatStep] && (
+            {/* 💡 1, 2, 4~8단계 원클릭 보기 선택지 칩 (Quick Choice Chips - 급여 정산 전용) */}
+            {isChatActive && chatCategory === 'salary' && (editingStep || chatStep) !== 3 && chatStep >= 1 && chatStep <= 8 && STEP_CHOICE_OPTIONS[editingStep || chatStep] && (
               <div style={{
                 padding: '0.65rem 1.25rem',
                 background: 'rgba(15, 23, 42, 0.95)',
