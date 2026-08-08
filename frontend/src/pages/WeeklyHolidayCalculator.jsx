@@ -3,6 +3,7 @@ import { Calendar } from 'lucide-react';
 import { calculateWeeklyHolidayPay, AVG_WEEKS_PER_MONTH, calculateHoursAndNightHours, roundDownToTen, calculateElapsedHours, getStatutoryBreakMinutes } from '../utils/laborCalc.js';
 import LaborInfoSync from '../components/LaborInfoSync.jsx';
 import UsageGuide from '../components/UsageGuide.jsx';
+import SEO from '../components/SEO.jsx';
 
 function TimeSelectInput({ value, onChange }) {
   const [hStr, mStr] = (value || '00:00').split(':');
@@ -84,6 +85,11 @@ function WeeklyHolidayCalculator() {
 
   return (
     <div className="page-container">
+      <SEO
+        title="2026 주휴수당 계산기·주15시간 판단"
+        description="2026년 주 15시간 이상 근무 조건 자동 검증 및 시급·일급·월급 기준 주휴수당 0% 오차 정밀 계산기"
+        path="/tools/weekly-holiday"
+      />
       <div className="tool-page-header">
         <h1 className="tool-page-title"><Calendar size={26} color="#38bdf8" /> 주휴수당 계산기</h1>
         <p className="tool-page-desc">

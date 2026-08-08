@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Clock, Building2 } from 'lucide-react';
 import { calculateAnnualLeave, roundDownToTen } from '../utils/laborCalc.js';
 import UsageGuide from '../components/UsageGuide.jsx';
+import SEO from '../components/SEO.jsx';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -20,6 +21,11 @@ function AnnualLeaveCalculator() {
 
   return (
     <div className="page-container">
+      <SEO
+        title="2026 연차유급휴가·미사용연차수당 계산기"
+        description="입사 1년 미만 월차 발생 수 및 1년 이상 법정 연차 휴가 일수, 미사용 연차수당 정산 정밀 계산기"
+        path="/tools/annual-leave"
+      />
       <div className="tool-page-header">
         <h1 className="tool-page-title"><Clock size={26} color="#a78bfa" /> 연차 계산기</h1>
         <p className="tool-page-desc">

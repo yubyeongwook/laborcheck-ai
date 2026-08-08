@@ -1,39 +1,140 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- 메인 홈 -->
   <url>
     <loc>https://xn--ai-h74ir53a94vh9e.com/</loc>
-    <lastmod>2026-07-25</lastmod>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.xn--ai-h74ir53a94vh9e.com/</loc>
-    <lastmod>2026-07-25</lastmod>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-  <url>
-    <loc>https://xn--ai-h74ir53a94vh9e.com/remedy</loc>
-    <lastmod>2026-07-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://xn--ai-h74ir53a94vh9e.com/injury</loc>
-    <lastmod>2026-07-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
+
+  <!-- 핵심 라운지 및 허브 -->
   <url>
     <loc>https://xn--ai-h74ir53a94vh9e.com/worker</loc>
-    <lastmod>2026-07-25</lastmod>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://xn--ai-h74ir53a94vh9e.com/employer</loc>
-    <lastmod>2026-07-25</lastmod>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/remedy</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/injury</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 통합 노무 계산기 및 세부 계산기 6종 -->
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/tools</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/tools/salary</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/tools/reverse-salary</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/tools/weekly-holiday</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/tools/annual-leave</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/tools/severance</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/employer/insurance</loc>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+
+  <!-- AI 상담 및 진단 리포트 생성기 -->
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/employer/ai-consultant</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/worker/report</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/employer/report</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- 산재 상세 가이드 및 정보 서비스 -->
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/worker/injury</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/employer/injury</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/education</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- 상담 및 고객안내 -->
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/contact</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://xn--ai-h74ir53a94vh9e.com/privacy</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

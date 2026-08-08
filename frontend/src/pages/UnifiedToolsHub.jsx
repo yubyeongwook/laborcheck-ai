@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Coins, RefreshCw, Calendar, Sun, PiggyBank, ShieldCheck } from 'lucide-react';
+import SEO from '../components/SEO.jsx';
 
 import SalaryCalculator from './SalaryCalculator.jsx';
 import ReverseSalaryCalculator from './ReverseSalaryCalculator.jsx';
@@ -44,6 +45,11 @@ export default function UnifiedToolsHub() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem 1rem 4rem' }}>
+      <SEO
+        title="2026 대한민국 6대 통합 노무 자동 계산기"
+        description="월급·주휴수당·역산급여·연차수당·퇴직금·4대보험 근로기준법 대법원 판례 기준 0% 오차 통합 계산기"
+        path="/tools"
+      />
       
       {/* 🛠️ AI 노동관리 도구 통합 서브 헤더 탭 */}
       <div style={{

@@ -29,9 +29,11 @@ import EducationCenter from './pages/EducationCenter.jsx';
 import AdminInquiries from './pages/AdminInquiries.jsx';
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
 import UnifiedToolsHub from './pages/UnifiedToolsHub.jsx';
-
+import usePageTracking from './utils/usePageTracking.js';
 
 function App() {
+  usePageTracking();
+
   React.useEffect(() => {
     // 구버전 Vercel 도메인(laborcheck-ai.vercel.app 등) 접속 시 최신 공식 도메인(노무체크ai.com)으로 즉시 리다이렉트
     if (window.location.hostname.includes('vercel.app')) {

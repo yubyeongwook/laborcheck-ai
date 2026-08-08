@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { calculateHoursAndNightHours, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, makeAutoBreakHandlers, formatMinutesAsHM } from '../utils/laborCalc.js';
 import LaborInfoSync from '../components/LaborInfoSync.jsx';
 import UsageGuide from '../components/UsageGuide.jsx';
+import SEO from '../components/SEO.jsx';
 
 const LOADING_TIPS = [
   "근로기준법 제18조: 4주 동안 평균하여 1주 동안의 소정근로시간이 15시간 미만인 근로자에게는 주휴수당 규정이 적용되지 않습니다.",
@@ -765,6 +766,11 @@ function ReportGenerator({ userType }) {
 
   return (
     <div className="page-container">
+      <SEO
+        title={isWorker ? "AI 근로자 자가진단 리포트 생성기" : "AI 사업주 노무 리스크 진단 리포트"}
+        description="근로기준법 대법원 판례 대조 2026 노무 이슈 0% 오차 자동 정밀 분석 및 카카오톡 리포트 발송"
+        path={isWorker ? "/worker/report" : "/employer/report"}
+      />
       <div className="tool-page-header">
         <h1 className="tool-page-title">
           <FileText size={26} color="#38bdf8" /> {isWorker ? 'AI 자가진단 리포트 (근로자용)' : 'AI 리스크 진단 리포트 (사업주용)'}

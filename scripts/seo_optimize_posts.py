@@ -1,4 +1,4 @@
-﻿import sys, os, ssl, re, time, json
+import sys, os, ssl, re, time, json
 import collections, collections.abc
 collections.Iterable = collections.abc.Iterable
 import xmlrpc.client
@@ -21,8 +21,8 @@ WP_USER = os.environ.get("WP_USER", "user")
 WP_PASS = os.environ.get("WP_PASS")
 if not WP_PASS:
     raise RuntimeError("WP_PASS 환경변수가 설정되지 않았습니다. scripts/.env(로컬) 또는 GitHub Actions Secrets(WP_PASS)에 설정하세요.")
-LABORCHECK_AI_URL = "https://laborcheck-ai.vercel.app"
-SITE_URL = "http://www.laborcheckai.co.kr"
+LABORCHECK_AI_URL = "https://노무체크ai.com"
+SITE_URL = "https://www.laborcheckai.co.kr"
 
 # 카테고리별 FAQ (JSON-LD용)
 CATEGORY_FAQS = {

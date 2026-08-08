@@ -1,4 +1,4 @@
-﻿"""
+"""
 enrich_existing_posts.py
 ========================
 기존 WordPress 포스트를 애드센스 승인 기준으로 강화하는 스크립트.
@@ -46,7 +46,8 @@ WP_USER = os.environ.get("WP_USER", "user")
 WP_PASS = os.environ.get("WP_PASS")
 if not WP_PASS:
     raise RuntimeError("WP_PASS 환경변수가 설정되지 않았습니다. scripts/.env(로컬) 또는 GitHub Actions Secrets(WP_PASS)에 설정하세요.")
-LABORCHECK_AI_URL = "https://laborcheck-ai.vercel.app"
+LABORCHECK_AI_URL = "https://노무체크ai.com"
+SITE_URL = "https://www.laborcheckai.co.kr"
 
 CATEGORY_FAQS = {
     "산재보상": [
@@ -105,8 +106,11 @@ def build_faq_section(faqs):
         qa_html += f"\n  <div style='margin-bottom:18px;'>\n    <p style='font-weight:700;color:#1a3a6b;font-size:15px;margin-bottom:6px;'>{q}</p>\n    <p style='color:#333;line-height:1.8;font-size:14px;'>{a}</p>\n  </div>"
     return f"\n<!-- ADSENSE_FAQ_SECTION -->\n<div style='background-color:#f0f7ff;border:1px solid #b3d4f5;border-radius:8px;padding:24px 28px;margin:32px 0;'>\n  <h2 style='font-size:17px;color:#1a3a6b;margin-bottom:18px;font-weight:800;'>VI &middot; 자주 묻는 질문 (FAQ) &mdash; 현장 실무 Q&amp;A</h2>\n  {qa_html}\n</div>\n"
 
+def build_mid_cta_section():
+    return f"\n<!-- IN_ARTICLE_MID_CTA -->\n<div style='background:linear-gradient(135deg,#f0f7ff,#e6f0fa);border:1px solid #b3d4f5;border-radius:10px;padding:20px;margin:28px 0;text-align:center;'>\n  <p style='font-size:15px;font-weight:700;color:#1a3a6b;margin-bottom:6px;'>💡 내 임금·휴가·해고 상황 3초 만에 진단해보셨나요?</p>\n  <p style='font-size:13px;color:#555;margin-bottom:12px;'>근로기준법 대법원 판례 기반 AI 노무 진단을 무료로 이용해보세요.</p>\n  <a href='{LABORCHECK_AI_URL}' target='_blank' style='display:inline-block;background:#1a7a4a;color:#fff;padding:10px 24px;border-radius:6px;font-size:14px;font-weight:700;text-decoration:none;'>👉 내 상황 무료 AI 노무 진단받기 &rarr;</a>\n</div>\n"
+
 def build_cta_section():
-    return f"\n<!-- ADSENSE_CTA_SECTION -->\n<div style='text-align:center;margin:32px 0;'>\n  <a href='{LABORCHECK_AI_URL}' target='_blank' style='display:inline-block;background:linear-gradient(135deg,#1a7a4a,#0d5c35);color:#fff;padding:14px 36px;border-radius:6px;font-size:16px;font-weight:700;text-decoration:none;'>AI 무료 노무 진단 받기 &rarr;</a>\n  <p style='font-size:12px;color:#888;margin-top:8px;'>laborcheck-ai.vercel.app &middot; 24시간 무료 운영</p>\n</div>\n"
+    return f"\n<!-- ADSENSE_CTA_SECTION -->\n<div style='text-align:center;margin:32px 0;'>\n  <a href='{LABORCHECK_AI_URL}' target='_blank' style='display:inline-block;background:linear-gradient(135deg,#1a7a4a,#0d5c35);color:#fff;padding:14px 36px;border-radius:6px;font-size:16px;font-weight:700;text-decoration:none;'>AI 무료 노무 진단 받기 &rarr;</a>\n  <p style='font-size:12px;color:#888;margin-top:8px;'>노무체크ai.com &middot; 24시간 무료 운영</p>\n</div>\n"
 
 def build_legal_notice():
     return "\n<!-- LEGAL_NOTICE -->\n<div style='background-color:#f9f9f9;border-top:1px solid #ddd;padding:18px 20px;margin-top:40px;font-size:12px;color:#777;line-height:1.7;'>\n  <strong>법적 고지:</strong> 본 콘텐츠는 근로기준법, 산업재해보상보험법, 고용보험법 등 현행 법령에 기초한 일반적 정보 제공을 목적으로 하며, 개별 사안에 대한 법률 자문이 아닙니다. 구체적인 분쟁 해결을 위해서는 고용노동부(국번 없이 1350) 또는 노무사, 법률전문가와 상담하시기 바랍니다.\n</div>\n"

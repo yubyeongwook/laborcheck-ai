@@ -9,6 +9,7 @@ import {
 import PayslipModal from '../components/PayslipModal';
 import WageCalculatorModal from '../components/WageCalculatorModal';
 import ContactForm from './ContactForm';
+import SEO from '../components/SEO';
 import { calculate4ComponentsBreakdown, verifyComprehensiveWage, calculateAnnualLeaveByTenure } from '../utils/laborCalc';
 
 const SMART_QUICK_PROMPTS = [
@@ -963,6 +964,7 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem 1rem 4rem' }}>
+      <SEO path="/" />
       
       {/* 숨겨진 파일 인풋 */}
       <input

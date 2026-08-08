@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Coins, Building2, Clock, Plus, Trash2, Sun, CalendarClock, Utensils } from 'lucide-react';
 import { calculateHoursAndNightHours, calculateYearlyEntryPay, getDeductionRatesForYear, getMinWageForYear, NON_TAXABLE_MONTHLY_CAP, calculateElapsedHours, getStatutoryBreakMinutes, applyDeductions, roundDownToTen, roundToTen, AVG_WEEKS_PER_MONTH } from '../utils/laborCalc.js';
 import UsageGuide from '../components/UsageGuide.jsx';
+import SEO from '../components/SEO.jsx';
 
 const currentYear = new Date().getFullYear();
 
@@ -1792,6 +1793,11 @@ function SalaryCalculator() {
 
   return (
     <div className="page-container">
+      <SEO
+        title="2026 최저임금·월급209시간·실수령액 계산기"
+        description="2026년 최저시급 10,320원 기준 월급 209시간, 4대보험, 주휴수당, 연차수당, 야간·휴일 수당 정밀 0% 오차 자동 계산기"
+        path="/tools/salary"
+      />
       <div className="tool-page-header">
         <h1 className="tool-page-title"><Coins size={26} color="#f59e0b" /> 월급 계산기 (연도별 이력)</h1>
         <p className="tool-page-desc">

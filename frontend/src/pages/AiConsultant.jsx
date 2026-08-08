@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import UsageGuide from '../components/UsageGuide.jsx';
+import SEO from '../components/SEO.jsx';
 
 const SAMPLE_CONTRACTS = {
   contract: `근 로 계 약 서 (샘플)
@@ -97,6 +98,11 @@ function AiConsultant() {
 
   return (
     <div className="page-container">
+      <SEO
+        title="AI 24시 노무 법률 상담소·근로계약서 검증"
+        description="대한민국 근로기준법 및 대법원 판례 기반 24시간 실시간 AI 노무 법률 상담 및 근로계약서, 독소조항 자동 검증"
+        path="/employer/ai-consultant"
+      />
       {/* 헤더 */}
       <div className="tool-page-header" style={{ marginBottom: '2rem' }}>
         <h1 className="tool-page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

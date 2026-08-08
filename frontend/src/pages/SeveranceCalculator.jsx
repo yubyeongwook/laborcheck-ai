@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { PiggyBank, Calculator, ShieldCheck, DollarSign, FileText, Printer, AlertTriangle, ShieldAlert, Scale, CheckCircle2 } from 'lucide-react';
 import { calculateSeverancePay, getTenure } from '../utils/laborCalc.js';
 import UsageGuide from '../components/UsageGuide.jsx';
+import SEO from '../components/SEO.jsx';
 import SeveranceReceiptModal from '../components/SeveranceReceiptModal.jsx';
 import SeveranceInterimModal from '../components/SeveranceInterimModal.jsx';
 
@@ -65,6 +66,11 @@ function SeveranceCalculator() {
 
   return (
     <div className="page-container">
+      <SEO
+        title="2026 퇴직금·퇴직연금DB/DC 계산기"
+        description="근로기준법 대법원 판례 기준 평균임금 vs 통상임금 자동 비교 및 2026 퇴직소득세, 세후 실수령액 0% 오차 정밀 계산기"
+        path="/tools/severance"
+      />
       <div className="tool-page-header">
         <h1 className="tool-page-title"><PiggyBank size={26} color="#34d399" /> 퇴직금 & 퇴직연금 계산기</h1>
         <p className="tool-page-desc">
