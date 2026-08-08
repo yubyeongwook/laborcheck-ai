@@ -1537,7 +1537,10 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
                       return;
                     }
 
-                    const replyText = `### 💰 법정 퇴직금 정산 리포트\n\n입력해주신 폼 조건(**입사일: ${sevHireDate} / 퇴사일: ${sevResignDate} / 세전월급: ${monthlyPayNum.toLocaleString()}원 / 상여금: ${bonusNum.toLocaleString()}원 / 연차수당: ${leavePayNum.toLocaleString()}원**)을 바탕으로 **근로자퇴직급여 보장법 정산 엔진**이 산출한 100% 동적 결과입니다:\n\n- 📅 **총 재직일수**: **${sevResult.totalDays.toLocaleString()}일** (${(sevResult.totalDays / 365).toFixed(2)}년 재직)\n- 💵 **3개월 평균임금 (1일당)**: **${sevResult.averageDailyWage.toLocaleString()}원/일** ${sevResult.isOrdinaryWageApplied ? '(※ 통상임금 하한선 보장 적용)' : ''}\n- 💰 **최종 법정 세전 퇴직금**: **${sevResult.severancePay.toLocaleString()}원**\n- 🏦 **예상 퇴직소득세 (참고용)**: 약 **${sevResult.taxInfo ? sevResult.taxInfo.estimatedTax.toLocaleString() : 0}원** (실수령 약 **${(sevResult.severancePay - (sevResult.taxInfo ? sevResult.taxInfo.estimatedTax : 0)).toLocaleString()}원**)\n\n*(※ 1년 이상 계속 근로 및 주 15시간 이상 근무 시 100% 발생하며 퇴사 후 14일 이내 지급 의무가 적용됩니다)*`;
+                    const taxEst = sevResult.taxInfo ? sevResult.taxInfo.totalTax : 0;
+                    const netEst = sevResult.taxInfo ? sevResult.taxInfo.netSeverancePay : sevResult.severancePay;
+
+                    const replyText = `### 💰 법정 퇴직금 정산 리포트\n\n입력해주신 폼 조건(**입사일: ${sevHireDate} / 퇴사일: ${sevResignDate} / 세전월급: ${monthlyPayNum.toLocaleString()}원 / 상여금: ${bonusNum.toLocaleString()}원 / 연차수당: ${leavePayNum.toLocaleString()}원**)을 바탕으로 **근로자퇴직급여 보장법 정산 엔진**이 산출한 100% 동적 결과입니다:\n\n- 📅 **총 재직일수**: **${sevResult.totalDays.toLocaleString()}일** (${(sevResult.totalDays / 365).toFixed(2)}년 재직)\n- 💵 **3개월 평균임금 (1일당)**: **${Math.round(sevResult.averageDailyWage).toLocaleString()}원/일** ${sevResult.isOrdinaryWageApplied ? '(※ 통상임금 하한선 보장 적용)' : ''}\n- 💰 **최종 법정 세전 퇴직금**: **${sevResult.severancePay.toLocaleString()}원**\n- 🏦 **예상 퇴직소득세 (참고용)**: 약 **${taxEst.toLocaleString()}원** (실수령 약 **${netEst.toLocaleString()}원**)\n\n*(※ 1년 이상 계속 근로 및 주 15시간 이상 근무 시 100% 발생하며 퇴사 후 14일 이내 지급 의무가 적용됩니다)*`;
 
                     setMessages(prev => [...prev, { sender: 'secretary', text: replyText }]);
                     setIsCalculatedOnce(true);
