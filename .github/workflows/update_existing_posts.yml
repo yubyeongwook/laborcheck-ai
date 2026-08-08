@@ -24,7 +24,7 @@ jobs:
 
       - name: 기존 블로그 글 일괄 보강 스크립트 실행
         env:
-          WP_USER: ${{ secrets.WP_USER }}
+          WP_USER: ${{ secrets.USER }}
           WP_PASS: ${{ secrets.WP_PASS }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
