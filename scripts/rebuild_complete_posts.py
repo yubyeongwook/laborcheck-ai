@@ -100,26 +100,8 @@ def main():
         topic_dict = build_rich_topic_for_title(title, category)
         
         # 2. auto_scheduled_publisher의 완벽 포맷터로 HTML 생성
+        # (예쁜 컴팩트 미니멀 칩 바 배너 1개 + 풍성한 본문 2,500자 포함!)
         rich_html = generate_v2_post_html(topic_dict, title, "노무체크 시리즈", idx)
-        
-        # 구형 둔탁한 큰 박스는 삭제하고 컴팩트한 예쁜 칩 바로 정제
-        compact_banner = """
-<!-- 💡 컴팩트하고 슬림하며 예쁜 노무체크 AI 자가진단 칩 바 -->
-<div style="background:#f2fbf7;border:1px solid #d1fae5;border-left:4px solid #10b981;padding:10px 16px;margin:16px 0;border-radius:6px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-  <span style="color:#065f46;font-size:14px;font-weight:600;">
-    💡 <strong>노무체크 AI 3초 무료 자가진단</strong> (내 수당·퇴직금·해고 3초 정산)
-  </span>
-  <a href="https://노무체크ai.com" target="_blank" rel="noopener" style="background:#10b981;color:#ffffff;padding:6px 14px;border-radius:20px;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:-0.3px;">
-    무료 진단하기 →
-  </a>
-</div>
-"""
-        # 중복 박스를 모두 싹 제거
-        rich_html = re.sub(r'<div[^>]*background:\s*#f0fff5.*?</div>\s*</div>', '', rich_html, flags=re.DOTALL)
-        rich_html = re.sub(r'<div[^>]*background:\s*#f2fbf7.*?</div>', '', rich_html, flags=re.DOTALL)
-        
-        # 상단 요약 박스 직후에 단 1개의 예쁜 컴팩트 칩 바 주입
-        rich_html = rich_html.replace('</div>\n\n<!-- 히어로 이미지 -->', '</div>\n\n' + compact_banner + '\n\n<!-- 히어로 이미지 -->')
         
         try:
             r = wp.metaWeblog.editPost(post_id, WP_USER, WP_PASS, {'description': rich_html}, True)
