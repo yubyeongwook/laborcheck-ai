@@ -987,12 +987,16 @@ def pick_random_image(category, exclude_url=None):
         candidates = pool
     return random.choice(candidates)
 
-def generate_v2_post_html(topic, final_title, series_tag, episode_num):
+def generate_v2_post_html(topic, final_title, series_tag, episode_num, part_num=1):
     category = topic["category"]
     law = topic["law"]
     fact = topic["fact"]
     img_url = pick_random_image(category)
     
+    part_names = {1: "기초·원칙", 2: "팩트체크·판례", 3: "실전대처·정산"}
+    next_part_num = (part_num % 3) + 1
+    next_part_name = part_names[next_part_num]
+
     # 앵글 및 테마 동적 다각화 (특수기호 없이 정갈한 서식 적용)
     angles = [
         {"prefix": "[근로자 권리 구제]", "intro_title": "근로자 핵심 권리 점검 포인트", "bg": "#f0fff5", "border": "#1a7a4a", "badge_bg": "#1a7a4a"},
@@ -1030,9 +1034,9 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 
     html = f"""<div style="font-family:-apple-system,BlinkMacSystemFont,'Pretendard',sans-serif;color:#1a1a1a;line-height:1.95;max-width:780px;margin:0 auto;background:#fff;">
 
-<!-- 시리즈 명찰 헤더 -->
+<!-- 시리즈 명찰 헤더 (3000자 3부작 시리즈) -->
 <div style="margin-bottom:12px;">
-  <span style="background:#1a3a6b;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:13px;font-weight:700;display:inline-block;margin-right:6px;">[{series_tag}]</span>
+  <span style="background:#1a3a6b;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:13px;font-weight:700;display:inline-block;margin-right:6px;">[{series_tag} Part {part_num}/3 ({part_names[part_num]})]</span>
   <span style="background:{angle['badge_bg']};color:#ffffff;padding:6px 12px;border-radius:4px;font-size:13px;font-weight:700;display:inline-block;">{angle['prefix']}</span>
 </div>
 
@@ -1057,7 +1061,7 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 <!-- 히어로 이미지 -->
 <img src="{img_url}" alt="{final_title}" style="width:100%;border-radius:8px;margin:16px 0;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
 
-<!-- H2 소제목 1 ~ 6 -->
+<!-- H2 소제목 1 ~ 4 -->
 <h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">1. {clean_h1}</h2>
 <p style="background:#f8f9fa;padding:14px;border-radius:6px;border-left:3px solid #1a3a6b;"><strong>법 조문 쉬운 풀이</strong>: {topic['p1']}</p>
 
@@ -1084,6 +1088,19 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 <h2 style="font-size:18px;font-weight:800;color:#1a3a6b;border-bottom:2px solid #1a3a6b;padding-bottom:8px;margin:36px 0 16px;">6. 자주 묻는 질문 (FAQ)</h2>
 
 {faq_html}
+
+<!-- 🔗 시리즈 다음편 이어보기 딥링크 네비게이션 카드 -->
+<div style="background:#f0f4ff;border:1px solid #c7d2fe;border-left:4px solid #4f46e5;padding:14px 18px;margin:24px 0;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <div>
+    <span style="background:#4f46e5;color:#ffffff;font-size:11px;font-weight:800;padding:3px 8px;border-radius:4px;display:inline-block;">다음 시리즈 연관 가이드</span>
+    <div style="color:#1e1b4b;font-size:14px;font-weight:700;margin-top:4px;">
+      👉 [{series_tag} Part {next_part_num}/3 ({next_part_name})] 정밀 팩트 해설 보러가기
+    </div>
+  </div>
+  <a href="https://www.laborcheckai.co.kr" target="_blank" rel="noopener" style="background:#4f46e5;color:#ffffff;padding:7px 16px;border-radius:6px;text-decoration:none;font-weight:700;font-size:13px;letter-spacing:-0.3px;">
+    다음 편 읽기 ➔
+  </a>
+</div>
 
 <!-- 함께 읽으면 도움이 되는 연관 노무 가이드 -->
 <div style="background:#f8f9fa;border:1px solid #e9ecef;border-left:4px solid #1a3a6b;padding:16px;margin:24px 0;border-radius:6px;">
@@ -1322,22 +1339,28 @@ def publish():
         category = topic_dict["category"]
         series_tag = SERIES_MAP.get(category, f"{category} 시리즈")
         episode_num = category_counts[category] + 1
+        
+        # 💡 대표님 지시사항: 3,000자 분량의 3부작 시리즈화 (Part 1/3 -> Part 2/3 -> Part 3/3 순환)
+        part_num = ((episode_num - 1) % 3) + 1
+        part_names = {1: "기초·원칙", 2: "팩트체크·판례", 3: "실전대처·정산"}
+        part_tag = f"Part {part_num}/3 ({part_names[part_num]})"
+        
         raw_title = topic_dict["base_title"]
-        final_title = f"[{series_tag} #{episode_num}] {raw_title}"
+        final_title = f"[{series_tag} {part_tag}] {raw_title}"
 
         # 기존 발행 제목과 중복 체크
         if final_title in existing_titles or any(raw_title in t for t in existing_titles):
             suffixes = [
-                "- 2026년 실무 적용 가이드",
-                "- 근로자 사업주 필수 체크사항",
-                "- 최신 판례 및 소급 정산 해설",
-                "- 노무 전문가 심화 해설"
+                "- 2026년 실무 정밀 해설",
+                "- 핵심 팩트 및 주의사항",
+                "- 최신 판례 및 소급 정산 가이드",
+                "- 노무 전문가 실전 체크포인트"
             ]
             suffix = random.choice(suffixes)
-            final_title = f"[{series_tag} #{episode_num}] {raw_title} {suffix}"
+            final_title = f"[{series_tag} {part_tag}] {raw_title} {suffix}"
             log(f"NOTICE: 기존 제목 중복 감지되어 부제목 추가 변형 적용 -> {final_title}")
 
-        html = generate_v2_post_html(topic_dict, final_title, series_tag, episode_num)
+        html = generate_v2_post_html(topic_dict, final_title, series_tag, episode_num, part_num)
         return category, series_tag, episode_num, raw_title, final_title, html
 
     # 1순위: Gemini API로 매번 새 글감을 직접 생성. 실패하면 사전 정의 주제 DB로 대체.

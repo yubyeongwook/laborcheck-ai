@@ -92,16 +92,12 @@ def main():
     failed = 0
     for idx, p in enumerate(posts, 1):
         post_id = p.get('postid') or p.get('post_id') or p.get('ID')
-        title = p.get('title') or p.get('post_title') or ""
-        cats = p.get('categories') or ["임금체불"]
-        category = cats[0] if cats else "임금체불"
-        
-        # 1. 포스트별 2,500자 풍성한 본문 팩트 데이터 생성
+        # 1. 3,000자 분량 3부작 시리즈 에피소드 산출
+        part_num = ((idx - 1) % 3) + 1
         topic_dict = build_rich_topic_for_title(title, category)
         
-        # 2. auto_scheduled_publisher의 완벽 포맷터로 HTML 생성
-        # (예쁜 컴팩트 미니멀 칩 바 배너 1개 + 풍성한 본문 2,500자 포함!)
-        rich_html = generate_v2_post_html(topic_dict, title, "노무체크 시리즈", idx)
+        # 2. auto_scheduled_publisher의 완벽 포맷터로 HTML 생성 (3,000자 + 3부작 딥링크 네비게이션)
+        rich_html = generate_v2_post_html(topic_dict, title, "노무체크 시리즈", idx, part_num)
         
         try:
             r = wp.metaWeblog.editPost(post_id, WP_USER, WP_PASS, {'description': rich_html}, True)
