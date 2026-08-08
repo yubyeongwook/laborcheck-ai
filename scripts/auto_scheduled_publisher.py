@@ -52,8 +52,8 @@ WP_URLS = [
     "http://www.laborcheckai.co.kr/xmlrpc.php",
     "http://43.200.245.223/xmlrpc.php"
 ]
-WP_USER = os.environ.get("WP_USER", "user")
-WP_PASS = os.environ.get("WP_PASS")
+WP_USER = os.environ.get("WP_USER") or "user"
+WP_PASS = (os.environ.get("WP_PASS") or "").strip()
 if not WP_PASS:
     raise RuntimeError("WP_PASS 환경변수가 설정되지 않았습니다. scripts/.env(로컬) 또는 GitHub Actions Secrets(WP_PASS)에 설정하세요.")
 LABORCHECK_AI_URL = "https://노무체크ai.com"
@@ -844,6 +844,7 @@ def get_wp_client():
     ssl_context = ssl._create_unverified_context()
     transport = xmlrpc.client.SafeTransport(context=ssl_context)
     
+    log(f"NOTICE: 워드프레스 인증 접속 시도 - 계정명: '{WP_USER}' | 비번길이: {len(WP_PASS)}자")
     for url in WP_URLS:
         try:
             log(f"워드프레스 접속 시도: {url}")
