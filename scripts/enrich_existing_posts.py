@@ -235,7 +235,18 @@ def main():
         for prefix in ["I · ", "II · ", "III · ", "IV · ", "V · ", "VI · ", "I. ", "II. ", "III. ", "IV. ", "I ", "II ", "III ", "IV ", "★ ", "⚡ ", "📌 ", "💡 ", "🛡️ ", "⚖️ ", "👉 "]:
             cleaned_content = cleaned_content.replace(prefix, "")
             
-        # 2. 플로팅 스티키 위젯 탑재 (보라색 상담문의 버튼 바로 위 노출)
+        # 2. 첫 화면 상단 100% 노출형 대형 AI 무료 자가진단 카드 (글을 열자마자 첫 화면에서 보임!)
+        top_ai_box = """
+<!-- ⚡ 첫 화면 상단 100% 노출형 AI 무료 자가진단 카드 -->
+<div style="background:linear-gradient(135deg, #1a7a4a 0%, #0d4a2b 100%);color:#ffffff;padding:18px 20px;margin:18px 0 24px 0;border-radius:10px;text-align:center;box-shadow:0 6px 18px rgba(26,122,74,0.25);">
+  <strong style="font-size:17px;color:#ffffff;display:block;margin-bottom:6px;">⚡ 노무체크 AI 3초 무료 자가진단 서비스</strong>
+  <p style="margin:0 0 12px 0;font-size:14px;color:#e0f2fe;line-height:1.5;">내 근로수당, 퇴직금, 해고예고수당 정당성 여부를 AI가 3초 만에 무상으로 자동 정산해 드립니다.</p>
+  <a href="https://노무체크ai.com" target="_blank" rel="noopener" style="background:#ffffff;color:#1a7a4a;padding:12px 24px;border-radius:30px;text-decoration:none;font-weight:800;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+    👉 노무체크 AI 무료 자가진단 시작하기 (노무체크ai.com) →
+  </a>
+</div>
+"""
+        # 3. 플로팅 스티키 위젯 탑재 (보라색 상담문의 버튼 바로 위 노출)
         floating_widget = """
 <!-- 둥둥 떠다니는 플로팅 AI 자가진단 퀵 버튼 (Floating Sticky Banner - 보라색 상담문의 버튼 바로 위 노출) -->
 <div style="position:fixed;bottom:85px;right:20px;z-index:999999;box-shadow:0 6px 20px rgba(26,122,74,0.4);border-radius:30px;background:#1a7a4a;">
@@ -244,6 +255,10 @@ def main():
 </a>
 </div>
 """
+        # 상단 카드가 없으면 상단에 강제 삽입
+        if "노무체크 AI 3초 무료 자가진단 서비스" not in cleaned_content:
+            cleaned_content = top_ai_box + cleaned_content
+
         if "https://노무체크ai.com" not in cleaned_content or "position:fixed" not in cleaned_content:
             cleaned_content += floating_widget
             

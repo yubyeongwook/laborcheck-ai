@@ -1044,6 +1044,15 @@ def generate_v2_post_html(topic, final_title, series_tag, episode_num):
 3. {topic['summary_3']}
 </div>
 
+<!-- ⚡ 첫 화면 상단 100% 노출형 AI 무료 자가진단 카드 (글을 열자마자 바로 보임!) -->
+<div style="background:linear-gradient(135deg, #1a7a4a 0%, #0d4a2b 100%);color:#ffffff;padding:18px 20px;margin:18px 0;border-radius:10px;text-align:center;box-shadow:0 6px 18px rgba(26,122,74,0.25);">
+  <strong style="font-size:17px;color:#ffffff;display:block;margin-bottom:6px;">⚡ 노무체크 AI 3초 무료 자가진단 서비스</strong>
+  <p style="margin:0 0 12px 0;font-size:14px;color:#e0f2fe;line-height:1.5;">내 근로수당, 퇴직금, 해고예고수당 정당성 여부를 AI가 3초 만에 무상으로 자동 정산해 드립니다.</p>
+  <a href="https://노무체크ai.com" target="_blank" rel="noopener" style="background:#ffffff;color:#1a7a4a;padding:12px 24px;border-radius:30px;text-decoration:none;font-weight:800;font-size:15px;display:inline-block;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+    👉 노무체크 AI 무료 자가진단 시작하기 (노무체크ai.com) →
+  </a>
+</div>
+
 <!-- 히어로 이미지 -->
 <img src="{img_url}" alt="{final_title}" style="width:100%;border-radius:8px;margin:16px 0;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
 
