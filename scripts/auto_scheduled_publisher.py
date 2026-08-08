@@ -1129,16 +1129,17 @@ def research_labor_law_facts(recent_sample, category_counts):
 
     client = google_genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
+    valid_categories = list(SERIES_MAP.keys())
+
     research_prompt = (
-        "대한민국 노동법(근로기준법, 최저임금법, 산업재해보상보험법, 고용보험법, "
-        "근로자퇴직급여보장법 등) 중에서, 아래 이미 다룬 주제와 겹치지 않으면서 "
-        "사업주/근로자에게 실질적으로 도움되는 새로운 주제를 하나 고르세요.\n\n"
-        "그 주제와 관련된 정확한 법 조문 번호와 원문 내용, 관련 대법원 판례나 "
-        "고용노동부 행정해석이 있다면 검색해서 근거와 함께 정리해주세요. "
-        "조문 번호나 판례가 검색으로 실제 확인되지 않으면 절대 지어내지 말고 "
-        "'조문 번호 미확인' 또는 '관련 판례 없음'이라고 명시하세요.\n\n"
-        "최근 발행 제목:\n" + "\n".join(f"- {t}" for t in recent_sample)
-        + f"\n\n카테고리별 기존 글 수: {dict(category_counts)}"
+        f"오늘 날짜({datetime.now().strftime('%Y년 %m월 %d일')}) 기준 대한민국 네이버 및 구글에서 "
+        "사업주와 근로자가 실시간으로 가장 많이 검색하는 실질적 핫이슈 노무 키워드 및 최신 노동법령 이슈를 검색하여 분석하세요.\n\n"
+        f"대상 12개 카테고리: {', '.join(valid_categories)}\n\n"
+        "아래 이미 발행된 주제와 겹치지 않는 오늘자 최신 핫 트렌드 질문 주제를 하나 선정하고, "
+        "구글 검색을 통해 관련 최신 근로기준법, 최저임금법, 대법원 판례, 노동부 보도자료 팩트를 정밀하게 조사하여 정리하세요.\n\n"
+        "조문 번호나 판례가 실제 확인되지 않으면 절대 지어내지 말고 '조문 번호 미확인'으로 처리하세요.\n\n"
+        "최근 발행 제목 목록:\n" + "\n".join(f"- {t}" for t in recent_sample)
+        + f"\n\n카테고리별 기존 발행 수: {dict(category_counts)}"
     )
 
     response = client.models.generate_content(
@@ -1150,30 +1151,29 @@ def research_labor_law_facts(recent_sample, category_counts):
     )
     research_text = (response.text or "").strip()
     if not research_text:
-        raise ValueError("리서치 단계에서 빈 응답을 받았습니다.")
+        raise ValueError("실시간 트렌드 리서치 단계에서 빈 응답을 받았습니다.")
     return research_text
 
 def generate_ai_article(existing_titles, category_counts):
-    """Gemini API로 매번 새로운 노무 글감(주제)과 본문 소재를 생성.
-    반환값은 generate_v2_post_html()이 기대하는 topic dict와 동일한 형태."""
+    """Gemini API로 그날그날 실시간 구글 검색 트렌드를 분석하여 최신 노무 이슈 글감과 본문 소재를 생성."""
     from google import genai as google_genai
 
     client = google_genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     valid_categories = list(SERIES_MAP.keys())
     recent_sample = list(existing_titles)[:40]
 
-    # 1단계: 구글 검색 연동으로 실제 법령/판례 리서치 (환각 방지의 핵심)
+    # 1단계: 실시간 구글 검색 트렌드 탐색 및 실제 법령/판례 팩트 리서치
     research_text = research_labor_law_facts(recent_sample, category_counts)
-    log("NOTICE: 리서치 단계 결과 요약 -> " + research_text[:300].replace("\n", " "))
+    log("NOTICE: 실시간 트렌드 리서치 단계 결과 요약 -> " + research_text[:300].replace("\n", " "))
 
-    system_prompt = f"""당신은 대한민국 노동법 전문 콘텐츠 작가입니다. '노무체크 AI'라는 노무 자가진단 서비스 블로그에 실릴 글을 씁니다.
+    system_prompt = f"""당신은 대한민국 실시간 노무 트렌드 전문 작가입니다. '노무체크 AI' 블로그에 들어갈 최신 실검색 팩트 글을 씁니다.
 
-독자: 노무 문제로 실제 곤란을 겪는 사업주와 근로자 (법 전문가 아님)
-제목/소제목 톤: 반드시 검색창에 실제로 칠 법한 질문형·실생활 언어를 쓰세요 (예: "직원 해고할 때 이것부터 확인하세요", "알바생도 퇴직금 받을 수 있나요?"). "법리", "~에 관한 고찰", "~의 정당한 적용 범위" 같은 논문투 표현은 절대 쓰지 마세요.
+독자: 오늘 노무 문제로 구글/네이버에 질문을 검색하는 사업주와 근로자
+제목/소제목 톤: 오늘 실시간으로 검색창에 입력하는 친근한 질문형·실생활 언어를 사용하세요. (예: "알바 주휴수당 쪼개기 계약 청구 되나요?", "수습기간 3개월 최저임금 90% 위법인가요?").
 
-카테고리는 반드시 다음 6개 중 하나만 사용하세요: {', '.join(valid_categories)}
+카테고리는 반드시 다음 12개 중 하나만 선택하세요: {', '.join(valid_categories)}
 
-**매우 중요**: 아래 [검색 리서치 결과]에 실제로 나온 법 조문·판례만 사용하세요. 리서치 결과에 없는 조문번호나 판례번호는 절대 새로 지어내지 마세요. 리서치 결과가 "조문 번호 미확인"이라고 했다면, 본문에서도 조문 번호 없이 법령명만 언급하세요.
+**매우 중요**: 아래 [실시간 검색 리서치 결과]의 팩트만 근거로 작성하고 조문번호나 판례를 절대 새로 지어내지 마세요.
 
 다른 설명 없이 아래 JSON 객체 하나만 응답하세요:
 {{
