@@ -6,6 +6,7 @@ import ssl
 import re
 import json
 import hashlib
+import difflib
 from datetime import datetime
 import collections
 import collections.abc
@@ -73,6 +74,22 @@ SERIES_MAP = {
     "법정의무교육": "사업주 법정의무교육 지침",
     "직종별 맞춤노무": "업종·직종별 맞춤 노무 가이드"
 }
+
+def normalize_category(raw_category):
+    """AI가 반환한 카테고리명이 SERIES_MAP과 토씨 하나라도 다르면 무조건 '임금체불'로
+    버려지던 문제 때문에, 12개 카테고리 중 7개가 워드프레스에 한 번도 생성되지 못했었음.
+    정확히 일치하지 않아도 부분 포함/유사도로 가장 가까운 카테고리를 찾아 살려준다."""
+    if not raw_category:
+        return None
+    if raw_category in SERIES_MAP:
+        return raw_category
+    # 1차: 부분 문자열 매칭 (예: "부당해고" -> "부당해고·해고예고")
+    for valid_cat in SERIES_MAP:
+        if raw_category in valid_cat or valid_cat in raw_category:
+            return valid_cat
+    # 2차: 문자열 유사도 매칭 (오타, 어순 차이 등)
+    matches = difflib.get_close_matches(raw_category, SERIES_MAP.keys(), n=1, cutoff=0.5)
+    return matches[0] if matches else None
 
 # 카테고리별 애드센스 고품질 FAQ 라이브러리 (12대 카테고리 전면 확충)
 CATEGORY_FAQS = {
@@ -1371,9 +1388,13 @@ def generate_ai_article(existing_titles, category_counts, slot="morning"):
     if missing:
         raise ValueError(f"AI 응답에 누락된 필드: {missing}")
 
-    if data["category"] not in SERIES_MAP:
+    matched_category = normalize_category(data["category"])
+    if matched_category is None:
         log(f"NOTICE: AI가 알 수 없는 카테고리를 반환({data['category']}) -> 기본값으로 대체")
         data["category"] = "임금체불"
+    elif matched_category != data["category"]:
+        log(f"NOTICE: AI 카테고리 '{data['category']}' -> 유사 매칭 '{matched_category}'")
+        data["category"] = matched_category
 
     return data
 
