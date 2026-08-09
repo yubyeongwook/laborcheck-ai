@@ -1040,13 +1040,36 @@ ${includeAnnualLeavePay ? `  - 📅 **미사용 연차유급휴가 정산 수당
         </div>
 
         <h1 className="hero-title">
-          우리 회사 근로계약서·급여명세서, <span className="hero-title-accent">과태료 대상일까?</span>
+          내 월급·퇴직금·해고, <span className="hero-title-accent">이게 맞는 걸까?</span>
         </h1>
 
         <p className="hero-subtitle">
-          노무체크 AI가 <strong style={{ color: '#38bdf8' }}>10초 만에 법정 과태료 및 임금 체불 리스크를 정밀 진단</strong>해 드립니다. <br />
+          노무체크 AI가 <strong style={{ color: '#38bdf8' }}>10초 만에 임금 체불·부당해고·법정 과태료 리스크를 정밀 진단</strong>해 드립니다. <br />
           진단 후 서류 자동 생성, 법정의무교육 이수 관리, 검증된 노무사 정액제 배너 연결까지 한 번에 이용하세요.
         </p>
+
+        {/* 👷 근로자 / 🏢 사업주 진입점 분리 */}
+        <div style={{
+          display: 'flex', gap: '0.8rem', flexWrap: 'wrap',
+          justifyContent: 'center', margin: '1.2rem 0 0.4rem'
+        }}>
+          <Link to="/worker" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+            background: 'linear-gradient(135deg, #0284c7, #38bdf8)', color: '#ffffff',
+            padding: '0.85rem 1.6rem', borderRadius: '12px', fontSize: '1rem', fontWeight: 800,
+            textDecoration: 'none', boxShadow: '0 8px 20px rgba(56, 189, 248, 0.3)'
+          }}>
+            <User size={19} /> 근로자 - 내 노동문제 확인하기
+          </Link>
+          <Link to="/employer" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+            background: 'linear-gradient(135deg, #7c3aed, #a78bfa)', color: '#ffffff',
+            padding: '0.85rem 1.6rem', borderRadius: '12px', fontSize: '1rem', fontWeight: 800,
+            textDecoration: 'none', boxShadow: '0 8px 20px rgba(167, 139, 250, 0.3)'
+          }}>
+            <Briefcase size={19} /> 사업주 - 우리 사업장 진단하기
+          </Link>
+        </div>
 
         {/* 🔍 노무비서실장 1:1 대화 시작 지휘창 */}
         <form onSubmit={handleFormSubmit} className="hero-search-wrap">
