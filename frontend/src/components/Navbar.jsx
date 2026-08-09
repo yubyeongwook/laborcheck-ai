@@ -6,13 +6,13 @@ import { useAuth } from '../context/AuthContext.jsx';
 const ADMIN_EMAIL = 'aigoid1203@gmail.com';
 
 const NAV_LINKS = [
-  { to: '/', label: '⚡ 2026 무료진단', highlight: true },
-  { to: '/worker', label: '📄 근로자' },
-  { to: '/employer', label: '🏢 사업주' },
-  { to: '/injury', label: '🩺 산재 70% 진단' },
-  { to: '/remedy', label: '⚖️ 부당해고 구제' },
-  { to: '/education', label: '🎓 법정의무교육' },
-  { to: '/contact', label: '💬 1:1 노무상담' }
+  { to: '/', label: '2026 무료진단', highlight: true },
+  { to: '/worker', label: '근로자' },
+  { to: '/employer', label: '사업주' },
+  { to: '/injury', label: '산재 70% 진단' },
+  { to: '/remedy', label: '부당해고 구제' },
+  { to: '/education', label: '법정의무교육' },
+  { to: '/contact', label: '1:1 노무상담' }
 ];
 
 const getDisplayName = (user) => {
