@@ -95,7 +95,7 @@ export function AuthProvider({ children }) {
       // 가입 성공 시 백엔드 API를 호출해 카카오 가입 환영 메시지 발송
       let kakaoSent = false;
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+        const apiBaseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : 'https://api.xn--ai-h74ir53a94vh9e.com');
         const kakaoRes = await fetch(`${apiBaseUrl}/api/send-kakao`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -100,7 +100,7 @@ function AiConsultant() {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://api.xn--ai-h74ir53a94vh9e.com');
       const res = await fetch(`${API_URL}/api/analyze-contract`, {
         method: 'POST',
         headers,

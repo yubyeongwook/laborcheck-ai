@@ -97,7 +97,7 @@ function EmployeeManager() {
     return headers;
   };
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://api.xn--ai-h74ir53a94vh9e.com');
 
   // 1. 사업장 목록 가져오기
   const fetchCompanies = async () => {
