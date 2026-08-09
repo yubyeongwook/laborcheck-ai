@@ -1,6 +1,13 @@
-# 일반 검색엔진 허용 및 Sitemap 지정
+# 일반 검색엔진 및 구글 애드센스 크롤러 허용
 User-agent: *
 Allow: /
+
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
 Sitemap: https://www.xn--ai-h74ir53a94vh9e.com/sitemap.xml
 
 # AI 학습/스크레이핑용 크롤러 차단
