@@ -501,7 +501,7 @@ ${deductionType === '3.3%' ? `- 사업소득세(3.3%): ${incomeTax.toLocaleStrin
                           setIsSentSuccess(true);
                           return;
                         } catch (err) {
-                          // 사용자가 취소했거나 미지원 환경이면 클립보드 복사로 진행
+                          if (err.name === 'AbortError') return;
                         }
                       }
 

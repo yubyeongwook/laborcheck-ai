@@ -534,7 +534,7 @@ function ReportGenerator({ userType }) {
         alert('📱 카카오톡으로 리포트 공유가 성공적으로 처리되었습니다!');
         return;
       } catch (err) {
-        // 공유 취소 시 아래 클립보드 폴백으로 이동
+        if (err.name === 'AbortError') return;
       }
     }
 

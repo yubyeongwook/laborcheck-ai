@@ -109,6 +109,7 @@ export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0, nonTaxa
   let employmentInsurance = 0;
   let incomeTax = 0;
   let localIncomeTax = 0;
+  let pensionTarget = 0;
 
   if (deductionType === '3.3%') {
     incomeTax = roundDownToTen(totalPay * 0.03);
@@ -133,7 +134,7 @@ export const applyDeductions = (totalPay, year = 2026, pensionBasis = 0, nonTaxa
     localIncomeTax = roundDownToTen(incomeTax * 0.1);
   } else {
     // 일반 4대보험 적용 근로자
-    const pensionTarget = pensionBasis > 0 ? pensionBasis : taxableBase;
+    pensionTarget = pensionBasis > 0 ? pensionBasis : taxableBase;
     nationalPension = roundDownToTen(pensionTarget * rates.pension);
     healthInsurance = roundDownToTen(taxableBase * rates.health);
     longTermCare = roundDownToTen(healthInsurance * rates.care);

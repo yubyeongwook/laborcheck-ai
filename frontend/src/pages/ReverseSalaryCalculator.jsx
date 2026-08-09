@@ -1740,7 +1740,9 @@ ${overtimePay > 0 ? `- 연장수당: ${Math.round(weeklyOvertimeHours * AVG_WEEK
                         url: 'https://노무체크ai.com'
                       });
                       return;
-                    } catch (err) {}
+                    } catch (err) {
+                      if (err.name === 'AbortError') return;
+                    }
                   }
 
                   try {
