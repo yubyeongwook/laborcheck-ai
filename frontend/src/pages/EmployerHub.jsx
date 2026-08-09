@@ -102,7 +102,7 @@ const TOOL_CATEGORIES = [
     categoryName: '🛡️ 노무 리스크 진단 & AI 컨설팅',
     items: [
       { to: '/employer/employees', icon: <Users size={24} color="#818cf8" />, title: '직원 관리 대시보드', desc: '사업장 직원 등록, 4대보험 부담금 및 인건비 실시간 통합 관리' },
-      { to: '/employer/ai-consultant', icon: <Sparkles size={24} color="#a78bfa" />, title: 'AI 노무 컨설턴트 (독소조항 검증)', desc: '근로계약서/취업규칙의 위법 독소조항을 AI 노무사가 정밀 분석하고 안전 대안 제시' },
+      { to: '/employer/ai-consultant', icon: <Sparkles size={24} color="#a78bfa" />, title: 'AI 근로계약서 위험조항 점검 (참고용)', desc: '근로계약서/취업규칙의 위법 소지가 있는 조항을 AI가 자동 점검하고 참고용 대안 문구를 제시' },
       { to: '/employer/report', icon: <ShieldAlert size={24} color="#fbbf24" />, title: 'AI 노무 리스크 진단 리포트', desc: '사업장 근로시간/급여 입력 시 법 위반 리스크 등급 및 과태료 방지 체크리스트 발행' },
     ]
   },

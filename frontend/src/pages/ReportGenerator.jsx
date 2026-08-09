@@ -514,14 +514,14 @@ function ReportGenerator({ userType }) {
       return;
     }
 
-    const shareTitle = `[노무체크 AI] ${userType || '노무'} 자가진단 정밀 리포트`;
+    const shareTitle = `[노무체크 AI] ${userType || '노무'} 자가진단 참고 리포트`;
     const shareText = `${shareTitle}
 ━━━━━━━━━━━━━━━━━━━━━━
-⚖️ 근로기준법 및 대법원 판례 대조 2026 AI 노무 진단 결과가 작성되었습니다.
+⚖️ 근로기준법 및 대법원 판례를 참고한 2026 AI 자가진단 결과가 작성되었습니다.
 
 🔗 상세 리포트 확인: https://노무체크ai.com
 
-※ 노무체크 AI(https://노무체크ai.com)를 통해 자동 검증 및 생성된 2026 정식 AI 노무 진단서입니다.`;
+※ 노무체크 AI(https://노무체크ai.com)를 통해 생성된 참고용 자가진단 리포트이며, 공인노무사·변호사의 법률 자문이 아닙니다.`;
 
     // 1. 모바일/디바이스 네이티브 공유 API 시도 (카카오톡 포함 0원 공유)
     if (navigator.share) {

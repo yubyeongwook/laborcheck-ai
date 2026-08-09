@@ -37,10 +37,16 @@ const SAMPLE_CONTRACTS = {
 회사의 업무 사정에 따라 연장 및 야간 근로를 지시할 수 있으며, 직원은 이에 무조건 응해야 한다. 단, 연장 근무 수당은 별도로 지급하지 않고 월 기본급에 포함된 것으로 간주한다.`
 };
 
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
+
 function AiConsultant() {
   const { session, user } = useAuth();
   const [analysisType, setAnalysisType] = useState('contract'); // 'contract' | 'rules'
   const [documentText, setDocumentText] = useState(SAMPLE_CONTRACTS.contract);
+  const [docYear, setDocYear] = useState('');
+  const [companySize, setCompanySize] = useState('모름'); // '5인 미만' | '5인 이상' | '모름'
+  const [industry, setIndustry] = useState('');
+  const [attachedFile, setAttachedFile] = useState(null); // { name, mime, dataUrl }
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState('');
 
@@ -50,19 +56,40 @@ function AiConsultant() {
     setDocumentText(SAMPLE_CONTRACTS[type]);
   };
 
-  // 파일 업로드는 아직 지원하지 않음 (OCR/PDF 파싱 미구현) - 사용자의 실제 문서를 임의로 바꿔치기하지 않도록 안내만 표시
+  // 텍스트(.txt)는 바로 입력창에 채우고, 이미지/PDF는 base64로 읽어 첨부 상태로 저장
   const handleFileChange = (e) => {
-    const hadFile = e.target.files.length > 0;
+    const file = e.target.files[0];
     e.target.value = '';
-    if (hadFile) {
-      alert('파일 업로드(이미지/PDF 자동 인식)는 아직 지원되지 않습니다. 아래 입력창에 문서 내용을 직접 붙여넣어 주세요.');
+    if (!file) return;
+
+    if (file.size > MAX_FILE_BYTES) {
+      alert('파일 용량이 너무 큽니다. 10MB 이하 파일을 업로드해 주세요.');
+      return;
     }
+
+    if (file.type === 'text/plain') {
+      const reader = new FileReader();
+      reader.onload = (ev) => setDocumentText(ev.target.result);
+      reader.readAsText(file);
+      return;
+    }
+
+    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setAttachedFile({ name: file.name, mime: file.type, dataUrl: ev.target.result });
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    alert('지원하지 않는 파일 형식입니다. txt, pdf, png, jpg 파일만 업로드할 수 있습니다.');
   };
 
   // 분석 실행
   const handleAnalyze = async () => {
-    if (!documentText.trim()) {
-      alert('분석할 문서 텍스트를 입력하거나 예시를 불러와 주세요.');
+    if (!documentText.trim() && !attachedFile) {
+      alert('분석할 문서 텍스트를 입력하거나, 예시를 불러오거나, 파일을 첨부해 주세요.');
       return;
     }
     setLoading(true);
@@ -72,14 +99,19 @@ function AiConsultant() {
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
-      
+
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const res = await fetch(`${API_URL}/api/analyze-contract`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           contractText: documentText,
-          analysisType
+          analysisType,
+          docYear: docYear.trim() || undefined,
+          companySize,
+          industry: industry.trim() || undefined,
+          file_data: attachedFile?.dataUrl,
+          file_mime: attachedFile?.mime
         })
       });
 
@@ -99,18 +131,18 @@ function AiConsultant() {
   return (
     <div className="page-container">
       <SEO
-        title="AI 24시 노무 법률 상담소·근로계약서 검증"
-        description="대한민국 근로기준법 및 대법원 판례 기반 24시간 실시간 AI 노무 법률 상담 및 근로계약서, 독소조항 자동 검증"
+        title="AI 근로계약서 위험조항 자동 점검 (참고용)"
+        description="근로기준법 및 판례 기반 근로계약서·취업규칙 위험조항 자동 점검 도구. 공인노무사·변호사의 법률 자문을 대체하지 않는 참고용 자가진단 서비스입니다."
         path="/employer/ai-consultant"
       />
       {/* 헤더 */}
       <div className="tool-page-header" style={{ marginBottom: '2rem' }}>
         <h1 className="tool-page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Sparkles size={28} color="#fbbf24" /> AI 노무 컨설턴트
+          <Sparkles size={28} color="#fbbf24" /> AI 근로계약서 위험조항 점검
         </h1>
         <p className="tool-page-desc">
-          사업주가 등록할 근로계약서나 사내 취업규칙을 법적으로 정밀 진단합니다. 
-          노동법(근로기준법) 위반 리스크를 식별하고, 사업주와 근로자 모두 보호할 수 있는 안전한 대안 문구를 추천해 드립니다.
+          사업주가 등록할 근로계약서나 사내 취업규칙에 근로기준법 위반 소지가 있는지 자동으로 점검해 드립니다.
+          위험조항을 식별하고 참고할 수 있는 대안 문구를 제시하지만, 이는 공인노무사·변호사의 법률 자문을 대체하지 않는 참고용 정보입니다. 개별 사안은 전문가와 상담하시기 바랍니다.
         </p>
       </div>
 
@@ -153,32 +185,103 @@ function AiConsultant() {
             </div>
           </div>
 
-          {/* 모의 드롭존 */}
-          <div 
-            style={{ 
-              border: '2px dashed rgba(255,255,255,0.1)', 
-              borderRadius: '12px', 
-              padding: '1.5rem', 
-              textAlign: 'center', 
+          {/* 파일/사진 업로드 드롭존 */}
+          <div
+            style={{
+              border: '2px dashed rgba(255,255,255,0.1)',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              textAlign: 'center',
               background: 'rgba(15, 23, 42, 0.3)',
               cursor: 'pointer',
               position: 'relative'
             }}
           >
-            <input 
-              type="file" 
-              accept=".txt,.pdf,.png,.jpg" 
+            <input
+              type="file"
+              accept=".txt,.pdf,.png,.jpg,.jpeg"
               onChange={handleFileChange}
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
             />
             <Upload size={24} color="#a78bfa" style={{ marginBottom: '0.5rem' }} />
             <div style={{ fontSize: '0.8rem', color: '#f8fafc', fontWeight: 'bold' }}>
-              근로계약서 이미지/PDF 파일 업로드 (준비 중)
+              근로계약서/취업규칙 사진(이미지)·PDF·텍스트 파일 업로드
             </div>
             <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem' }}>
-              현재는 아래 입력창에 문서 내용을 직접 붙여넣어 분석할 수 있습니다
+              사진(png/jpg)이나 PDF는 첨부되어 AI가 함께 판독하고, txt 파일은 아래 입력창에 바로 채워집니다
             </div>
           </div>
+
+          {attachedFile && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: 'rgba(167, 139, 250, 0.1)', border: '1px solid rgba(167, 139, 250, 0.3)',
+              borderRadius: '8px', padding: '0.5rem 0.8rem', fontSize: '0.78rem', color: '#e2e8f0'
+            }}>
+              <span>📎 첨부됨: {attachedFile.name}</span>
+              <button
+                type="button"
+                onClick={() => setAttachedFile(null)}
+                style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}
+              >
+                제거
+              </button>
+            </div>
+          )}
+
+          <div className="form-group">
+            <label className="form-label">사업장 규모 (5인 미만/이상에 따라 적용 법령이 크게 달라집니다)</label>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {['5인 미만', '5인 이상', '모름'].map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setCompanySize(opt)}
+                  style={{
+                    flex: 1, padding: '0.5rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700,
+                    border: companySize === opt ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.1)',
+                    background: companySize === opt ? 'rgba(251, 191, 36, 0.15)' : 'transparent',
+                    color: companySize === opt ? '#fbbf24' : '#94a3b8',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.3rem' }}>
+              5인 미만 사업장은 연장·야간·휴일 가산수당, 부당해고 구제, 연차유급휴가 등 상당수 규정이 적용 제외됩니다. "모름"을 선택하면 두 경우를 모두 안내해 드립니다.
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">업종 (선택 - 운수업/보건업 등 근로시간 특례업종 여부 판단에 활용)</label>
+            <input
+              type="text"
+              className="text-input"
+              placeholder="예: 운수업, 요양병원, 일반 소매업 등"
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
+              style={{ padding: '0.5rem 0.75rem' }}
+            />
+          </div>
+
+          {analysisType === 'rules' && (
+            <div className="form-group">
+              <label className="form-label">이 취업규칙의 작성/최종 개정 연도 (선택)</label>
+              <input
+                type="number"
+                className="text-input"
+                placeholder="예: 2021 (모르면 비워두세요)"
+                value={docYear}
+                onChange={(e) => setDocYear(e.target.value)}
+                style={{ padding: '0.5rem 0.75rem' }}
+              />
+              <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.3rem' }}>
+                입력하시면 그 연도 기준으로 작성된 규정을 현재 법정 기준과 비교해 무엇이 새로 생기고, 바뀌고, 보완이 필요한지 정리해 드립니다.
+              </div>
+            </div>
+          )}
 
           <div className="form-group" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>

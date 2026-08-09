@@ -25,7 +25,7 @@ function PrivacyPolicy() {
         <div>
           <h3 style={{ color: '#f8fafc', fontSize: '1rem', marginBottom: '0.5rem' }}>2. 개인정보의 수집 및 이용 목적</h3>
           <ul style={{ margin: 0, paddingLeft: '1.2rem' }}>
-            <li>AI 급여·노무 정밀 진단서 및 법정 서식(급여명세서, 퇴직금 정산서) 생성·발급</li>
+            <li>AI 급여·노무 자가진단 참고 리포트 및 법정 서식(급여명세서, 퇴직금 정산서) 생성·발급</li>
             <li>1:1 맞춤 노무 상담 처리 및 카카오톡 알림톡·문자(SMS)·이메일·전화를 통한 상담 진행 상황 및 결과 안내</li>
             <li><strong>추후 요청 시 전문 노무사 및 제휴 노무법인과의 1:1 상담 및 노무 사건 구제 대리 연결 서비스 제공</strong></li>
             <li>서비스 품질 향상, 불법/부정 이용 방지 및 고충 처리</li>
