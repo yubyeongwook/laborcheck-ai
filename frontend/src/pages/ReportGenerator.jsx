@@ -514,52 +514,36 @@ function ReportGenerator({ userType }) {
       return;
     }
 
-    if (REQUIRE_PAYMENT) {
-      // 결제 체크 플레이스홀더 (향후 결제 연동 완료 후 상태 확인 적용)
-      const hasPaid = false;
-      if (!hasPaid) {
-        alert('이 기능은 결제가 필요한 서비스입니다. 결제 모듈을 연동해 주세요.');
+    const shareTitle = `[노무체크 AI] ${userType || '노무'} 자가진단 정밀 리포트`;
+    const shareText = `${shareTitle}
+━━━━━━━━━━━━━━━━━━━━━━
+⚖️ 근로기준법 및 대법원 판례 대조 2026 AI 노무 진단 결과가 작성되었습니다.
+
+🔗 상세 리포트 확인: https://노무체크ai.com
+
+※ 노무체크 AI(https://노무체크ai.com)를 통해 자동 검증 및 생성된 2026 정식 AI 노무 진단서입니다.`;
+
+    // 1. 모바일/디바이스 네이티브 공유 API 시도 (카카오톡 포함 0원 공유)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: 'https://노무체크ai.com'
+        });
+        alert('📱 카카오톡으로 리포트 공유가 성공적으로 처리되었습니다!');
         return;
+      } catch (err) {
+        // 공유 취소 시 아래 클립보드 폴백으로 이동
       }
     }
 
-    const defaultPhone = user?.user_metadata?.phone_number || '';
-    const phone = prompt('자료를 전송받을 휴대폰 번호를 입력해 주세요. (예: 010-1234-5678)', defaultPhone);
-    
-    if (phone === null) return; // 취소
-    if (!phone.trim()) {
-      alert('휴대폰 번호를 입력해 주세요.');
-      return;
-    }
-
+    // 2. 클립보드 복사 폴백
     try {
-      setIsSendingKakao(true);
-      const apiBaseUrl = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiBaseUrl}/api/send-kakao`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
-        },
-        body: JSON.stringify({
-          phone: phone,
-          type: 'download',
-          data: {
-            title: `${userType || '노무'} 자가진단 리포트 결과`
-          }
-        })
-      });
-
-      const resData = await response.json();
-      if (!response.ok) {
-        throw new Error(resData.error || '알림톡 전송에 실패했습니다.');
-      }
-      
-      alert('입력하신 휴대폰 번호의 카카오톡으로 자료 다운로드 링크가 발송되었습니다!');
+      await navigator.clipboard.writeText(shareText);
+      alert('📱 리포트 카카오톡 공유 문구가 클립보드에 복사되었습니다!\n카카오톡 대화창에 붙여넣기(Ctrl+V 또는 길게 누르기) 하여 바로 수신인에게 전송해보세요.');
     } catch (err) {
-      alert(err.message || '전송 실패');
-    } finally {
-      setIsSendingKakao(false);
+      alert('리포트 공유 문구 복사에 실패했습니다.');
     }
   };
 

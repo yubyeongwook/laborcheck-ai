@@ -1706,7 +1706,7 @@ function YearEntryCard({ entry, onChange, onRemove, removable }) {
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   const paymentYear = paymentMonth.split('-')[0];
                   const paymentMon = paymentMonth.split('-')[1];
                   const copyText = `[${companyName} 급여명세서]
@@ -1739,11 +1739,23 @@ ${absenceDeduction > 0 ? `- 결근·조퇴 공제 (${absenceLabel}): ${absenceDe
 ${result.overtimePay > 0 ? `- 연장수당: ${result.overtimeHoursMonthly}시간 × 시급 × ${entry.companySize === '5인 이상' ? '1.5' : '1.0'}\n` : ''}${result.nightPay > 0 ? `- 야간수당: ${result.nightHoursMonthly}시간 × 시급 × ${entry.companySize === '5인 이상' ? '0.5' : '0.0'}\n` : ''}${absenceDeduction > 0 ? `- 결근·조퇴공제 (${absenceLabel}): ${absenceDeduction.toLocaleString()}원\n` : ''}
 * 노무체크 AI를 통해 생성된 모바일 법정 급여명세서입니다.`;
                   
-                  navigator.clipboard.writeText(copyText).then(() => {
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({
+                        title: `[${companyName}] 급여명세서`,
+                        text: copyText,
+                        url: 'https://노무체크ai.com'
+                      });
+                      return;
+                    } catch (err) {}
+                  }
+
+                  try {
+                    await navigator.clipboard.writeText(copyText);
                     alert('급여명세서 텍스트가 클립보드에 복사되었습니다! 카카오톡 창에 붙여넣기(Ctrl+V) 하여 즉시 전송할 수 있습니다.');
-                  }).catch(() => {
+                  } catch (err) {
                     alert('복사에 실패했습니다. 명세서를 직접 드래그하여 복사해 주세요.');
-                  });
+                  }
                 }}
                 style={{ flex: 1, padding: '0.75rem', background: '#eab308', border: 'none', borderRadius: '8px', color: '#000', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
               >

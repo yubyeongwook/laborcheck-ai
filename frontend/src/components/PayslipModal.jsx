@@ -458,12 +458,60 @@ export default function PayslipModal({ data = {}, onClose }) {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!userPhone.trim()) {
-                        alert("📱 카카오톡 수신 휴대폰 번호를 입력해주세요!");
-                        return;
+                    onClick={async () => {
+                      const payslipText = `[${companyName} 법정 급여명세서]
+귀하의 노고에 감사드립니다. (근로기준법 제48조 규격)
+
+👤 근로자: ${receiverName || employeeName}님
+📅 지급기간: ${payPeriod}
+🗓️ 급여지급일: ${payDate}
+⏱️ 통상시급: ${hourlyRate.toLocaleString()}원/h
+
+■ 지급 내역 (세전)
+- 기본급: ${calcPureBasePay.toLocaleString()}원 (${calcPureBaseHours}시간)
+- 주휴수당: ${calcWeeklyHolidayPay.toLocaleString()}원 (${calcWeeklyHolidayHours}시간)
+${overtimeAllowance > 0 ? `- 연장근로수당: ${overtimeAllowance.toLocaleString()}원 (${overtimeHours}시간)\n` : ''}${nightAllowance > 0 ? `- 야간근로수당: ${(nightAllowance || 0).toLocaleString()}원 (${nightHours}시간)\n` : ''}${holidayAllowance > 0 ? `- 휴일근로수당: ${holidayAllowance.toLocaleString()}원 (${displayHolidayHours}시간)\n` : ''}${annualLeaveAllowance > 0 ? `- 연차휴가수당: ${annualLeaveAllowance.toLocaleString()}원 (${displayAnnualLeaveHours}시간)\n` : ''}- 식대(비과세): ${mealAllowanceTaxExempt.toLocaleString()}원
+💰 지급액 합계: ${totalGrossSalary.toLocaleString()}원
+
+■ 공제 내역 (${deductionType})
+${deductionType === '3.3%' ? `- 사업소득세(3.3%): ${incomeTax.toLocaleString()}원
+- 지방소득세: ${localIncomeTax.toLocaleString()}원` : deductionType === '일용직' ? `- 고용보험(0.9%): ${employmentInsurance.toLocaleString()}원
+- 일용소득세: ${incomeTax.toLocaleString()}원
+- 지방소득세: ${localIncomeTax.toLocaleString()}원` : `- 국민연금(4.75%): ${nationalPension.toLocaleString()}원
+- 건강보험(3.595%): ${healthInsurance.toLocaleString()}원
+- 장기요양(13.14%): ${longtermCare.toLocaleString()}원
+- 고용보험(0.9%): ${employmentInsurance.toLocaleString()}원
+- 근로소득세: ${incomeTax.toLocaleString()}원
+- 지방소득세: ${localIncomeTax.toLocaleString()}원`}${calcAbsenceDeduction > 0 ? `\n- 결근/조퇴 차감공제: -${calcAbsenceDeduction.toLocaleString()}원` : ''}
+📉 공제액 합계: ${calcTotalDeduction.toLocaleString()}원
+
+■ 실수령액 (차인 지급액)
+★ 실수령액: ${calcNetPay.toLocaleString()}원
+
+⚖️ 본 명세서는 노무체크 AI(https://노무체크ai.com)를 통해 2026년 근로기준법 제48조 제2항에 따라 자동 생성된 정식 법정 전자 급여명세서입니다.`;
+
+                      // 1. 모바일/디바이스 네이티브 공유 API 시도 (카카오톡 포함 0원 공유)
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: `[${companyName}] ${receiverName || employeeName}님 급여명세서`,
+                            text: payslipText,
+                            url: 'https://노무체크ai.com'
+                          });
+                          setIsSentSuccess(true);
+                          return;
+                        } catch (err) {
+                          // 사용자가 취소했거나 미지원 환경이면 클립보드 복사로 진행
+                        }
                       }
-                      setIsSentSuccess(true);
+
+                      // 2. 클립보드 복사 폴백
+                      try {
+                        await navigator.clipboard.writeText(payslipText);
+                        setIsSentSuccess(true);
+                      } catch (err) {
+                        alert("급여명세서 복사에 실패했습니다. 명세서를 직접 드래그하여 복사해 주세요.");
+                      }
                     }}
                     style={{
                       width: '100%', padding: '0.85rem', borderRadius: '10px',
@@ -473,17 +521,19 @@ export default function PayslipModal({ data = {}, onClose }) {
                       boxShadow: '0 4px 14px rgba(254, 229, 0, 0.4)'
                     }}
                   >
-                    <Send size={18} color="#000" /> 카카오톡 명세서 받기 (즉시 전송)
+                    <Send size={18} color="#000" /> 카카오톡 명세서 보내기 (0원 무료 전송)
                   </button>
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                   <CheckCircle size={48} color="#34d399" style={{ marginBottom: '0.75rem' }} />
                   <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', color: '#34d399', fontWeight: 900 }}>
-                    📱 카카오톡 전송 완료!
+                    📱 카카오톡 공유 준비 완료!
                   </h4>
                   <p style={{ fontSize: '0.88rem', color: '#e2e8f0', lineHeight: '1.5', marginBottom: '1.25rem' }}>
-                    <strong>[{userPhone}]</strong> 번호로 <strong>{receiverName}</strong> 님의 2026년 법정 급여명세서가 안전하게 전송되었습니다!
+                    <strong>{receiverName || employeeName}</strong> 님의 2026년 법정 급여명세서(세전 {totalGrossSalary.toLocaleString()}원 / 실수령액 {calcNetPay.toLocaleString()}원)가 공유/복사되었습니다!
+                    <br/><br/>
+                    카카오톡 대화창에 <strong>붙여넣기(Ctrl+V 또는 길게 누르기)</strong> 하시면 상대방에게 무료로 즉시 전송됩니다.
                   </p>
                   <button
                     onClick={() => { setIsKakaoOpen(false); setIsSentSuccess(false); }}
