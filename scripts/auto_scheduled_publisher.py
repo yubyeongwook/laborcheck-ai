@@ -866,7 +866,7 @@ def topic_key(topic):
 def fetch_existing_posts(wp):
     """기존 발행된 글 목록, 카테고리별 개수, 이미 사용된 주제 키 분석"""
     try:
-        recent_posts = wp.call(GetPosts({'number': 50, 'post_type': 'post'}, ['post_title', 'custom_fields']))
+        recent_posts = wp.call(GetPosts({'number': 50, 'post_type': 'post'}, ['post_title', 'custom_fields', 'terms']))
         titles = set()
         category_counts = collections.defaultdict(int)
         used_topic_keys = set()
@@ -875,9 +875,11 @@ def fetch_existing_posts(wp):
             if hasattr(p, 'title') and p.title:
                 clean_title = p.title.strip()
                 titles.add(clean_title)
-            if hasattr(p, 'terms_names') and 'category' in p.terms_names:
-                for cat in p.terms_names['category']:
-                    category_counts[cat] += 1
+            # GetPosts는 terms_names가 아니라 terms(WordPressTerm 객체 목록)로 카테고리를 반환함
+            if hasattr(p, 'terms') and p.terms:
+                for term in p.terms:
+                    if getattr(term, 'taxonomy', None) == 'category':
+                        category_counts[term.name] += 1
             if hasattr(p, 'custom_fields') and p.custom_fields:
                 for cf in p.custom_fields:
                     if cf.get('key') == 'lc_topic_key':
